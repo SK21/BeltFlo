@@ -93,6 +93,9 @@ namespace BeltFlo.Forms
             bool resume = Properties.Settings.Default.ResumeJobOnStart;
             SetToggle(btnResumeOn, btnResumeOff, resume);
 
+            // Resume from Pause when sections come on
+            SetToggle(btnAutoResumeOn, btnAutoResumeOff, Properties.Settings.Default.AutoResumePause);
+
             // CAN driver
             cbCanDriver.SelectedIndex = cbCanDriver.FindStringExact(Properties.Settings.Default.CanDriver);
             if (cbCanDriver.SelectedIndex < 0) cbCanDriver.SelectedIndex = 0;
@@ -155,6 +158,8 @@ namespace BeltFlo.Forms
         private void btnMetric_Click(object sender, EventArgs e) => SetToggle(btnImperial, btnMetric, false);
         private void btnResumeOn_Click(object sender, EventArgs e) => SetToggle(btnResumeOn, btnResumeOff, true);
         private void btnResumeOff_Click(object sender, EventArgs e) => SetToggle(btnResumeOn, btnResumeOff, false);
+        private void btnAutoResumeOn_Click(object sender, EventArgs e) => SetToggle(btnAutoResumeOn, btnAutoResumeOff, true);
+        private void btnAutoResumeOff_Click(object sender, EventArgs e) => SetToggle(btnAutoResumeOn, btnAutoResumeOff, false);
 
         private void btnEthernet_Click(object sender, EventArgs e)
         {
@@ -196,6 +201,9 @@ namespace BeltFlo.Forms
 
             // Resume Job on Start
             Properties.Settings.Default.ResumeJobOnStart = btnResumeOn.BackColor == ActiveColour;
+
+            // Resume from Pause when sections come on
+            Properties.Settings.Default.AutoResumePause = btnAutoResumeOn.BackColor == ActiveColour;
 
             Properties.Settings.Default.Save();
             Core.RaiseColorChanged();

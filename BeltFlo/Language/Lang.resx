@@ -320,8 +320,12 @@ Rewrite this job's recorded points and total using the new factor, so the map an
   <data name="lgStatusZero" xml:space="preserve"><value>Zero</value></data>
   <data name="lgFinishJob" xml:space="preserve"><value>Finish</value></data>
   <data name="lgFinishLoadPrompt" xml:space="preserve"><value>Finish this load? Its weight is kept until the certified weight is entered.</value></data>
-  <data name="lgLoadPaused" xml:space="preserve"><value>Load paused - weight not added to the load</value></data>
-  <data name="lgLoadResumed" xml:space="preserve"><value>Load resumed</value></data>
+  <data name="lgPaused" xml:space="preserve"><value>Paused - nothing is being counted</value></data>
+  <data name="lgResumed" xml:space="preserve"><value>Counting resumed</value></data>
+  <data name="lgResumedSectionsOn" xml:space="preserve"><value>Sections on - counting resumed</value></data>
+  <data name="lgPausedSectionsOn" xml:space="preserve"><value>PAUSED - sections on, nothing counted. Press ▶</value></data>
+  <data name="lgJobStatusPaused" xml:space="preserve"><value> - Paused</value></data>
+  <data name="lgAutoResumePause" xml:space="preserve"><value>Resume from Pause when Sections On</value></data>
   <data name="lgBeltSensorSuspect" xml:space="preserve"><value>No belt pulses - weight not recorded</value></data>
 
 </root>

@@ -6,16 +6,19 @@ using BeltFlo.Language;
 
 namespace BeltFlo.Forms
 {
-    // The run screen. The toolbar's ▶ ⏸ ⏹ control the truck load and nothing
-    // else — jobs are started and finished on the Jobs screen, so a tap in the
-    // cab can never end a job by mistake. The tiles and bars still use the grain
-    // app's layout: the second tile shows the open load, the bars show flow and
-    // belt speed.
+    // The run screen. The toolbar's ▶ ⏹ start and finish the truck load, and ⏸
+    // stops all counting until ▶ — jobs are started and finished on the Jobs
+    // screen, so a tap in the cab can never end a job by mistake. The tiles and
+    // bars still use the grain app's layout: the second tile shows the open load,
+    // the bars show flow and belt speed.
     public partial class frmMain : Form
     {
         // Status message fade timer
         private System.Windows.Forms.Timer _msgTimer;
         private int _msgCountdown;
+
+        // Paused-with-sections-on alarm, counted in display ticks (1 s)
+        private int _alarmTick;
 
         // Borderless drag
         private bool _dragging;
@@ -181,6 +184,24 @@ namespace BeltFlo.Forms
             UpdateGauges();
             UpdateStatusBar();
             CheckModuleTimeout();
+            SoundPausedAlarm();
+        }
+
+        // Sections came on while paused and auto-resume is off: crop is probably
+        // going over the scale uncounted. Sound and show it every other second
+        // until ▶ is pressed or sections go off again.
+        private void SoundPausedAlarm()
+        {
+            var col = Core.Collector;
+            // SectionsActive goes stale 4 s after AOG stops sending, so closing AOG
+            // silences it too.
+            if (col == null || !col.IsPaused || !col.PausedSectionsAlarm || !Core.GPS.SectionsActive)
+            {
+                _alarmTick = 0;
+                return;
+            }
+            if (_alarmTick++ % 2 == 0)
+                Props.ShowMessage(Lang.lgPausedSectionsOn, "", 3000, true);
         }
 
         private void Core_JobStateChanged(object sender, EventArgs e)
@@ -211,11 +232,11 @@ namespace BeltFlo.Forms
             lblYieldUnit.Text = Props.RateUnit;
 
             // Second tile — the open load, the number the operator watches to know
-            // when the truck is full. Blank between loads. A paused load says so in
-            // place of its unit, in the pause button's colour, so a load left paused
+            // when the truck is full. Blank between loads. While paused it says so
+            // in place of its unit, in the pause button's colour, so a pause left on
             // by mistake is hard to miss.
             bool hasLoad = col != null && col.ActiveLoadId > 0;
-            bool paused  = hasLoad && col.LoadPaused;
+            bool paused  = col != null && col.IsPaused;
             string loadWord = Lang.lgLoad.ToUpperInvariant();
             lblMoistureTitle.Text = hasLoad ? loadWord + " " + col.ActiveLoadNumber : loadWord;
             lblMoisture.Text = hasLoad ? Props.DisplayLoad(col.CurrentLoadLb).ToString("F0") : "--";
@@ -316,6 +337,11 @@ namespace BeltFlo.Forms
                     lblStatusJob.Text = jobName + Lang.lgDataWriteError;
                     lblStatusJob.ForeColor = StatusBad;
                 }
+                else if (Core.Collector.IsPaused)
+                {
+                    lblStatusJob.Text = jobName + Lang.lgJobStatusPaused;
+                    lblStatusJob.ForeColor = OkabeIto.Orange;
+                }
                 else
                 {
                     lblStatusJob.Text = recording ? jobName + Lang.lgJobStatusOn : jobName + Lang.lgJobStatusOff;
@@ -347,7 +373,7 @@ namespace BeltFlo.Forms
             FormManager.ShowForm(new frmMenu());
         }
 
-        // ▶ — start a load, or resume a paused one.
+        // ▶ — resume counting after a pause, or start a load.
         private void btnStart_Click(object sender, EventArgs e)
         {
             var col = Core.Collector;
@@ -357,27 +383,25 @@ namespace BeltFlo.Forms
                 return;
             }
 
-            if (col.ActiveLoadId > 0)
+            if (col.IsPaused)
             {
-                if (col.LoadPaused)
-                {
-                    col.ResumeLoad();
-                    Props.ShowMessage(Lang.lgLoadResumed, "", 2000);
-                }
+                col.ResumeJob();
+                Props.ShowMessage(Lang.lgResumed, "", 2000);
             }
-            else
+            else if (col.ActiveLoadId <= 0)
             {
                 col.StartLoad();
             }
             SetLoadButtons();
         }
 
-        // ⏸ — stop adding weight to the load. The job keeps recording; weight that
-        // arrives while paused goes to the job alone, as it does between loads.
+        // ⏸ — stop counting altogether: no weight to the job or the load and no
+        // map points, for cleaning the belt, clearing a jam or dumping on purpose.
+        // Allowed with or without an open load.
         private void btnPause_Click(object sender, EventArgs e)
         {
-            Core.Collector.PauseLoad();
-            Props.ShowMessage(Lang.lgLoadPaused, "", 3000);
+            Core.Collector.PauseJob();
+            Props.ShowMessage(Lang.lgPaused, "", 3000);
             SetLoadButtons();
         }
 
@@ -423,12 +447,12 @@ namespace BeltFlo.Forms
             var col = Core.Collector;
             bool hasJob  = col != null && col.ActiveJobId > 0;
             bool hasLoad = hasJob && col.ActiveLoadId > 0;
-            bool paused  = hasLoad && col.LoadPaused;
+            bool paused  = hasJob && col.IsPaused;
 
             // All three are dark with no job: the status bar already says so, and
             // jobs are started on the Jobs screen.
-            btnStart.Enabled = hasJob && (!hasLoad || paused);   // new load, or resume
-            btnPause.Enabled = hasLoad && !paused;
+            btnStart.Enabled = hasJob && (paused || !hasLoad);   // resume, or new load
+            btnPause.Enabled = hasJob && !paused;
             btnStop.Enabled  = hasLoad;
 
             StyleButton(btnStart, StartActive);

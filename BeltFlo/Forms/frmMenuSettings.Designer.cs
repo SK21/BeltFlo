@@ -37,6 +37,9 @@ namespace BeltFlo.Forms
             this.lblResumeJob = new System.Windows.Forms.Label();
             this.btnResumeOn = new System.Windows.Forms.Button();
             this.btnResumeOff = new System.Windows.Forms.Button();
+            this.lblAutoResume = new System.Windows.Forms.Label();
+            this.btnAutoResumeOn = new System.Windows.Forms.Button();
+            this.btnAutoResumeOff = new System.Windows.Forms.Button();
             this.btnSaveSettings = new System.Windows.Forms.Button();
             this.btnSettingsClose = new System.Windows.Forms.Button();
             this.pnlTitle.SuspendLayout();
@@ -84,12 +87,15 @@ namespace BeltFlo.Forms
             this.pnlContent.Controls.Add(this.lblResumeJob);
             this.pnlContent.Controls.Add(this.btnResumeOn);
             this.pnlContent.Controls.Add(this.btnResumeOff);
+            this.pnlContent.Controls.Add(this.lblAutoResume);
+            this.pnlContent.Controls.Add(this.btnAutoResumeOn);
+            this.pnlContent.Controls.Add(this.btnAutoResumeOff);
             this.pnlContent.Controls.Add(this.btnSaveSettings);
             this.pnlContent.Controls.Add(this.btnSettingsClose);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContent.Location = new System.Drawing.Point(2, 50);
             this.pnlContent.Name = "pnlContent";
-            this.pnlContent.Size = new System.Drawing.Size(560, 420);
+            this.pnlContent.Size = new System.Drawing.Size(560, 510);
             this.pnlContent.TabIndex = 1;
             // 
             // lblWifiInfo
@@ -298,14 +304,54 @@ namespace BeltFlo.Forms
             this.btnResumeOff.Text = global::BeltFlo.Language.Lang.lgOff;
             this.btnResumeOff.UseVisualStyleBackColor = false;
             this.btnResumeOff.Click += new System.EventHandler(this.btnResumeOff_Click);
-            // 
+            //
+            // lblAutoResume
+            //
+            this.lblAutoResume.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
+            this.lblAutoResume.ForeColor = System.Drawing.Color.Silver;
+            this.lblAutoResume.Location = new System.Drawing.Point(8, 364);
+            this.lblAutoResume.Name = "lblAutoResume";
+            this.lblAutoResume.Size = new System.Drawing.Size(544, 26);
+            this.lblAutoResume.TabIndex = 21;
+            this.lblAutoResume.Text = global::BeltFlo.Language.Lang.lgAutoResumePause;
+            //
+            // btnAutoResumeOn
+            //
+            this.btnAutoResumeOn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.btnAutoResumeOn.FlatAppearance.BorderSize = 0;
+            this.btnAutoResumeOn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnAutoResumeOn.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
+            this.btnAutoResumeOn.ForeColor = System.Drawing.Color.White;
+            this.btnAutoResumeOn.Location = new System.Drawing.Point(8, 394);
+            this.btnAutoResumeOn.Name = "btnAutoResumeOn";
+            this.btnAutoResumeOn.Size = new System.Drawing.Size(267, 48);
+            this.btnAutoResumeOn.TabIndex = 22;
+            this.btnAutoResumeOn.Text = global::BeltFlo.Language.Lang.lgOn;
+            this.btnAutoResumeOn.UseVisualStyleBackColor = false;
+            this.btnAutoResumeOn.Click += new System.EventHandler(this.btnAutoResumeOn_Click);
+            //
+            // btnAutoResumeOff
+            //
+            this.btnAutoResumeOff.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.btnAutoResumeOff.FlatAppearance.BorderSize = 0;
+            this.btnAutoResumeOff.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnAutoResumeOff.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
+            this.btnAutoResumeOff.ForeColor = System.Drawing.Color.White;
+            this.btnAutoResumeOff.Location = new System.Drawing.Point(285, 394);
+            this.btnAutoResumeOff.Name = "btnAutoResumeOff";
+            this.btnAutoResumeOff.Size = new System.Drawing.Size(267, 48);
+            this.btnAutoResumeOff.TabIndex = 23;
+            this.btnAutoResumeOff.Text = global::BeltFlo.Language.Lang.lgOff;
+            this.btnAutoResumeOff.UseVisualStyleBackColor = false;
+            this.btnAutoResumeOff.Click += new System.EventHandler(this.btnAutoResumeOff_Click);
+            //
             // btnSaveSettings
-            // 
+            //
             this.btnSaveSettings.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(110)))), ((int)(((byte)(0)))));
             this.btnSaveSettings.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSaveSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
             this.btnSaveSettings.ForeColor = System.Drawing.Color.White;
-            this.btnSaveSettings.Location = new System.Drawing.Point(8, 364);
+            this.btnSaveSettings.Location = new System.Drawing.Point(8, 454);
             this.btnSaveSettings.Name = "btnSaveSettings";
             this.btnSaveSettings.Size = new System.Drawing.Size(130, 44);
             this.btnSaveSettings.TabIndex = 18;
@@ -319,7 +365,7 @@ namespace BeltFlo.Forms
             this.btnSettingsClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSettingsClose.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
             this.btnSettingsClose.ForeColor = System.Drawing.Color.White;
-            this.btnSettingsClose.Location = new System.Drawing.Point(422, 364);
+            this.btnSettingsClose.Location = new System.Drawing.Point(422, 454);
             this.btnSettingsClose.Name = "btnSettingsClose";
             this.btnSettingsClose.Size = new System.Drawing.Size(130, 44);
             this.btnSettingsClose.TabIndex = 19;
@@ -330,7 +376,7 @@ namespace BeltFlo.Forms
             // frmMenuSettings
             // 
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(564, 472);
+            this.ClientSize = new System.Drawing.Size(564, 562);
             this.Controls.Add(this.pnlContent);
             this.Controls.Add(this.pnlTitle);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
@@ -368,6 +414,9 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Label    lblResumeJob;
         private System.Windows.Forms.Button   btnResumeOn;
         private System.Windows.Forms.Button   btnResumeOff;
+        private System.Windows.Forms.Label    lblAutoResume;
+        private System.Windows.Forms.Button   btnAutoResumeOn;
+        private System.Windows.Forms.Button   btnAutoResumeOff;
         private System.Windows.Forms.Button   btnSaveSettings;
         private System.Windows.Forms.Button   btnSettingsClose;
     }

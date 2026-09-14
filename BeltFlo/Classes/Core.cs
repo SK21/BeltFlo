@@ -188,7 +188,11 @@ namespace BeltFlo.Classes
             LastModuleReceive = DateTime.UtcNow;
 
             double dLb = Yield?.PushConveyorReading(cumPoundsX10, cumPulses, DateTime.UtcNow) ?? 0;
-            if (dLb > 0) Collector?.OnPoundsDelta(dLb);
+
+            // Below the empty-belt threshold the belt is carrying dirt, not crop —
+            // cleaning the belt or running it empty — so nothing is credited to the
+            // job, the load or the map.
+            if (dLb > 0 && Yield.IsFlowing) Collector?.OnPoundsDelta(dLb);
 
             // After the pulse time above is current, so weight and pulses are judged
             // from the same packet.

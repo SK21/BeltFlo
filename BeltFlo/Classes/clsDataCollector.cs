@@ -71,10 +71,15 @@ namespace BeltFlo.Classes
         // what the operator and the ticket talk about. The database id is global.
         public int ActiveLoadNumber { get; private set; }
 
-        // A paused load keeps its place but gains no weight. Weight arriving while
-        // paused goes to the job alone, and its map points belong to no load, so a
-        // later correction from the load's ticket cannot rescale them.
-        public bool LoadPaused { get; private set; }
+        // Paused from the run screen: nothing is counted — no weight to the job or
+        // the load, no map points — for belt cleaning, clearing a jam, or dumping
+        // on purpose. Distinct from the auto-pause that follows AOG sections.
+        public bool IsPaused => ActiveJobId > 0 && !IsRecording && !IsAutoPaused;
+
+        // Sections came on while paused and auto-resume is off: the run screen
+        // sounds an alarm until the operator resumes or sections go off again.
+        public bool PausedSectionsAlarm { get; private set; }
+        private bool _sectionsOnWhilePaused;
 
         // Positions still waiting for their crop to reach the scale. Exposed for
         // the diagnostic log: it hits 0 exactly when the app stops attributing
@@ -251,8 +256,25 @@ namespace BeltFlo.Classes
 
         // Manual pause discards in-transit positions; their flow can't be
         // matched after an arbitrary pause. Pounds stop being credited too — a
-        // manual pause means "this is not part of the job".
-        public void PauseJob() { IsRecording = false; IsAutoPaused = false; _pipeline.Clear(); _tailActive = false; }
+        // manual pause means "this is not part of the job". The pass is closed so
+        // resuming starts a fresh ribbon rather than bridging the gap. Sections
+        // already on when pause is pressed do not count as coming on, or pausing
+        // with the digger down would undo itself at once.
+        public void PauseJob()
+        {
+            if (ActiveJobId <= 0 || IsPaused) return;
+            IsRecording  = false;
+            IsAutoPaused = false;
+            ResetPipeline();
+            if (_lastLat != 0 || _lastLon != 0) _coverage.Flush();
+            _lastLat = 0;
+            _lastLon = 0;
+            _lastFixTime = DateTime.MinValue;
+            _sectionsOnWhilePaused = Core.GPS.IsConnected && Core.GPS.SectionsActive;
+            PausedSectionsAlarm = false;
+            Props.WriteActivityLog("Paused - nothing counted");
+            Core.RaiseJobStateChanged();
+        }
 
         // Abandon everything in transit: buffered positions, the yield average
         // in progress, and any unwritten drained point that belonged to them.
@@ -290,7 +312,17 @@ namespace BeltFlo.Classes
             CurrentLoadLb = 0;
         }
 
-        public void ResumeJob() { IsRecording = false; IsAutoPaused = true; }  // re-arms auto-resume; recording starts when sections come on
+        // Re-arms the auto-pause: recording starts as soon as sections are on and
+        // the scale is good.
+        public void ResumeJob()
+        {
+            if (!IsPaused) return;
+            IsRecording  = false;
+            IsAutoPaused = true;
+            PausedSectionsAlarm = false;
+            Props.WriteActivityLog("Resumed");
+            Core.RaiseJobStateChanged();
+        }
 
         /// <summary>
         /// Loads a previously created job, restoring its accumulated totals and
@@ -323,7 +355,6 @@ namespace BeltFlo.Classes
             ActiveLoadId  = -1;
             CurrentLoadLb = 0;
             var open = Core.Database?.Loads.GetOpen(jobId);
-            LoadPaused       = false;
             ActiveLoadNumber = 0;
             if (open != null)
             {
@@ -400,7 +431,6 @@ namespace BeltFlo.Classes
             FinishLoad();
             ActiveLoadId  = Core.Database.Loads.Create(ActiveJobId, truck, Core.ActiveCalRev);
             CurrentLoadLb = 0;
-            LoadPaused    = false;
             ActiveLoadNumber = Core.Database.Loads.GetAll(ActiveJobId).Count;
             Props.WriteActivityLog("Load " + ActiveLoadNumber + " started (id " + ActiveLoadId + ")");
             MarkTotalsSaved();
@@ -420,30 +450,12 @@ namespace BeltFlo.Classes
             Props.WriteActivityLog("Load " + ActiveLoadNumber + " finished at " + CurrentLoadLb.ToString("0") + " lb (id " + ActiveLoadId + ")");
             ActiveLoadId  = -1;
             CurrentLoadLb = 0;
-            LoadPaused    = false;
             ActiveLoadNumber = 0;
             MarkTotalsSaved();
             Core.RaiseJobStateChanged();
         }
 
         // ── Mass ──────────────────────────────────────────────────────────────
-
-        /// <summary>Stops adding weight to the open load without closing it.</summary>
-        public void PauseLoad()
-        {
-            if (ActiveLoadId <= 0 || LoadPaused) return;
-            LoadPaused = true;
-            Props.WriteActivityLog("Load " + ActiveLoadNumber + " paused at " + CurrentLoadLb.ToString("0") + " lb");
-            Core.RaiseJobStateChanged();
-        }
-
-        public void ResumeLoad()
-        {
-            if (ActiveLoadId <= 0 || !LoadPaused) return;
-            LoadPaused = false;
-            Props.WriteActivityLog("Load " + ActiveLoadNumber + " resumed");
-            Core.RaiseJobStateChanged();
-        }
 
         /// <summary>
         /// Pounds the module says crossed the scale since its previous packet.
@@ -459,12 +471,45 @@ namespace BeltFlo.Classes
             if (_scaleFault) return;                     // the module said not to trust this
 
             TotalPounds       += lb;
-            if (ActiveLoadId > 0 && !LoadPaused)
+            if (ActiveLoadId > 0)
                 CurrentLoadLb += lb;
             _poundsSinceWrite += lb;
         }
 
         // ── Position ──────────────────────────────────────────────────────────
+
+        // Sections switching on while paused: resume if the setting allows it,
+        // otherwise raise the run screen's alarm. Only the off-to-on change counts,
+        // and the alarm clears when sections go off again.
+        private void CheckSectionsWhilePaused(clsGPS gps)
+        {
+            bool sectionsOn = gps.IsConnected && gps.SectionsActive;
+            bool cameOn = sectionsOn && !_sectionsOnWhilePaused;
+            _sectionsOnWhilePaused = sectionsOn;
+
+            if (!sectionsOn)
+            {
+                if (PausedSectionsAlarm)
+                {
+                    PausedSectionsAlarm = false;
+                    Core.RaiseJobStateChanged();
+                }
+                return;
+            }
+            if (!cameOn) return;
+
+            if (Properties.Settings.Default.AutoResumePause)
+            {
+                ResumeJob();
+                Props.ShowMessage(Lang.lgResumedSectionsOn, "", 3000);
+            }
+            else
+            {
+                PausedSectionsAlarm = true;
+                Props.WriteActivityLog("Sections on while paused - nothing counted");
+                Core.RaiseJobStateChanged();
+            }
+        }
 
         /// <summary>
         /// Called every GPS update (~10 Hz). Writes to DB once per second.
@@ -473,10 +518,17 @@ namespace BeltFlo.Classes
         {
             if (ActiveJobId < 0) return;
 
-            // Allow auto-resume check even when paused — but skip entirely if manually paused.
-            if (!IsRecording && !IsAutoPaused) return;
-
             var gps = Core.GPS;
+
+            // Paused from the run screen: nothing is recorded, but sections coming
+            // on are watched for — they mean crop is probably crossing the scale
+            // uncounted.
+            if (IsPaused)
+            {
+                CheckSectionsWhilePaused(gps);
+                return;
+            }
+
             if (!gps.IsConnected) return;
 
             var yield = Core.Yield;
@@ -832,7 +884,7 @@ namespace BeltFlo.Classes
             var point = new YieldDataPoint
             {
                 JobId = ActiveJobId,
-                LoadId = LoadPaused ? -1 : ActiveLoadId,
+                LoadId = ActiveLoadId,
                 Timestamp = pt.Time,
                 Latitude = pt.Lat,
                 Longitude = pt.Lon,
