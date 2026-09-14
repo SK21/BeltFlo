@@ -1,0 +1,81 @@
+using System;
+using System.IO;
+using System.Text;
+using BeltFlo.Database;
+
+namespace BeltFlo.Classes
+{
+    public static class CsvExporter
+    {
+        /// <summary>
+        /// Exports all YieldDataPoints for a job to a CSV file.
+        /// Returns the output file path, or null on error.
+        /// </summary>
+        public static string ExportJob(int jobId, string jobName, string path)
+        {
+            try
+            {
+                var points = Core.Database.YieldData.GetByJob(jobId);
+                if (points == null || points.Count == 0) return null;
+
+                // Same treatment the map gives them, so the exported file and the
+                // picture on screen agree. Without this the CSV would still carry the
+                // raw pass ends and every downstream map built from it would show the
+                // blue headland the operator was just told had been dealt with.
+                PassTransients.Apply(points);
+
+                // Resolve crop test weight and header width from the job record.
+                double testWeightKgPerBu = Props.TestWeightKgPerBu;
+                double headerWidthM      = 9.144;
+                foreach (var j in Core.Database.Jobs.GetAll())
+                {
+                    if (j.id != jobId) continue;
+                    if (j.cropId > 0)
+                    {
+                        foreach (var c in Core.Database.Crops.GetAll())
+                        {
+                            if (c.id == j.cropId) { testWeightKgPerBu = c.testWeight * 0.453592; break; }
+                        }
+                    }
+                    if (j.headerId > 0)
+                    {
+                        foreach (var h in Core.Database.Headers.GetAll())
+                        {
+                            if (h.id == j.headerId) { headerWidthM = h.widthM; break; }
+                        }
+                    }
+                    break;
+                }
+
+                var sb = new StringBuilder();
+                // Columns 0-5 match RC's YieldOverlayCreator expected format (parsed by position).
+                // Extra columns follow for BeltFlo-specific data.
+                sb.AppendLine("Timestamp,Latitude,Longitude,WidthMeters,Yield_kgha,ElevationMeters,Speed_kmh,Heading,Moisture_pct,HaAccumulated,Sensor1Raw");
+
+                foreach (var p in points)
+                {
+                    double yieldTha  = p.YieldRate * testWeightKgPerBu / 1000.0 / 0.404686;
+                    double yieldKgHa = yieldTha * 1000.0;
+                    double haAcc     = p.AcresAccumulated * 0.404686;
+
+                    sb.AppendLine(
+                        $"{p.Timestamp:yyyy-MM-dd HH:mm:ss}," +
+                        $"{p.Latitude:F7},{p.Longitude:F7}," +
+                        $"{headerWidthM:F3},{yieldKgHa:F1},{p.Elevation:F1}," +
+                        $"{p.Speed:F2},{p.Heading:F1}," +
+                        $"{p.Moisture:F1}," +
+                        $"{haAcc:F4}," +
+                        $"{p.Sensor1Raw:F4}");
+                }
+
+                File.WriteAllText(path, sb.ToString());
+                return path;
+            }
+            catch (Exception ex)
+            {
+                Props.WriteErrorLog("CsvExporter: " + ex.Message);
+                return null;
+            }
+        }
+    }
+}

@@ -7,8 +7,8 @@ using System.Windows.Forms;
 namespace ModuleSimulator
 {
     /// <summary>
-    /// Simulates a YieldFlo hardware module — sends PK1 (sensor, 5 Hz) and
-    /// PK2 (temperature, 1 Hz) UDP packets to the YieldFlo PC app on port 30100.
+    /// Simulates a BeltFlo hardware module — sends PK1 (sensor, 5 Hz) and
+    /// PK2 (temperature, 1 Hz) UDP packets to the BeltFlo PC app on port 30100.
     ///
     /// Moisture and temperature sliders represent calibrated values.
     /// Raw counts sent = value / default_scale so the PC app reads correctly

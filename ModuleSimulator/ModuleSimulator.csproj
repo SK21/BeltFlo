@@ -11,7 +11,7 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>ModuleSimulator</AssemblyName>
     <RootNamespace>ModuleSimulator</RootNamespace>
-    <ApplicationIcon>..\YieldFlo\YieldFlo2.ico</ApplicationIcon>
+    <ApplicationIcon>..\BeltFlo\BeltFlo2.ico</ApplicationIcon>
   </PropertyGroup>
 
 </Project>

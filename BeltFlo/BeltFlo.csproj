@@ -1,0 +1,102 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Main project settings -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <AssemblyName>BeltFlo</AssemblyName>
+    <RootNamespace>BeltFlo</RootNamespace>
+    <ApplicationIcon>BeltFlo2.ico</ApplicationIcon>
+
+    <!-- 32-bit process: the InnoMaker USB2CAN C# SDK ships x86-only DLLs -->
+    <Prefer32Bit>true</Prefer32Bit>
+
+    <!-- Prevent SDK from adding Debug/net48/ folders -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
+  <!-- Icon file -->
+  <ItemGroup>
+    <Content Include="BeltFlo2.ico" />
+  </ItemGroup>
+
+  <!-- Help files — copied to Help\ subfolder in output -->
+  <ItemGroup>
+    <Content Include="Help\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Help\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+
+  <!-- NuGet packages -->
+  <ItemGroup>
+    <PackageReference Include="System.Data.SQLite" Version="1.0.119.0" />
+    <PackageReference Include="GMap.NET.WindowsForms" Version="1.7.5" />
+  </ItemGroup>
+
+  <!-- Settings designer -->
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- Language resources -->
+  <!-- Neutral English: embedded in main assembly as BeltFlo.Language.Lang.resources -->
+  <ItemGroup>
+    <EmbeddedResource Update="Language\Lang.resx">
+      <LogicalName>BeltFlo.Language.Lang.resources</LogicalName>
+    </EmbeddedResource>
+    <!-- Satellite languages: Culture metadata causes MSBuild to build each into
+         a separate {culture}\BeltFlo.resources.dll satellite assembly,
+         which ResourceManager finds automatically via Thread.CurrentUICulture. -->
+    <EmbeddedResource Update="Language\Lang.de.resx">
+      <Culture>de</Culture>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Language\Lang.fr.resx">
+      <Culture>fr</Culture>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Language\Lang.hu.resx">
+      <Culture>hu</Culture>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Language\Lang.nl.resx">
+      <Culture>nl</Culture>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Language\Lang.pl.resx">
+      <Culture>pl</Culture>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Language\Lang.ru.resx">
+      <Culture>ru</Culture>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Language\Lang.lt.resx">
+      <Culture>lt</Culture>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- Custom output path (must be LAST so it overrides SDK defaults) -->
+  <PropertyGroup>
+    <OutputPath>..\BeltFloApp\</OutputPath>
+  </PropertyGroup>
+
+</Project>

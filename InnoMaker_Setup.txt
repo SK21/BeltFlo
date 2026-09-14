@@ -1,15 +1,15 @@
-YieldFlo — InnoMaker USB2CAN setup
+BeltFlo — InnoMaker USB2CAN setup
 ==================================
 
-The next YieldFlo build adds support for the InnoMaker USB2CAN adapter.
+The next BeltFlo build adds support for the InnoMaker USB2CAN adapter.
 To use it:
 
 1. Install InnoMaker's Windows driver for the USB2CAN adapter
    (from the InnoMaker website or their driver installer).
 
 2. Download the InnoMaker USB2CAN C# SDK and copy these two files
-   into the YieldFlo application folder (the folder containing
-   YieldFlo.exe):
+   into the BeltFlo application folder (the folder containing
+   BeltFlo.exe):
 
        InnoMakerUsb2CanLib.dll
        LibUsbDotNet.dll
@@ -20,16 +20,16 @@ To use it:
    repo as a zip — saving the web page itself gives a corrupt DLL).
 
    If the error log said "bitness does not match" or "class
-   InnoMakerUsb2CanLib not found", update YieldFlo.exe to the newest
+   InnoMakerUsb2CanLib not found", update BeltFlo.exe to the newest
    build (2026-07-06 or later) — the DLLs are fine, keep them where
    they are.
 
 PCAN (alternative adapter)
 --------------------------
-   YieldFlo builds BEFORE 2026-07-06 did not support PCAN at all (the
-   driver was an empty stub) — update YieldFlo.exe first. Then: install
+   BeltFlo builds BEFORE 2026-07-06 did not support PCAN at all (the
+   driver was an empty stub) — update BeltFlo.exe first. Then: install
    the PEAK device driver package from peak-system.com (it includes
-   PCAN-Basic), select CAN Driver: PCAN in YieldFlo, Save & Apply,
+   PCAN-Basic), select CAN Driver: PCAN in BeltFlo, Save & Apply,
    restart. Nothing needs to be copied into the app folder.
 
 Checking whether the module is sending (any adapter)
@@ -41,11 +41,11 @@ Checking whether the module is sending (any adapter)
    on the bus" therefore usually means the PC side never opened, not
    that the module is silent.
 
-   To test the module independent of YieldFlo: open PCAN-View (PEAK's
+   To test the module independent of BeltFlo: open PCAN-View (PEAK's
    free tool) at 250 kbit/s in normal mode (NOT listen-only). A working
    module shows ID 18FF00F8h at 5 Hz and 18FF01F8h at 1 Hz.
 
-3. In YieldFlo:  Menu > Settings > Module communication
+3. In BeltFlo:  Menu > Settings > Module communication
    - select CAN
    - CAN Driver: InnoMaker
    - COM Port is ignored for InnoMaker (the first adapter found is
@@ -53,7 +53,7 @@ Checking whether the module is sending (any adapter)
 
 If CAN still fails to start, send the newest file from:
 
-       Documents\YieldFlo\Logs
+       Documents\BeltFlo\Logs
 
 The exact reason (DLL missing, wrong bitness, no adapter found, etc.)
 is written there.

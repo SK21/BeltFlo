@@ -38,7 +38,7 @@ namespace ModuleSimulator
             this.SuspendLayout();
 
             // lblTitle
-            this.lblTitle.Text     = "YieldFlo Simulator";
+            this.lblTitle.Text     = "BeltFlo Simulator";
             this.lblTitle.Font     = new System.Drawing.Font("Microsoft Sans Serif", 13F, System.Drawing.FontStyle.Bold);
             this.lblTitle.Location = new System.Drawing.Point(10, 10);
             this.lblTitle.AutoSize = true;
@@ -161,7 +161,7 @@ namespace ModuleSimulator
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox     = false;
             this.Name            = "frmSimulator";
-            this.Text            = "YieldFlo Simulator";
+            this.Text            = "BeltFlo Simulator";
             this.Icon            = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);
             this.Load           += new System.EventHandler(this.frmSimulator_Load);
 

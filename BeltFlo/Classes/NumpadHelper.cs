@@ -1,0 +1,69 @@
+using System;
+using System.Windows.Forms;
+using BeltFlo.Forms;
+
+namespace BeltFlo.Classes
+{
+    /// <summary>
+    /// Wires a finger-friendly numpad to NumericUpDown controls.
+    /// Call Wire() for each control in the form's Shown event.
+    /// Call SetFocus() at the end to move focus away from NUDs.
+    /// </summary>
+    public static class NumpadHelper
+    {
+        private static bool _open = false;
+
+        public static void Wire(Form owner, NumericUpDown num, double min, double max,
+                                int decimals, string title = "")
+        {
+            void ShowPad(object s, EventArgs e) => Show(owner, num, min, max, decimals, title);
+            num.Enter += ShowPad;
+            num.Click  += ShowPad;
+        }
+
+        /// <summary>
+        /// Wires the numpad to Click only — safe for controls where focus may
+        /// arrive programmatically (e.g. after disabling adjacent buttons).
+        /// </summary>
+        public static void WireClickOnly(Form owner, NumericUpDown num, double min, double max,
+                                         int decimals, string title = "")
+        {
+            num.Click += (s, e) => Show(owner, num, min, max, decimals, title);
+        }
+
+        /// <summary>
+        /// Click-only, with the bounds resolved at each press rather than captured
+        /// when wired. Needed where the box's unit can change while the form is open:
+        /// a fixed capture would go on offering a pound-sized range, and a pound
+        /// title, after the operator switched the box to bushels.
+        /// </summary>
+        public static void WireClickOnly(Form owner, NumericUpDown num,
+                                         Func<(double min, double max, int decimals, string title)> spec)
+        {
+            num.Click += (s, e) =>
+            {
+                var (min, max, decimals, title) = spec();
+                Show(owner, num, min, max, decimals, title);
+            };
+        }
+
+        private static void Show(Form owner, NumericUpDown num, double min, double max,
+                                  int decimals, string title)
+        {
+            if (_open) return;
+            _open = true;
+            try
+            {
+                using (var pad = new frmNumpad(min, max, (double)num.Value, decimals, title))
+                {
+                    if (pad.ShowDialog(owner) == DialogResult.OK)
+                    {
+                        decimal clamped = (decimal)Math.Min(max, Math.Max(min, pad.ReturnValue));
+                        num.Value = Math.Min(num.Maximum, Math.Max(num.Minimum, clamped));
+                    }
+                }
+            }
+            finally { _open = false; }
+        }
+    }
+}
