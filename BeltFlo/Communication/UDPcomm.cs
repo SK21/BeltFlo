@@ -8,7 +8,7 @@ namespace BeltFlo.Communication
 {
     // BeltFlo UDP port assignments (different from RC to allow both apps to run simultaneously)
     //   AOG GPS:       recv 17777  send 15555   (same as RC — both apps share via SO_REUSEADDR)
-    //   Module data:   recv 30100  send 30200   (unique to BeltFlo)
+    //   Module data:   recv 30300  send 30400   (BeltFlo only — YieldFlo keeps 30100/30200, so both apps and both modules can share one network)
 
     public class UDPComm
     {
@@ -127,8 +127,7 @@ namespace BeltFlo.Communication
                                     Core.RaiseGpsUpdated();
 
                                     // Feed GPS update to data collector
-                                    // moisture is supplied by the module (stored in Core later)
-                                    Core.Collector?.OnGpsUpdate(Core.LastMoisture);
+                                    Core.Collector?.OnGpsUpdate();
                                     break;
 
                                 case 229:   // Section control — bytes 5-12 are 64 section bits
@@ -150,14 +149,9 @@ namespace BeltFlo.Communication
                         }
                         break;
 
-                    // ── BeltFlo module sensor data (PGN 40001) ───────────────
-                    case 40001:
-                        ParseModulePacket(data);
-                        break;
-
-                    // ── BeltFlo temperature packet (PGN 40002, 1 Hz) ─────────
-                    case 40002:
-                        ParseTempPacket(data);
+                    // ── BeltFlo conveyor packet (PGN 40010, 5 Hz) ────────────
+                    case 40010:
+                        ParseConveyorPacket(data);
                         break;
                 }
             }
@@ -167,110 +161,35 @@ namespace BeltFlo.Communication
             }
         }
 
-        private void ParseModulePacket(byte[] data)
+        private void ParseConveyorPacket(byte[] data)
         {
-            // Module → PC packet (11 bytes):
-            // [0-1]  PGN 40001 little-endian
-            // [2]    status_flags  bit0=SensorOK, bit1=RPMPresent, bit2=MoistureOK,
-            //                      bit3=CompFault (0 on firmware predating the bit)
-            // [3-4]  sensor_ratio  uint16 LE  (ratio × 1000, 0–1000 = 0.0–100.0%)
-            // [5-6]  moisture_raw  uint16 LE  (raw ADS1115 AIN0-AIN1 differential count)
-            // [7-8]  module_rpm    uint16 LE
-            // [9]    noise_count   uint8  (ISR-rejected edges per 200 ms window)
-            // [10]   CRC8
-            if (data.Length < 11) return;
+            // Module → PC conveyor packet (19 bytes). A new PGN rather than a new
+            // layout under 40001, so a grain module on the same network can never be
+            // read as a scale.
+            // [0-1]   PGN 40010 little-endian (0x4A 0x9C)
+            // [2]     flags  bit0=ScaleOK, bit1=BeltRunning, bit2=Tared,
+            //                bit3=CalMismatch, bit4=Overload
+            // [3-6]   cum_pounds_x10  uint32 LE  delivered weight, tenths of a pound; wraps
+            // [7-10]  cum_pulses      uint32 LE  belt pulses; wraps
+            // [11-12] scale_lb_x10    int16 LE   live weigh-section load after zero, tenths
+            // [13-16] scale_raw       int32 LE   raw converter counts
+            // [17]    cal_rev         uint8      conveyor_config id the module is running
+            // [18]    CRC8 — over everything before it
+            if (data.Length < 19) return;
             if (!Core.Tls.GoodCRC(data)) return;
 
-            byte flags = data[2];
-            ushort ratio = BitConverter.ToUInt16(data, 3);
-            ushort moistureRaw = BitConverter.ToUInt16(data, 5);
-            ushort rpm = BitConverter.ToUInt16(data, 7);
-            byte noiseCount = data[9];
+            byte flags      = data[2];
+            uint cumLbX10   = BitConverter.ToUInt32(data, 3);
+            uint cumPulses  = BitConverter.ToUInt32(data, 7);
+            short scaleX10  = BitConverter.ToInt16(data, 11);
+            int scaleRaw    = BitConverter.ToInt32(data, 13);
+            int calRev      = data[17];
 
-            bool s1Ok = (flags & 0x01) != 0;
-            bool moistureOk = (flags & 0x04) != 0;
-            bool compFault = (flags & 0x08) != 0;
-
-            Core.LastSensor1Valid = s1Ok;
-            Core.LastCompFault = compFault;
-            Core.LastSensor1 = s1Ok ? ratio / 1000.0 : 0;
-            Core.LastMoisture = moistureRaw * Core.ActiveMoistScale;
-            Core.LastMoistureOk = moistureOk;
-            Core.LastModuleRpm = rpm;
-            Core.LastNoiseCount = noiseCount;
-            Core.ModuleConnected = true;
-            Core.LastModuleReceive = DateTime.UtcNow;
-
-            Core.Yield?.PushSensorReading(Core.LastSensor1);
-
-            // One diagnostic row per module packet — 5 Hz, independent of whether a
-            // job is recording, so a fault between jobs still leaves evidence.
-            Core.DiagLog?.Log();
+            // Status first, so the diagnostic row the counters write sees this
+            // packet's flags rather than the previous one's.
+            Core.ApplyConveyorStatus(flags, scaleX10 / 10.0, scaleRaw, calRev);
+            Core.ApplyConveyorCounters(cumLbX10, cumPulses);
         }
-
-        private void ParseTempPacket(byte[] data)
-        {
-            // Temperature packet (10 bytes; 9 before median_cycle_ms added, 8 before
-            // gate_rejects, 7 before min_cycle_ms, 6 before paddle_hz — each field is
-            // gated on both its flag bit and the packet length, so any firmware
-            // vintage parses correctly):
-            // [0-1]  PGN 40002 little-endian
-            // [2]    flags  bit0=TempOK, bit1=PaddleHzPresent, bit2=MinCycleMsPresent,
-            //               bit3=GateRejectsPresent, bit4=MedianCycleMsPresent
-            // [3-4]  temp_raw  int16 LE  (raw ADS1115 AIN2 reading)
-            // [5]    paddle_hz uint8  (paddles/s — only when bit1 set)
-            // [6]    min_cycle_ms uint8  (shortest paddle cycle this window, ms — only when bit2 set)
-            // [7]    gate_rejects uint8  (period-gate rejections this window — only when bit3 set)
-            // [8]    median_cycle_ms uint8  (gate's period estimate, ms — only when bit4 set)
-            // [last] CRC8 — always the final byte, over everything before it, so the
-            //        packet can grow without either side changing how it is checked
-            if (data.Length < 6) return;
-            if (!Core.Tls.GoodCRC(data)) return;
-
-            bool tempOk = (data[2] & 0x01) != 0;
-            short tempRaw = BitConverter.ToInt16(data, 3);
-
-            Core.LastTemperature = tempRaw * Core.ActiveTempScale;
-            Core.LastTemperatureOk = tempOk;
-
-            bool hzOk = (data[2] & 0x02) != 0 && data.Length >= 7;
-            Core.LastPaddleHz = hzOk ? data[5] : -1;
-
-            bool minCycleOk = (data[2] & 0x04) != 0 && data.Length >= 8;
-            Core.LastMinCycleMs = minCycleOk ? data[6] : -1;
-
-            // -1 rather than a stale value when the module predates the field, so the
-            // readout shows "not available" instead of a count frozen at whatever
-            // arrived last.
-            bool gateOk = (data[2] & 0x08) != 0 && data.Length >= 9;
-            Core.LastGateRejects = gateOk ? data[7] : -1;
-
-            // The third of the set: rejects counts what the gate caught, min_cycle_ms
-            // what got through, and this the threshold both were judged against. 0 is
-            // a value, not an absence — it means the gate was open.
-            bool medianOk = (data[2] & 0x10) != 0 && data.Length >= 10;
-            Core.LastMedianCycleMs = medianOk ? data[8] : -1;
-
-            // Diagnostic: one line whenever the SHAPE of this packet changes, so a
-            // missing readout can be settled from the log rather than inferred. It
-            // separates the two candidates directly — len=9 flags=0x0F means the
-            // module never sends the newest field (firmware not updated), len=10
-            // flags=0x1F means it does and the fault is on this side. Logs once per
-            // change, not per packet, so it costs nothing at 1 Hz.
-            int shape = (data.Length << 8) | data[2];
-            if (shape != _lastTempShape)
-            {
-                _lastTempShape = shape;
-                Props.WriteErrorLog(
-                    $"PGN40002 shape: len={data.Length} flags=0x{data[2]:X2} " +
-                    $"paddleHz={Core.LastPaddleHz} minCycleMs={Core.LastMinCycleMs} " +
-                    $"gateRejects={Core.LastGateRejects} medianCycleMs={Core.LastMedianCycleMs}");
-            }
-        }
-
-        // Last seen (length, flags) of PGN 40002, so the diagnostic above logs on
-        // change rather than every packet. -1 = nothing seen yet.
-        private int _lastTempShape = -1;
 
         // ── Socket callbacks ──────────────────────────────────────────────────
         private void HandleSend(IAsyncResult asyncResult)

@@ -142,23 +142,21 @@ namespace BeltFlo.Forms
             double displayRate = Props.DisplayRate(avgYield);
             lblReportAvgYield.Text = $"{Lang.lgAvgYield} {displayRate:F1} {Props.RateUnit}";
 
-            // Get point count and average moisture from database
+            // Point and load counts from the database
             int pointCount   = 0;
-            double avgMoist  = 0;
+            int loadCount = 0;
             try
             {
                 var points = Core.Database.YieldData.GetByJob(job.id);
                 pointCount = points.Count;
+                loadCount  = Core.Database.Loads.GetAll(job.id).Count;
                 if (pointCount > 0)
                 {
-                    double moistSum = 0;
-                    foreach (var p in points) moistSum += p.Moisture;
-                    avgMoist = moistSum / pointCount;
                 }
             }
             catch { }
 
-            lblReportAvgMoist.Text = $"{Lang.lgAvgMoisture} {avgMoist:F1} %";
+            lblReportAvgMoist.Text = $"{Lang.lgLoads} {loadCount}";
             lblReportPoints.Text   = $"{Lang.lgDataPoints} {pointCount}";
         }
 
@@ -176,7 +174,7 @@ namespace BeltFlo.Forms
             lblReportArea.Text     = $"{Lang.lgAreaColon} --";
             lblReportTotal.Text    = $"{Lang.lgTotalColon} --";
             lblReportAvgYield.Text = $"{Lang.lgAvgYield} --";
-            lblReportAvgMoist.Text = $"{Lang.lgAvgMoisture} --";
+            lblReportAvgMoist.Text = $"{Lang.lgLoads} --";
             lblReportPoints.Text   = $"{Lang.lgDataPoints} --";
         }
 
@@ -237,18 +235,16 @@ namespace BeltFlo.Forms
                     break;
                 }
 
-            // Average moisture and point count
+            // Point and load counts
             int    pointCount = 0;
-            double avgMoist   = 0;
+            int    loadCount  = 0;
             try
             {
                 var points = Core.Database.YieldData.GetByJob(job.id);
                 pointCount = points.Count;
+                loadCount  = Core.Database.Loads.GetAll(job.id).Count;
                 if (pointCount > 0)
                 {
-                    double sum = 0;
-                    foreach (var p in points) sum += p.Moisture;
-                    avgMoist = sum / pointCount;
                 }
             }
             catch { }
@@ -291,7 +287,7 @@ namespace BeltFlo.Forms
             AddRow(Lang.lgAreaColon,   $"{displayArea:F2} {Props.AreaUnit}");
             AddRow(Lang.lgTotalColon,  $"{displayMass:F1} {Props.MassUnit}");
             AddRow(Lang.lgAvgYield,    $"{displayRate:F1} {Props.RateUnit}");
-            AddRow(Lang.lgAvgMoisture, $"{avgMoist:F1} %");
+            AddRow(Lang.lgLoads, $"{loadCount}");
             AddRow(Lang.lgDataPoints,  $"{pointCount}");
             AddLine(rule);
 

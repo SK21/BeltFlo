@@ -726,42 +726,10 @@ namespace BeltFlo.Forms
         // stored YieldRate, so no drawing logic changes.
         private void btnRecalc_Click(object sender, EventArgs e)
         {
-            int idx = cboJob.SelectedIndex;
-            if (idx < 0 || idx >= _jobIds.Count) return;
-            int jobId = _jobIds[idx];
-
-            var answer = MessageBox.Show(Lang.lgRecalcMapPrompt, Lang.lgRecalcMap,
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (answer != DialogResult.Yes) return;
-
-            int profileId = -1, cropId = -1, headerId = -1;
-            foreach (var j in Core.Database.Jobs.GetAll())
-            {
-                if (j.id != jobId) continue;
-                profileId = j.profileId;
-                cropId    = j.cropId;
-                headerId  = j.headerId;
-                break;
-            }
-            if (profileId <= 0 || cropId <= 0) return;
-
-            double testWeightLbsBu = 60.0;
-            foreach (var c in Core.Database.Crops.GetAll())
-                if (c.id == cropId) { testWeightLbsBu = c.testWeight; break; }
-
-            double headerWidthM = 9.144;
-            foreach (var h in Core.Database.Headers.GetAll())
-                if (h.id == headerId) { headerWidthM = h.widthM; break; }
-
-            var cal = Core.Database.Calibrations.GetLatest(profileId, cropId);
-            var (rows, newTotal) = Core.Database.YieldData.RecalculateJob(
-                jobId, cal.baseline, cal.yieldFactor, headerWidthM, testWeightLbsBu);
-
-            // If this is the job currently recording, the collector's running total
-            // must adopt the new figure or its next lifecycle write undoes the rescale.
-            if (rows > 0) Core.Collector?.SyncTotalBushels(jobId, newTotal);
-
-            RebuildSwaths(Core.Database.YieldData.GetByJob(jobId), jobId, center: false);
+            // Per-load correction against a certified weight rescales a load's points
+            // and lives on the Loads screen; there is no crop calibration to re-derive
+            // from here any more.
+            Props.ShowMessage(Lang.lgRecalcLater, "", 3000);
         }
 
         // ── Legend paint ──────────────────────────────────────────────────────

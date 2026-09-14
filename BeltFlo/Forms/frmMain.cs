@@ -6,6 +6,11 @@ using BeltFlo.Language;
 
 namespace BeltFlo.Forms
 {
+    // The run screen. The toolbar's ▶ ⏸ ⏹ control the truck load and nothing
+    // else — jobs are started and finished on the Jobs screen, so a tap in the
+    // cab can never end a job by mistake. The tiles and bars still use the grain
+    // app's layout: the second tile shows the open load, the bars show flow and
+    // belt speed.
     public partial class frmMain : Form
     {
         // Status message fade timer
@@ -15,6 +20,11 @@ namespace BeltFlo.Forms
         // Borderless drag
         private bool _dragging;
         private System.Drawing.Point _dragStart;
+
+        // Bar scales. Flow beyond ~90 t/h is past any digger; belt speed beyond
+        // 400 ft/min likewise.
+        private const double MaxFlowLbPerMin = 3000.0;
+        private const double MaxBeltFtPerMin = 400.0;
 
         public frmMain()
         {
@@ -26,6 +36,10 @@ namespace BeltFlo.Forms
         private void frmMain_Load(object sender, EventArgs e)
         {
             ApplyTheme();
+
+            lblMoistureTitle.Text = Lang.lgLoad.ToUpperInvariant();
+            lblSensor1Title.Text  = Lang.lgFlow;
+            lblSensor2Title.Text  = Lang.lgBelt;
 
             // No title bar and no title label to grab — wire dragging onto every
             // non-button surface (panels, labels) so the form is draggable from
@@ -42,7 +56,7 @@ namespace BeltFlo.Forms
             _msgTimer.Tick += MsgTimer_Tick;
 
             UpdateStatusBar();
-            SetJobButtons(Core.Collector?.IsRecording ?? false);
+            SetLoadButtons();
         }
 
         private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
@@ -107,8 +121,9 @@ namespace BeltFlo.Forms
             lblWorkRate.ForeColor = fore;
             lblMoistureUnit.ForeColor = System.Drawing.Color.White;
 
-            pnlSensor1.BackColor = Color.FromArgb(30, 120, 30);
-            pnlSensor2.BackColor = Color.FromArgb(30, 120, 30);
+            // Dark tracks: a green track read as a full bar when the value was zero.
+            pnlSensor1.BackColor = Color.FromArgb(50, 50, 50);
+            pnlSensor2.BackColor = Color.FromArgb(50, 50, 50);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -144,8 +159,7 @@ namespace BeltFlo.Forms
 
         // Wires drag onto every descendant control except Buttons (the toolbar's
         // icon buttons need their Click behaviour, not drag). Recurses into panels
-        // so labels/bars nested several levels deep (e.g. inside pnlGauges/pnlYield)
-        // are draggable too.
+        // so labels/bars nested several levels deep are draggable too.
         private void WireDragRecursive(Control parent)
         {
             foreach (Control c in parent.Controls)
@@ -171,9 +185,9 @@ namespace BeltFlo.Forms
 
         private void Core_JobStateChanged(object sender, EventArgs e)
         {
-            bool active = Core.Collector.IsRecording;
-            SetJobButtons(active);
+            SetLoadButtons();
             UpdateStatusBar();
+            UpdateGauges();
         }
 
         private void Core_ColorChanged(object sender, EventArgs e)
@@ -189,37 +203,50 @@ namespace BeltFlo.Forms
         {
             if (Core.IsShuttingDown) return;
 
-            double yield = Props.DisplayRate(Core.Yield?.SmoothedYield ?? 0);
-            double moisture = Core.LastMoistureOk ? Core.LastMoisture + Core.ActiveMoistureOffset : 0;
+            var col = Core.Collector;
+            var yieldCalc = Core.Yield;
 
+            double yield = Props.DisplayRate(yieldCalc?.SmoothedYield ?? 0);
             lblYield.Text = yield.ToString("F1");
             lblYieldUnit.Text = Props.RateUnit;
-            lblMoisture.Text = moisture > 0 ? moisture.ToString("F1") : "--.-";
 
-            // Bar 1 — Elevator flow (raw obstruction ratio, 0–100%)
-            double flow = Math.Min(1.0, Math.Max(0, Core.LastSensor1));
+            // Second tile — the open load, the number the operator watches to know
+            // when the truck is full. Blank between loads. A paused load says so in
+            // place of its unit, in the pause button's colour, so a load left paused
+            // by mistake is hard to miss.
+            bool hasLoad = col != null && col.ActiveLoadId > 0;
+            bool paused  = hasLoad && col.LoadPaused;
+            string loadWord = Lang.lgLoad.ToUpperInvariant();
+            lblMoistureTitle.Text = hasLoad ? loadWord + " " + col.ActiveLoadNumber : loadWord;
+            lblMoisture.Text = hasLoad ? Props.DisplayLoad(col.CurrentLoadLb).ToString("F0") : "--";
+            lblMoisture.ForeColor = paused ? OkabeIto.Orange : Properties.Settings.Default.DisplayForeColour;
+            lblMoistureUnit.Text = paused ? Lang.lgPause.ToUpperInvariant() : Props.LoadUnit;
+            lblMoistureUnit.ForeColor = paused ? OkabeIto.Orange : Color.White;
+
+            // Bar 1 — flow over the scale
+            double flowLbMin = (yieldCalc?.CurrentLbPerSec ?? 0) * 60.0;
+            double flow = Math.Min(1.0, Math.Max(0, flowLbMin / MaxFlowLbPerMin));
             pnlSensor1Fill.Width = (int)(pnlSensor1.Width * flow);
-            lblSensor1Value.Text = (flow * 100).ToString("F0") + "%";
+            lblSensor1Value.Text = Props.DisplayFlow(flowLbMin).ToString("F0");
 
-            // Bar 2 — Moisture (0–30% range mapped to full bar width)
-            const double MaxMoisture = 30.0;
-            double moistRatio = Math.Min(1.0, Math.Max(0, moisture / MaxMoisture));
-            pnlSensor2Fill.Width = (int)(pnlSensor2.Width * moistRatio);
-            lblSensor2Value.Text = moisture > 0 ? moisture.ToString("F1") + "%" : "--";
-            pnlSensor2Fill.BackColor = moisture > 0
-                ? Color.FromArgb(50, 150, 220)   // blue for moisture
+            // Bar 2 — belt speed
+            double beltFtMin = yieldCalc?.BeltFtPerMin ?? 0;
+            double belt = Math.Min(1.0, Math.Max(0, beltFtMin / MaxBeltFtPerMin));
+            pnlSensor2Fill.Width = (int)(pnlSensor2.Width * belt);
+            lblSensor2Value.Text = Props.DisplayBeltSpeed(beltFtMin).ToString("F0");
+            pnlSensor2Fill.BackColor = Core.LastBeltRunning
+                ? Color.FromArgb(50, 150, 220)
                 : Color.FromArgb(80, 80, 80);
 
-            double area = Props.DisplayArea(Core.Collector.TotalAcres);
-            double total = Props.DisplayMass(Core.Collector.TotalBushels);
-            double avg = Props.DisplayRate(Core.Collector.AverageYield);
-
-            double workRate = Props.DisplayMass(Core.Yield?.SmoothedWorkRate ?? 0);   // t/hr metric, bu/hr imperial
+            double area = Props.DisplayArea(col?.TotalAcres ?? 0);
+            double total = Props.DisplayMass(col?.TotalPounds ?? 0);
+            double avg = Props.DisplayRate(col?.AverageYield ?? 0);
+            double workRate = Props.DisplayFlow((yieldCalc?.SmoothedWorkRate ?? 0) / 60.0);
 
             lblTotArea.Text = $"{area:F1} {Props.AreaUnit}";
-            lblTotTotal.Text = Props.IsMetric ? $"{total:F1} {Props.MassUnit}" : $"{total:F0} {Props.MassUnit}";
+            lblTotTotal.Text = $"{total:F1} {Props.MassUnit}";
             lblTotRate.Text = $"{avg:F1} {Props.RateUnit}";
-            lblWorkRate.Text = Props.IsMetric ? $"{workRate:F1} {Props.MassUnit}/hr" : $"{workRate:F0} {Props.MassUnit}/hr";
+            lblWorkRate.Text = $"{workRate:F0} {Props.FlowUnit}";
         }
 
         // Okabe-Ito colorblind-safe palette: bluish-green / vermillion instead of
@@ -235,59 +262,52 @@ namespace BeltFlo.Forms
             bool modOk = Core.ModuleConnected
                 && (DateTime.UtcNow - Core.LastModuleReceive).TotalSeconds < 5;
 
-            // A module can be talking normally while its sensor sees nothing, and
-            // that case used to read exactly like a healthy one — green bar,
-            // packets arriving, zeros being recorded as real no-flow readings.
-            // The module field reports the link only; the sensor gets its own say
-            // in the job field below, because a blind sensor pauses recording and
-            // that is where the operator already looks to see recording state.
-            //
-            // Only while grain should be flowing, though. The module reports
-            // SensorOK from "was there a sensor edge in the last 500 ms", so a
-            // still elevator reads exactly like a dead sensor — the two are not
-            // distinguishable from the packet. Parked, between jobs, or on the
-            // headland with the header up, a quiet sensor is not a fault and
-            // warning about it just teaches the operator to ignore the label.
-            //
-            // Deliberately not gated on IsRecording alone: a sensor fault calls
-            // AutoPause(), which clears IsRecording, so the warning would switch
-            // itself off the instant it fired.
-            bool harvesting = gpsOk
-                && Core.Collector != null
-                && Core.Collector.ActiveJobId > 0
-                && (Core.Collector.IsRecording || Core.Collector.IsAutoPaused)
-                && Core.GPS.SectionsActive;
-
-            bool sensorBad = harvesting
-                && (!Core.LastSensor1Valid || Core.Collector.SensorFault);
-
-            // The comp-wire fault is deliberately NOT behind `harvesting`. The
-            // reason SensorOK needs that gate does not apply here: the module
-            // raises this only while edges are actively arriving and none is
-            // surviving to commit, which a still elevator cannot produce. So it
-            // cannot cry wolf on a parked machine, and showing it the moment the
-            // elevator spins up is the entire point — it is a configuration fault
-            // worth catching in the yard rather than after a day of empty passes.
-            bool compFault = Core.LastCompFault;
-
             lblStatusGPS.Text = Lang.lgGPS;
             lblStatusGPS.ForeColor = gpsOk ? StatusOk : StatusBad;
 
             lblStatusModule.Text = Lang.lgModule;
             lblStatusModule.ForeColor = modOk ? StatusOk : StatusBad;
 
-            // Only alternate while the sensor is actually faulted — a label that
-            // blinks all day is one the operator learns to stop reading. Nothing
-            // to say when the module itself is down: that is already red, and the
-            // sensor's state is unknowable without packets.
-            // Comp first when both are up: it names a cause, where "no sensor"
-            // only reports the symptom it produces.
-            if (modOk && (compFault || sensorBad) && SensorAlertPhase())
+            // Scale — the module's verdict on its converter and cells, plus the one
+            // belt-sensor fault the app can infer for itself. The module field
+            // reports the link only; this reports whether what comes over the link
+            // can be believed. Worst first, so the label always names the thing
+            // most in need of attention.
+            //
+            // Unlike the grain app's flow sensor this is not gated on harvesting: a
+            // converter that has stopped answering, or cells at their limit, are
+            // hardware faults whether or not the machine is moving, and worth
+            // catching in the yard.
+            if (!modOk)
             {
-                lblStatusJob.Text = compFault ? Lang.lgNoComp : Lang.lgNoSensor;
-                lblStatusJob.ForeColor = OkabeIto.Orange;
+                // Nothing to say without packets — the Module label is already red.
+                lblStatusScale.Text = Lang.lgStatusScale;
+                lblStatusScale.ForeColor = Color.Silver;
             }
-            else if (Core.Collector.ActiveJobId > 0)
+            else if (!Core.LastScaleOk || Core.LastOverload)
+            {
+                lblStatusScale.Text = Lang.lgStatusScale;
+                lblStatusScale.ForeColor = StatusBad;
+            }
+            else if (Core.BeltSensorSuspect)
+            {
+                // Weight moving over the section with no belt pulses: the module
+                // multiplies weight by belt travel, so it is recording nothing.
+                lblStatusScale.Text = Lang.lgBelt;
+                lblStatusScale.ForeColor = OkabeIto.Orange;
+            }
+            else if (!Core.LastTared)
+            {
+                lblStatusScale.Text = Lang.lgStatusZero;
+                lblStatusScale.ForeColor = OkabeIto.Orange;
+            }
+            else
+            {
+                lblStatusScale.Text = Lang.lgStatusScale;
+                lblStatusScale.ForeColor = StatusOk;
+            }
+
+            if (Core.Collector.ActiveJobId > 0)
             {
                 bool recording = Core.Collector.IsRecording;
                 string jobName = Core.Collector.ActiveJobName.Length > 0 ? Core.Collector.ActiveJobName : "Active Job";
@@ -301,24 +321,12 @@ namespace BeltFlo.Forms
                     lblStatusJob.Text = recording ? jobName + Lang.lgJobStatusOn : jobName + Lang.lgJobStatusOff;
                     lblStatusJob.ForeColor = recording ? StatusOk : OkabeIto.Orange;
                 }
-                //lblStatusJob.Font      = new System.Drawing.Font("Microsoft Sans Serif", recording ? 9F : 7F, System.Drawing.FontStyle.Bold);
             }
             else
             {
                 lblStatusJob.Text = Lang.lgNoActiveJob;
                 lblStatusJob.ForeColor = Color.Silver;
-                //lblStatusJob.Font      = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Bold);
             }
-        }
-
-        /// <summary>
-        /// Which half of the 2-second alternation the sensor alert is in. Taken
-        /// from the wall clock rather than a tick counter so the swap stays even
-        /// no matter how often UpdateStatusBar() happens to be called.
-        /// </summary>
-        private static bool SensorAlertPhase()
-        {
-            return (DateTime.UtcNow.Ticks / (TimeSpan.TicksPerSecond * 2)) % 2 == 1;
         }
 
         private void CheckModuleTimeout()
@@ -327,10 +335,8 @@ namespace BeltFlo.Forms
                 (DateTime.UtcNow - Core.LastModuleReceive).TotalSeconds > 5)
             {
                 Core.ModuleConnected = false;
-                // Module-reported state does not outlive the module. Left set, a
-                // comp fault latched at the moment of a dropout would go on
-                // blaming the comp wire for every later sensor fault.
-                Core.LastCompFault = false;
+                // Module-reported state does not outlive the module.
+                Core.LastBeltRunning = false;
             }
         }
 
@@ -341,40 +347,50 @@ namespace BeltFlo.Forms
             FormManager.ShowForm(new frmMenu());
         }
 
+        // ▶ — start a load, or resume a paused one.
         private void btnStart_Click(object sender, EventArgs e)
         {
-            if (Core.Collector.IsRecording) return;
-
-            if (Core.Collector.ActiveJobId > 0)
+            var col = Core.Collector;
+            if (col.ActiveJobId <= 0)
             {
-                // Resume paused job
-                Core.Collector.ResumeJob();
-                SetJobButtons(true);
-                Core.RaiseJobStateChanged();
+                Props.ShowMessage(Lang.lgNoActiveJob, "", 3000, true);
+                return;
+            }
+
+            if (col.ActiveLoadId > 0)
+            {
+                if (col.LoadPaused)
+                {
+                    col.ResumeLoad();
+                    Props.ShowMessage(Lang.lgLoadResumed, "", 2000);
+                }
             }
             else
             {
-                // Open Jobs menu to configure and start a new job
-                FormManager.ShowForm(new frmMenuJobs());
+                col.StartLoad();
             }
+            SetLoadButtons();
         }
 
+        // ⏸ — stop adding weight to the load. The job keeps recording; weight that
+        // arrives while paused goes to the job alone, as it does between loads.
         private void btnPause_Click(object sender, EventArgs e)
         {
-            Core.Collector.PauseJob();
-            SetJobButtons(false);
-            Core.RaiseJobStateChanged();
+            Core.Collector.PauseLoad();
+            Props.ShowMessage(Lang.lgLoadPaused, "", 3000);
+            SetLoadButtons();
         }
 
+        // ⏹ — the truck has left. Confirmed, because nothing yet can reopen a
+        // finished load from the cab.
         private void btnStop_Click(object sender, EventArgs e)
         {
-            var answer = MessageBox.Show(Lang.lgStopJobPrompt, Lang.lgStopJob,
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (answer != DialogResult.Yes) return;
+            using var dlg = new frmMsgBox(Lang.lgFinishLoadPrompt);
+            dlg.ShowDialog(this);
+            if (!dlg.Result) return;
 
-            Core.Collector.StopJob();
-            SetJobButtons(false);
-            Core.RaiseJobStateChanged();
+            Core.Collector.FinishLoad();
+            SetLoadButtons();
         }
 
         private void btnExit_Click(object sender, EventArgs e)
@@ -388,8 +404,8 @@ namespace BeltFlo.Forms
             new frmMini().Show();
         }
 
-        // Full-strength colours for each job button when it is available.
-        // Okabe-Ito: same hues used for the status-bar dots, so "good/active",
+        // Full-strength colours for each load button when it is available.
+        // Okabe-Ito: same hues used for the status-bar labels, so "good/active",
         // "warning/paused" and "bad/stopped" mean the same color everywhere.
         private static readonly Color StartActive = OkabeIto.BluishGreen;
         private static readonly Color PauseActive = OkabeIto.Orange;
@@ -399,35 +415,31 @@ namespace BeltFlo.Forms
         private static readonly Color BtnOffFore   = Color.FromArgb(95, 95, 95);
         private static readonly Color BtnOffBorder = Color.FromArgb(70, 70, 70);
 
-        private void SetJobButtons(bool jobActive)
+        private void SetLoadButtons()
         {
-            // jobActive param is ignored — button states are derived from the job
-            // lifecycle, not the moment-to-moment IsRecording flag. IsRecording
-            // toggles automatically as AOG sections come on/off (every headland
-            // turn), which must NOT restyle the buttons or the operator sees Start
-            // "light up" mid-harvest and thinks they need to press it.
+            // Derived from the load's lifecycle, not from whether the job happens to
+            // be recording this second — recording toggles with AOG sections on every
+            // headland turn, and the buttons must not flicker with it.
             var col = Core.Collector;
-            bool hasJob = col != null && col.ActiveJobId > 0;
-            // Manual pause zeroes both flags; auto-pause keeps IsAutoPaused set.
-            bool manuallyPaused = hasJob && !col.IsRecording && !col.IsAutoPaused;
+            bool hasJob  = col != null && col.ActiveJobId > 0;
+            bool hasLoad = hasJob && col.ActiveLoadId > 0;
+            bool paused  = hasLoad && col.LoadPaused;
 
-            // Start (▶) = create a new job (none active) or resume a manually
-            // paused one. Icon is constant; availability shows via lit/dark colour.
-            btnStart.Enabled = !hasJob || manuallyPaused;
-            // Pause = manually pause an armed/recording job (pointless once paused).
-            btnPause.Enabled = hasJob && !manuallyPaused;
-            // Stop = end the job; available whenever a job exists.
-            btnStop.Enabled  = hasJob;
+            // All three are dark with no job: the status bar already says so, and
+            // jobs are started on the Jobs screen.
+            btnStart.Enabled = hasJob && (!hasLoad || paused);   // new load, or resume
+            btnPause.Enabled = hasLoad && !paused;
+            btnStop.Enabled  = hasLoad;
 
-            StyleJobButton(btnStart, StartActive);
-            StyleJobButton(btnPause, PauseActive);
-            StyleJobButton(btnStop,  StopActive);
+            StyleButton(btnStart, StartActive);
+            StyleButton(btnPause, PauseActive);
+            StyleButton(btnStop,  StopActive);
         }
 
         // Make availability obvious at a glance: an enabled button shows its
         // full colour with a bright border; a disabled one goes flat dark grey
         // so it plainly reads as "off" rather than a slightly greyed word.
-        private static void StyleJobButton(Button btn, Color activeBack)
+        private static void StyleButton(Button btn, Color activeBack)
         {
             if (btn.Enabled)
             {

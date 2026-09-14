@@ -69,7 +69,6 @@
   <data name="lgAlreadyAdded" xml:space="preserve"><value>{0} (already added)</value></data>
   <data name="lgSave" xml:space="preserve"><value>Save</value></data>
   <data name="lgDelete" xml:space="preserve"><value>Delete</value></data>
-  <data name="lgLoad" xml:space="preserve"><value>Load</value></data>
   <data name="lgYes" xml:space="preserve"><value>Yes</value></data>
   <data name="lgNo" xml:space="preserve"><value>No</value></data>
   <data name="lgOn" xml:space="preserve"><value>On</value></data>
@@ -83,6 +82,7 @@
   <data name="lgField" xml:space="preserve"><value>Field:</value></data>
   <data name="lgOffset" xml:space="preserve"><value>Offset:</value></data>
   <data name="lgScale" xml:space="preserve"><value>Scale:</value></data>
+  <data name="lgLoad" xml:space="preserve"><value>Load</value></data>
   <data name="lgAppReads" xml:space="preserve"><value>App reads:</value></data>
   <data name="lgMeter" xml:space="preserve"><value>Meter:</value></data>
   <data name="lgCalculate" xml:space="preserve"><value>Calculate</value></data>
@@ -303,5 +303,25 @@ Rewrite this job's recorded points and total using the new factor, so the map an
   <data name="lgLow" xml:space="preserve"><value>Low</value></data>
   <data name="lgHigh" xml:space="preserve"><value>High</value></data>
   <data name="lgNoJobs" xml:space="preserve"><value>No jobs</value></data>
+
+  <!-- ── Conveyor / loads ──────────────────────────────────────────────── -->
+  <data name="lgNoScale" xml:space="preserve"><value>NO SCALE</value></data>
+  <data name="lgScaleFault" xml:space="preserve"><value>Scale fault - recording paused</value></data>
+  <data name="lgScaleRestored" xml:space="preserve"><value>Scale OK - recording resumed</value></data>
+  <data name="lgLoads" xml:space="preserve"><value>Loads:</value></data>
+  <data name="lgTitleLoads" xml:space="preserve"><value>Loads</value></data>
+  <data name="lgNewLoad" xml:space="preserve"><value>New Load</value></data>
+  <data name="lgFinishLoad" xml:space="preserve"><value>Finish Load</value></data>
+  <data name="lgFlow" xml:space="preserve"><value>Flow</value></data>
+  <data name="lgBelt" xml:space="preserve"><value>Belt</value></data>
+  <data name="lgRecording" xml:space="preserve"><value>Rec</value></data>
+  <data name="lgRecalcLater" xml:space="preserve"><value>Map correction is done from the Loads screen</value></data>
+  <data name="lgStatusScale" xml:space="preserve"><value>Scale</value></data>
+  <data name="lgStatusZero" xml:space="preserve"><value>Zero</value></data>
+  <data name="lgFinishJob" xml:space="preserve"><value>Finish</value></data>
+  <data name="lgFinishLoadPrompt" xml:space="preserve"><value>Finish this load? Its weight is kept until the certified weight is entered.</value></data>
+  <data name="lgLoadPaused" xml:space="preserve"><value>Load paused - weight not added to the load</value></data>
+  <data name="lgLoadResumed" xml:space="preserve"><value>Load resumed</value></data>
+  <data name="lgBeltSensorSuspect" xml:space="preserve"><value>No belt pulses - weight not recorded</value></data>
 
 </root>

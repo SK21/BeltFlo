@@ -7,10 +7,17 @@ namespace BeltFlo.Classes
 {
     /// <summary>
     /// Accumulates yield data points during an active job.
-    /// Positions are buffered for ProcessingDelaySec (the grain transport time
-    /// from header to elevator sensor) and paired with the sensor flow measured
-    /// when they drain, so grain is mapped where it was actually cut and the
-    /// tail still in the machine after sections go off is not lost.
+    ///
+    /// Positions are buffered for ProcessingDelaySec (the crop's transport time from
+    /// the share to the weigh section) and paired with the flow measured when they
+    /// drain, so crop is mapped where it was actually dug and the tail still on the
+    /// belts after sections go off is not lost.
+    ///
+    /// Two totals, two sources. Mass — the job total and the open load — comes
+    /// straight from the module's differenced pounds counter, credited the moment a
+    /// packet arrives, so it is exact regardless of GPS. The map records yield rate
+    /// per position. Neither is derived from the other.
+    ///
     /// Writes one record per second to the database, carrying the mean yield of
     /// that second. Pass boundaries are exact: the first point after sections
     /// come on and the last point before they go off are always written, and a
@@ -26,7 +33,7 @@ namespace BeltFlo.Classes
             public double Lat, Lon;
             public float Altitude, Speed, Heading;
             public double AcresInc;
-            public double NewFraction;  // 0..1 of this step's swath that was not already cut — 1 when nothing overlapped
+            public double NewFraction;  // 0..1 of this step's swath that was not already dug — 1 when nothing overlapped
             public bool PassStart;  // first point after sections came on — force-written so the pass begins exactly here
             public bool PassEnd;    // break marker queued when sections went off — becomes a zero-yield row at the off position
         }
@@ -35,10 +42,9 @@ namespace BeltFlo.Classes
 
         // Yield samples accumulated since the last DB write. Each written row
         // carries the MEAN of the ~10 per-tick yields of its second, not one
-        // instantaneous 200 ms sensor sample — a transient flow dip at the
-        // write instant used to store YieldRate 0 and punch a false gap in the
-        // map ribbon (the swath drawer correctly refuses to bridge zero-yield
-        // rows). A row is zero only if the whole interval had no flow.
+        // instantaneous sample, so a transient dip at the write instant cannot
+        // punch a false gap in the map ribbon. A row is zero only if the whole
+        // interval had no flow.
         private double _yieldSum;
         private int    _yieldSamples;
 
@@ -54,174 +60,136 @@ namespace BeltFlo.Classes
         public string ActiveJobName { get; private set; } = "";
 
         public double TotalAcres { get; private set; }
-        public double TotalBushels { get; private set; }
-        public double AverageYield => TotalAcres > 0.01 ? TotalBushels / TotalAcres : 0;
-        public double AverageMoisture { get; private set; }
+        public double TotalPounds { get; private set; }
+        public double AverageYield => TotalAcres > 0.01 ? TotalPounds / TotalAcres : 0;   // lb/ac
 
-        // Positions still waiting for their grain to reach the sensor. Exposed for
+        // The truck being filled. -1 between loads; pounds then go to the job only.
+        public int ActiveLoadId { get; private set; } = -1;
+        public double CurrentLoadLb { get; private set; }
+
+        // The open load's number within this job — 1 for the first truck — which is
+        // what the operator and the ticket talk about. The database id is global.
+        public int ActiveLoadNumber { get; private set; }
+
+        // A paused load keeps its place but gains no weight. Weight arriving while
+        // paused goes to the job alone, and its map points belong to no load, so a
+        // later correction from the load's ticket cannot rescale them.
+        public bool LoadPaused { get; private set; }
+
+        // Positions still waiting for their crop to reach the scale. Exposed for
         // the diagnostic log: it hits 0 exactly when the app stops attributing
-        // grain to a finished pass, so comparing it against the sensor trace shows
-        // whether the machine was still delivering after recording stopped.
+        // flow to a finished pass.
         public int PipelineCount => _pipeline.Count;
 
         private DateTime _lastWriteTime = DateTime.MinValue;
         private double _lastLat = 0, _lastLon = 0;
         private DateTime _lastFixTime = DateTime.MinValue;
 
-        // Max plausible combine ground speed, used to bound a single GPS-tick's
-        // distance step — guards TotalAcres/TotalBushels against a corrupt fix
-        // (e.g. a momentary (0,0) glitch) producing a bogus multi-km jump.
+        // Max plausible ground speed, used to bound a single GPS-tick's distance
+        // step — guards TotalAcres against a corrupt fix (e.g. a momentary (0,0)
+        // glitch) producing a bogus multi-km jump.
         private const double MaxPlausibleSpeedMps = 15.0; // ~34 mph, generous ceiling
         private const double MinFixIntervalSec = 0.05;
 
         // --- Overlap ---------------------------------------------------------
-        // Ground already cut is not new acres, and a header only partly in crop is
-        // not cutting its full width. Both come from the same grid: see
+        // Ground already dug is not new acres, and a digger only partly in crop is
+        // not lifting its full width. Both come from the same grid: see
         // clsCoverageGrid for why it returns a ratio rather than an area.
         private readonly clsCoverageGrid _coverage = new clsCoverageGrid();
 
         /// <summary>Fraction of the last swath that was new ground. Diagnostic log only.</summary>
         public double LastNewFraction { get; private set; } = 1.0;
 
-        // Below this the machine is essentially re-running ground it already cut.
-        // Dividing a part-header's flow by a vanishing width sends yield to
-        // infinity, so under this the tick is treated the way the tail drain treats
-        // a draining machine: real mass, no area, no bu/ac, no map row. 0.15 is
-        // roughly the point where an overlapped pass stops being a measurement of
-        // anything — a 30 ft header with under 4.5 ft in standing crop.
+        // Below this the machine is essentially re-running ground it already dug.
+        // Dividing a part-width flow by a vanishing width sends yield to infinity,
+        // so under this the tick produces no area, no lb/ac and no map row. The
+        // mass is unaffected — it came off the scale and is already counted.
         private const double MinNewFraction = 0.15;
-
-        // Time of the last drained point, for integrating mass across ticks that
-        // produce no area of their own.
-        private DateTime _lastDrainTime = DateTime.MinValue;
 
         // Replay guards when rebuilding coverage for a resumed job. Same numbers as
         // the map's ribbon breaks (frmYieldMap MaxBridgeMeters/Seconds), so the
-        // ground the grid believes was cut is the ground the map painted.
+        // ground the grid believes was dug is the ground the map painted.
         private const double MaxRebuildStepM = 5.0;
         private const double MaxRebuildGapSec = 3.0;
 
         // --- Crash safety ----------------------------------------------------
-        // The totals live in memory and used to reach the job row only on a
-        // lifecycle event — StartJob, SuspendJob, StopJob, LoadJob. A power cut or
-        // a killed process therefore rolled the job back to the last clean exit,
-        // which could be hours: the yield_data rows all survive, so the map keeps
-        // every pass, but the job's headline acres and bushels do not.
-        //
-        // Saving once a minute bounds that to a minute's harvesting and costs one
-        // UPDATE of two REALs — negligible beside the 1 Hz yield_data INSERT
-        // already running next to it. Skipped when the totals have not moved, so a
-        // machine parked with a job open never touches the disk.
-        //
-        // Acres alone could be recovered exactly after a crash, since every row
-        // carries acres_accumulated; bushels have no such column, which is why the
-        // fix is a periodic write rather than a replay.
+        // The totals live in memory and reach the job row on a lifecycle event —
+        // StartJob, SuspendJob, StopJob, LoadJob. A power cut or a killed process
+        // would otherwise roll the job back to the last clean exit, which could be
+        // hours. Saving once a minute bounds that to a minute's digging; skipped
+        // when nothing has moved, so a parked machine never touches the disk. The
+        // open load's running weight is saved on the same beat.
         private const double TotalsSaveIntervalSec = 60.0;
         private DateTime _lastTotalsSave = DateTime.MinValue;
-        private double _savedAcres = -1, _savedBushels = -1;
+        private double _savedAcres = -1, _savedPounds = -1, _savedLoadLb = -1;
 
-        private double _moistureSum = 0;
-        private int _moistureCount = 0;
+        // Pounds over the scale since the last row was written, and the belt pulse
+        // count at that row, so each row carries what arrived during its interval.
+        private double _poundsSinceWrite;
+        private uint _pulsesAtLastWrite;
+        private bool _hasPulseMark;
 
         // --- Tail drain -----------------------------------------------------
         // A pass stops being integrated when its last position drains, one
-        // ProcessingDelaySec after sections go off. The machine is not empty at
-        // that moment: grain already inside keeps arriving as the shoe and
-        // returns clear, and that mass used to be dropped entirely, so every
-        // pass under-read by its own tail. Here it keeps being counted until the
-        // elevator actually runs empty.
-        //
-        // Mass only — no new ground is being cut, so there is no area to divide
-        // by and no bu/ac to compute. The grain lands in the job total and the
-        // cal run; the map cells are untouched until the back-spread lands.
+        // ProcessingDelaySec after sections go off. The belts are not empty at
+        // that moment: crop already on them keeps arriving at the scale. Mass is
+        // counted regardless — it comes off the counter — but the tail keeps the
+        // job in the recording state until the belt actually runs empty, so the
+        // status bar and the auto-pause tell the truth about what the machine is
+        // doing.
         private bool _tailActive;
         private DateTime _tailStart;
-        private DateTime _tailLastTick;
-        private DateTime _tailEndsAt;      // set when the next pass's grain is due to arrive
-        private DateTime _tailEmptySince;  // first sub-threshold reading of the current run
-        private double _tailBushels;
+        private DateTime _tailEndsAt;      // set when the next pass's crop is due to arrive
+        private DateTime _tailEmptySince;  // first below-threshold reading of the current run
 
         public bool IsDrainingTail => _tailActive;
-        public double LastTailBushels { get; private set; }
         public string LastTailEndReason { get; private set; } = "";
 
-        // Fault backstop only. It bounds the case where the baseline has drifted
-        // above the true no-flow reading (dust on the sensor, a paddle sitting in
-        // the beam, a dead module holding its last value), where CurrentRatio
-        // never returns to zero and a parked combine would otherwise accumulate
-        // phantom grain into the job total indefinitely.
-        //
-        // Flat seconds, deliberately NOT a multiple of ProcessingDelaySec. Measured
-        // in the field 2026-08-03: header up with the separator at full speed, the
-        // elevator took ~100 s to fall from 30% back to its 9% baseline, against a
-        // delay of 10. Transit and clean-out are not the same process — the delay is
-        // how long grain takes to travel, the tail is the returns loop and sieve
-        // residue recirculating — so no factor of one expresses the other. 180 clears
-        // the measured 100 with room for a tougher, wetter crop.
-        //
-        // Note this is rarely the terminator that fires. Clean-out outlasts a
-        // headland turn, so in continuous harvesting the machine never actually
-        // empties and "next pass" ends almost every drain; "empty" only wins when
-        // the combine stops, at the end of a field or a run.
-        private const double TailTimeoutSec = 180.0;
+        // Backstop only. A belt that never reads empty — a zero that has drifted,
+        // or a stuck reading — would otherwise hold the job "recording" forever.
+        // Clean-out on a digger is tens of seconds; 120 clears that with room.
+        private const double TailTimeoutSec = 120.0;
 
         // Flow has to stay down this long to end a drain, so a single dropped or
         // glitched reading mid-tail cannot truncate it early.
         private const double TailEmptyConfirmSec = 0.5;
 
-        // Bounds one tick's integration so a stalled UI thread or a suspend/resume
-        // cannot turn one long gap into a large bogus mass.
-        private const double MaxTailTickSec = 1.0;
+        // --- Scale validity -------------------------------------------------
+        // A reading the scale did not actually make is worse than no reading: it
+        // maps, it accumulates, and nothing about it looks wrong afterwards.
+        // Recording stops while the module says the scale cannot be trusted, the
+        // same way it stops for a GPS dropout, and the pass is closed off rather
+        // than bridged across the gap.
+        private bool _scaleFault;
 
-        // --- Sensor validity ------------------------------------------------
-        // A reading the sensor did not actually make is worse than no reading:
-        // it maps, it accumulates, and nothing about it looks wrong afterwards.
-        // Recording stops while the sensor is blind, the same way it stops for a
-        // GPS dropout, and the pass is closed off rather than bridged across the
-        // gap.
-        private bool _sensorFault;
-        private DateTime _hardZeroSince = DateTime.MaxValue;
-
-        /// <summary>True while recording is held off because the sensor cannot be trusted.</summary>
-        public bool SensorFault => _sensorFault;
-
-        // The second failure mode, and the one the module's own flag misses: a
-        // reading of hard zero. A running elevator never produces it — even an
-        // empty one reads its baseline, because the paddles themselves occlude
-        // the beam — so the beam seeing nothing at all while crop is entering the
-        // machine is a fault, not a measurement. Held this long it is not a
-        // dropout either.
-        private const double HardZeroRatio = 0.001;
-        private const double HardZeroFaultSec = 30.0;
+        /// <summary>True while recording is held off because the scale cannot be trusted.</summary>
+        public bool ScaleFault => _scaleFault;
 
         /// <summary>
-        /// Adopts a recalculated total for the job currently recording. Without this,
-        /// RecalculateJob's new total_volume survives only until the next lifecycle
-        /// write (StartJob/SuspendJob/StopJob/Save all call UpdateTotals), which would
-        /// put the stale in-memory figure straight back. No-op for any other job.
+        /// Adopts a rescaled total for the job currently recording. Without this,
+        /// RescaleJob's new total_pounds survives only until the next lifecycle
+        /// write, which would put the stale in-memory figure straight back.
+        /// No-op for any other job.
         /// </summary>
-        public void SyncTotalBushels(int jobId, double totalBushels)
+        public void SyncTotalPounds(int jobId, double totalPounds)
         {
-            if (jobId > 0 && jobId == ActiveJobId) TotalBushels = totalBushels;
+            if (jobId > 0 && jobId == ActiveJobId) TotalPounds = totalPounds;
         }
 
-        /// <summary>
-        /// Writes the running totals to the job row once a minute, so a power cut
-        /// costs a minute's work rather than everything since the last clean exit.
-        /// Cheap enough to call every tick: it does two compares and returns.
-        /// </summary>
         private void SaveTotalsPeriodically()
         {
             if (ActiveJobId <= 0 || Core.Database == null) return;
             if ((DateTime.UtcNow - _lastTotalsSave).TotalSeconds < TotalsSaveIntervalSec) return;
-            if (TotalAcres == _savedAcres && TotalBushels == _savedBushels) return;
+            if (TotalAcres == _savedAcres && TotalPounds == _savedPounds && CurrentLoadLb == _savedLoadLb) return;
 
             MarkTotalsSaved();
-            Core.Database.Jobs.UpdateTotals(ActiveJobId, TotalAcres, TotalBushels);
+            Core.Database.Jobs.UpdateTotals(ActiveJobId, TotalAcres, TotalPounds);
+            if (ActiveLoadId > 0)
+                Core.Database.Loads.UpdateMonitorLb(ActiveLoadId, CurrentLoadLb);
         }
 
         /// <summary>
-        /// Notes that the job row and the in-memory totals agree as of now, and
+        /// Notes that the database and the in-memory totals agree as of now, and
         /// restarts the interval. Called wherever a lifecycle event has just
         /// written them, so a freshly opened job does not save on its first tick.
         /// </summary>
@@ -229,31 +197,35 @@ namespace BeltFlo.Classes
         {
             _lastTotalsSave = DateTime.UtcNow;
             _savedAcres = TotalAcres;
-            _savedBushels = TotalBushels;
+            _savedPounds = TotalPounds;
+            _savedLoadLb = CurrentLoadLb;
         }
+
+        // ── Job lifecycle ─────────────────────────────────────────────────────
 
         public void StartJob(int jobId, string jobName = "")
         {
             // Close any currently active job before starting a new one
             if (ActiveJobId > 0 && Core.Database != null)
             {
-                Core.Database.Jobs.UpdateTotals(ActiveJobId, TotalAcres, TotalBushels);
+                FinishLoad();
+                Core.Database.Jobs.UpdateTotals(ActiveJobId, TotalAcres, TotalPounds);
                 Core.Database.Jobs.Close(ActiveJobId);
             }
 
             ActiveJobId = jobId;
             ActiveJobName = jobName;
             TotalAcres = 0;
-            TotalBushels = 0;
-            AverageMoisture = 0;
-            _moistureSum = 0;
-            _moistureCount = 0;
+            TotalPounds = 0;
+            ActiveLoadId = -1;
+            CurrentLoadLb = 0;
+            _poundsSinceWrite = 0;
+            _hasPulseMark = false;
             _lastLat = 0;
             _lastLon = 0;
             _lastFixTime = DateTime.MinValue;
             _lastWriteTime = DateTime.MinValue;
-            _sensorFault = false;
-            _hardZeroSince = DateTime.MaxValue;
+            _scaleFault = false;
             _coverage.Reset();
             ResetPipeline();
             MarkTotalsSaved();
@@ -266,10 +238,11 @@ namespace BeltFlo.Classes
         public void StopJob()
         {
             IsRecording = false;
-            ResetPipeline();   // grain still in transit is abandoned on an explicit stop
+            ResetPipeline();   // crop still in transit is abandoned on an explicit stop
             if (ActiveJobId > 0 && Core.Database != null)
             {
-                Core.Database.Jobs.UpdateTotals(ActiveJobId, TotalAcres, TotalBushels);
+                FinishLoad();
+                Core.Database.Jobs.UpdateTotals(ActiveJobId, TotalAcres, TotalPounds);
                 Core.Database.Jobs.Close(ActiveJobId);
             }
             ActiveJobId = -1;
@@ -277,7 +250,8 @@ namespace BeltFlo.Classes
         }
 
         // Manual pause discards in-transit positions; their flow can't be
-        // matched after an arbitrary pause.
+        // matched after an arbitrary pause. Pounds stop being credited too — a
+        // manual pause means "this is not part of the job".
         public void PauseJob() { IsRecording = false; IsAutoPaused = false; _pipeline.Clear(); _tailActive = false; }
 
         // Abandon everything in transit: buffered positions, the yield average
@@ -288,8 +262,7 @@ namespace BeltFlo.Classes
             _yieldSum = 0;
             _yieldSamples = 0;
             _lastDrainedUnwritten = false;
-            _lastDrainTime = DateTime.MinValue;
-            _tailActive = false;   // grain still emptying out is abandoned too
+            _tailActive = false;
         }
 
         private void AutoPause() { IsRecording = false; IsAutoPaused = true; }
@@ -298,66 +271,83 @@ namespace BeltFlo.Classes
 
         /// <summary>
         /// Saves accumulated totals to the DB but leaves the job status as Active
-        /// so it can be auto-resumed on the next app start.
+        /// so it can be auto-resumed on the next app start. The open load stays
+        /// open for the same reason — the truck is still there tomorrow.
         /// </summary>
         public void SuspendJob()
         {
             IsRecording = false;
             ResetPipeline();
             if (ActiveJobId > 0 && Core.Database != null)
-                Core.Database.Jobs.UpdateTotals(ActiveJobId, TotalAcres, TotalBushels);
+            {
+                Core.Database.Jobs.UpdateTotals(ActiveJobId, TotalAcres, TotalPounds);
+                if (ActiveLoadId > 0)
+                    Core.Database.Loads.UpdateMonitorLb(ActiveLoadId, CurrentLoadLb);
+            }
             ActiveJobId   = -1;
             ActiveJobName = "";
+            ActiveLoadId  = -1;
+            CurrentLoadLb = 0;
         }
 
         public void ResumeJob() { IsRecording = false; IsAutoPaused = true; }  // re-arms auto-resume; recording starts when sections come on
 
         /// <summary>
-        /// Loads a previously created job, restoring its accumulated totals.
-        /// Used when resuming a job from a prior session.
+        /// Loads a previously created job, restoring its accumulated totals and
+        /// any load that was still being filled.
         /// </summary>
-        public void LoadJob(int jobId, string jobName, double existingAcres, double existingBushels)
+        public void LoadJob(int jobId, string jobName, double existingAcres, double existingPounds)
         {
             // Close any different active job before loading the new one
             if (ActiveJobId > 0 && ActiveJobId != jobId && Core.Database != null)
             {
-                Core.Database.Jobs.UpdateTotals(ActiveJobId, TotalAcres, TotalBushels);
+                FinishLoad();
+                Core.Database.Jobs.UpdateTotals(ActiveJobId, TotalAcres, TotalPounds);
                 Core.Database.Jobs.Close(ActiveJobId);
             }
 
             ActiveJobId = jobId;
             ActiveJobName = jobName;
             TotalAcres = existingAcres;
-            TotalBushels = existingBushels;
-            AverageMoisture = 0;
-            _moistureSum = 0;
-            _moistureCount = 0;
+            TotalPounds = existingPounds;
+            _poundsSinceWrite = 0;
+            _hasPulseMark = false;
             _lastLat = 0;
             _lastLon = 0;
             _lastFixTime = DateTime.MinValue;
             _lastWriteTime = DateTime.MinValue;
-            _sensorFault = false;
-            _hardZeroSince = DateTime.MaxValue;
+            _scaleFault = false;
             ResetPipeline();
             RebuildCoverage(jobId);
+
+            ActiveLoadId  = -1;
+            CurrentLoadLb = 0;
+            var open = Core.Database?.Loads.GetOpen(jobId);
+            LoadPaused       = false;
+            ActiveLoadNumber = 0;
+            if (open != null)
+            {
+                ActiveLoadId  = open.Id;
+                CurrentLoadLb = open.MonitorLb;
+                ActiveLoadNumber = Core.Database.Loads.GetAll(jobId).FindAll(l => l.Id <= open.Id).Count;
+            }
+
             MarkTotalsSaved();
             IsRecording  = false;
-            IsAutoPaused = true;   // auto-resumes once AOG connects and harvesting starts
+            IsAutoPaused = true;   // auto-resumes once AOG connects and digging starts
         }
 
         /// <summary>
         /// Replays a job's stored positions through the coverage grid so a resumed
-        /// job knows what it already cut.
+        /// job knows what it already dug.
         ///
         /// Without this the grid starts empty on resume and the first lap back over
-        /// yesterday's ground is charged as new acres — the exact error the grid
-        /// exists to prevent, reintroduced by restarting the app. Every point needed
-        /// is already in yield_data, so this is a replay, not an estimate.
+        /// yesterday's ground is charged as new acres. Every point needed is already
+        /// in yield_data, so this is a replay, not an estimate.
         ///
         /// The break guards match the map's swath drawer: a pair of points is only a
         /// swath if both ends were flowing and they are close enough in time and
-        /// distance to be consecutive. Anything else is a gap the machine did not cut
-        /// through — a headland transit, a paused job, the join between two sessions.
+        /// distance to be consecutive.
         /// </summary>
         private void RebuildCoverage(int jobId)
         {
@@ -393,15 +383,93 @@ namespace BeltFlo.Classes
             catch (Exception ex)
             {
                 // A job that cannot be replayed still records — it just cannot
-                // credit itself for ground cut before the restart.
+                // credit itself for ground dug before the restart.
                 Props.WriteErrorLog("DataCollector/RebuildCoverage: " + ex.Message);
             }
         }
 
+        // ── Loads ─────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Opens a new truck load on the active job, closing the one being filled.
+        /// Returns the new load id, or -1 with no job.
+        /// </summary>
+        public int StartLoad(string truck = "")
+        {
+            if (ActiveJobId <= 0 || Core.Database == null) return -1;
+            FinishLoad();
+            ActiveLoadId  = Core.Database.Loads.Create(ActiveJobId, truck, Core.ActiveCalRev);
+            CurrentLoadLb = 0;
+            LoadPaused    = false;
+            ActiveLoadNumber = Core.Database.Loads.GetAll(ActiveJobId).Count;
+            Props.WriteActivityLog("Load " + ActiveLoadNumber + " started (id " + ActiveLoadId + ")");
+            MarkTotalsSaved();
+            Core.RaiseJobStateChanged();
+            return ActiveLoadId;
+        }
+
+        /// <summary>
+        /// The truck has left: freezes the monitor weight on the load and waits for
+        /// its ticket. Pounds arriving afterwards go to the job alone until the
+        /// next load is opened.
+        /// </summary>
+        public void FinishLoad()
+        {
+            if (ActiveLoadId <= 0) return;
+            Core.Database?.Loads.Close(ActiveLoadId, CurrentLoadLb);
+            Props.WriteActivityLog("Load " + ActiveLoadNumber + " finished at " + CurrentLoadLb.ToString("0") + " lb (id " + ActiveLoadId + ")");
+            ActiveLoadId  = -1;
+            CurrentLoadLb = 0;
+            LoadPaused    = false;
+            ActiveLoadNumber = 0;
+            MarkTotalsSaved();
+            Core.RaiseJobStateChanged();
+        }
+
+        // ── Mass ──────────────────────────────────────────────────────────────
+
+        /// <summary>Stops adding weight to the open load without closing it.</summary>
+        public void PauseLoad()
+        {
+            if (ActiveLoadId <= 0 || LoadPaused) return;
+            LoadPaused = true;
+            Props.WriteActivityLog("Load " + ActiveLoadNumber + " paused at " + CurrentLoadLb.ToString("0") + " lb");
+            Core.RaiseJobStateChanged();
+        }
+
+        public void ResumeLoad()
+        {
+            if (ActiveLoadId <= 0 || !LoadPaused) return;
+            LoadPaused = false;
+            Props.WriteActivityLog("Load " + ActiveLoadNumber + " resumed");
+            Core.RaiseJobStateChanged();
+        }
+
+        /// <summary>
+        /// Pounds the module says crossed the scale since its previous packet.
+        /// Credited to the job and the open load whenever a job is open and not
+        /// manually paused — crop reaching the truck while the machine is turning,
+        /// or emptying out while parked, is real crop. Only a manual pause says
+        /// "this is not part of the job".
+        /// </summary>
+        public void OnPoundsDelta(double lb)
+        {
+            if (lb <= 0 || ActiveJobId < 0) return;
+            if (!IsRecording && !IsAutoPaused) return;   // manual pause
+            if (_scaleFault) return;                     // the module said not to trust this
+
+            TotalPounds       += lb;
+            if (ActiveLoadId > 0 && !LoadPaused)
+                CurrentLoadLb += lb;
+            _poundsSinceWrite += lb;
+        }
+
+        // ── Position ──────────────────────────────────────────────────────────
+
         /// <summary>
         /// Called every GPS update (~10 Hz). Writes to DB once per second.
         /// </summary>
-        public void OnGpsUpdate(double rawMoisture)
+        public void OnGpsUpdate()
         {
             if (ActiveJobId < 0) return;
 
@@ -413,63 +481,56 @@ namespace BeltFlo.Classes
 
             var yield = Core.Yield;
 
-            // Sections turn off over already-harvested ground even when moving.
+            // Sections turn off over already-dug ground even when moving.
             bool harvestActive = gps.SectionsActive;
 
-            double moisture = rawMoisture > 0 ? rawMoisture + Core.ActiveMoistureOffset : 0;
-
-            // Nothing below this point can produce real data while the sensor is
-            // blind — the flow reading every calculation depends on would be
-            // fabricated. Checked before the position is buffered so no point
-            // enters the pipeline whose grain arrives during the blind window.
-            if (!SensorUsable(harvestActive))
+            // Nothing below this point can produce real data while the scale is
+            // untrusted — the flow every calculation depends on would be fabricated.
+            // Checked before the position is buffered so no point enters the
+            // pipeline whose crop arrives during the blind window.
+            if (!ScaleUsable())
             {
                 // The readout has to fall to zero rather than freeze at the last
                 // good value: a frozen number reads as a live one.
                 yield.Calculate(0);
 
-                if (!_sensorFault)
+                if (!_scaleFault)
                 {
-                    _sensorFault = true;
+                    _scaleFault = true;
                     bool wasRecording = IsRecording;
 
-                    Props.WriteErrorLog("DataCollector/Sensor invalid — recording paused"
+                    Props.WriteErrorLog("DataCollector/Scale invalid — recording paused"
                         + " (moduleConnected=" + Core.ModuleConnected
-                        + ", sensorOk=" + Core.LastSensor1Valid
-                        + ", compFault=" + Core.LastCompFault
-                        + ", sensor1=" + Core.LastSensor1.ToString("0.###") + ")");
+                        + ", scaleOk=" + Core.LastScaleOk
+                        + ", flags=0x" + Core.LastFlags.ToString("X2") + ")");
 
-                    // Alarm only when this actually interrupted harvesting. A module
+                    // Alarm only when this actually interrupted digging. A module
                     // dropping out between passes stops nothing, and an alert the
                     // operator learns to dismiss is worse than no alert.
-                    //
-                    // When the module has named the cause, say the cause: the generic
-                    // message sends the operator to look at a sensor that is fine.
                     if (wasRecording)
-                        Props.ShowMessage(Core.LastCompFault ? Lang.lgCompFault : Lang.lgSensorFault,
-                                          "", 4000, true);
+                        Props.ShowMessage(Lang.lgScaleFault, "", 4000, true);
 
-                    EndPassOnFault(gps, moisture);
+                    EndPassOnFault(gps);
                     if (!IsAutoPaused) AutoPause();
                     Core.RaiseJobStateChanged();
                 }
                 return;
             }
 
-            if (_sensorFault)
+            if (_scaleFault)
             {
-                _sensorFault = false;
-                Props.WriteActivityLog("Sensor valid again");
+                _scaleFault = false;
+                Props.WriteActivityLog("Scale valid again");
                 // Only claim recording resumed when it does — auto-resume still
-                // waits for sections, so with the header up nothing restarts yet.
+                // waits for sections, so with the digger up nothing restarts yet.
                 if (harvestActive)
-                    Props.ShowMessage(Lang.lgSensorRestored, "", 3000);
+                    Props.ShowMessage(Lang.lgScaleRestored, "", 3000);
                 Core.RaiseJobStateChanged();
             }
 
-            // The GPS fix is the antenna; the crop is cut at the header, which sits
-            // HeaderFwdOffsetM ahead of it. Record the HEADER position so pass
-            // boundaries land where the header crossed them — AOG paints its
+            // The GPS fix is the antenna; the crop is lifted at the share, which
+            // sits HeaderFwdOffsetM ahead of it. Record the share position so pass
+            // boundaries land where the share crossed them — AOG paints its
             // coverage at the tool the same way.
             double hdgRad = gps.Heading * Math.PI / 180.0;
             double lat = gps.Latitude
@@ -481,17 +542,14 @@ namespace BeltFlo.Classes
             if (harvestActive)
             {
                 // A new pass has started while the previous one is still draining.
-                // Its grain cannot reach the sensor for another ProcessingDelaySec,
+                // Its crop cannot reach the scale for another ProcessingDelaySec,
                 // so everything arriving before then still belongs to the old pass —
-                // the tail runs on until exactly the moment the new crop is due,
-                // which is also when the new pass's own positions start draining.
-                // Ending it at sections-on instead would throw away most of the tail
-                // on precisely the quick headland turns that lose the most today.
+                // the tail runs on until exactly the moment the new crop is due.
                 if (_tailActive && _tailEndsAt == DateTime.MaxValue)
                     _tailEndsAt = DateTime.UtcNow.AddSeconds(yield.ProcessingDelaySec);
 
-                // Crop is entering the machine — buffer this position. Its grain
-                // reaches the sensor ProcessingDelaySec from now.
+                // Crop is entering the machine — buffer this position. Its crop
+                // reaches the scale ProcessingDelaySec from now.
                 bool passStart = _lastLat == 0 && _lastLon == 0;
                 double acresInc = 0;
                 double newFraction = 1.0;
@@ -502,10 +560,10 @@ namespace BeltFlo.Classes
                     double dtSec = Math.Max((now - _lastFixTime).TotalSeconds, MinFixIntervalSec);
                     if (distM <= MaxPlausibleSpeedMps * dtSec)
                     {
-                        // Ground already cut is not new ground. Marking happens here,
+                        // Ground already dug is not new ground. Marking happens here,
                         // at the position, not at drain time — the grid is about where
-                        // the header has been, which has nothing to do with when that
-                        // strip's grain reaches the sensor.
+                        // the share has been, which has nothing to do with when that
+                        // strip's crop reaches the scale.
                         newFraction = _coverage.MarkSwath(_lastLat, _lastLon, lat, lon, yield.HeaderWidthM);
                         LastNewFraction = newFraction;
                         acresInc = clsYieldCalculator.MetresToAcres(distM, yield.HeaderWidthM) * newFraction;
@@ -514,8 +572,7 @@ namespace BeltFlo.Classes
                     // skip this tick's acreage/yield contribution instead of adding a
                     // bogus multi-km increment to the job total. The point is still
                     // enqueued below; the map's own AddSwath/MaxBridgeMeters guard
-                    // already refuses to bridge a gap this large, so the ribbon is
-                    // unaffected.
+                    // already refuses to bridge a gap this large.
                 }
                 _lastLat = lat;
                 _lastLon = lon;
@@ -536,14 +593,14 @@ namespace BeltFlo.Classes
             }
             else
             {
-                // Header up / sections off — no new crop, but keep draining the
-                // pipeline: delay-time's worth of grain is still in the machine.
+                // Digger up / sections off — no new crop, but keep draining the
+                // pipeline: delay-time's worth of crop is still on the belts.
                 if (_lastLat != 0 || _lastLon != 0)
                 {
                     // Sections just went off: send a pass-end marker down the
-                    // pipeline at the last harvested position. When it drains it
-                    // ends the map ribbon exactly there, so a brief section-off
-                    // can never be painted across.
+                    // pipeline at the last dug position. When it drains it ends the
+                    // map ribbon exactly there, so a brief section-off can never be
+                    // painted across.
                     _pipeline.Enqueue(new PendingPoint
                     {
                         Time = DateTime.UtcNow,
@@ -557,7 +614,7 @@ namespace BeltFlo.Classes
                     });
 
                     // The pass is over positionally, so its last few metres can come
-                    // out of the coverage grid's lag and become cut ground. The next
+                    // out of the coverage grid's lag and become dug ground. The next
                     // pass may cross them within seconds of the turn.
                     _coverage.Flush();
                 }
@@ -566,8 +623,8 @@ namespace BeltFlo.Classes
                 _lastFixTime = DateTime.MinValue;
             }
 
-            // Drain positions older than the transport delay — their grain is at
-            // the sensor now, so pair them with the current flow reading.
+            // Drain positions older than the transport delay — their crop is at
+            // the scale now, so pair them with the current flow reading.
             DateTime cutoff = DateTime.UtcNow.AddSeconds(-yield.ProcessingDelaySec);
 
             while (_pipeline.Count > 0 && _pipeline.Peek().Time <= cutoff)
@@ -582,16 +639,16 @@ namespace BeltFlo.Classes
                     // map's both-ends-flowing guard turns it into a guaranteed
                     // ribbon break however short the section-off was.
                     if (_lastDrainedUnwritten)
-                        WritePoint(_lastDrained, _yieldSum / _yieldSamples, moisture);
-                    WritePoint(pt, 0, moisture);
+                        WritePoint(_lastDrained, _yieldSum / _yieldSamples);
+                    WritePoint(pt, 0);
                     _yieldSum = 0;
                     _yieldSamples = 0;
                     _lastDrainedUnwritten = false;
                     _lastWriteTime = DateTime.UtcNow;
-                    _lastDrainTime = pt.Time;
 
                     // Everything positional for this pass is now written, but the
-                    // machine is still delivering its grain. Keep counting.
+                    // machine is still delivering its crop. Stay in the recording
+                    // state until it runs empty.
                     BeginTailDrain();
                     continue;
                 }
@@ -600,57 +657,34 @@ namespace BeltFlo.Classes
                 // whether or not the timer said so.
                 if (_tailActive) EndTailDrain("next pass");
 
-                // Only the part of the header in standing crop produced this flow,
+                // Only the part of the digger in standing crop produced this flow,
                 // so only that width may divide it. Floored for the calculation so a
                 // near-total overlap cannot divide by nearly nothing; the tick is
                 // then excluded from the record below rather than trusted.
                 double newFrac = pt.NewFraction;
                 yield.Calculate(pt.Speed, yield.HeaderWidthM * Math.Max(newFrac, MinNewFraction));
 
-                double drainDt = _lastDrainTime == DateTime.MinValue
-                    ? 0
-                    : Math.Min((pt.Time - _lastDrainTime).TotalSeconds, MaxTailTickSec);
-                _lastDrainTime = pt.Time;
-
                 if (newFrac < MinNewFraction)
                 {
-                    // Re-running ground already cut. There is no new area, so there
-                    // is no bu/ac to compute and nothing to map — but the machine is
-                    // still delivering grain and that mass is real, so it is counted
-                    // the way the tail drain counts it: by flow and time, not by area.
-                    double reworkBushels = yield.CurrentBushelsPerSec() * drainDt;
-                    TotalBushels += reworkBushels;
-                    yield.AccumulateCalRun(reworkBushels);
+                    // Re-running ground already dug. There is no new area, so there
+                    // is no lb/ac to compute and nothing to map. The crop's mass is
+                    // already in the totals from the counter.
                     continue;
                 }
 
                 TotalAcres += pt.AcresInc;
-                // Effective width cancels here — it divides the yield and multiplies
-                // the acres — so bushels stay exactly flow x time, as before.
-                double bushelsInc = yield.InstantYield * pt.AcresInc;
-                TotalBushels += bushelsInc;
-                yield.AccumulateCalRun(bushelsInc);
 
                 _yieldSum += yield.InstantYield;
                 _yieldSamples++;
                 _lastDrained = pt;
                 _lastDrainedUnwritten = true;
 
-                // Moisture is measured at the sensor, so the current reading
-                // belongs to this drained position's grain.
-                if (moisture > 0)
-                {
-                    _moistureSum += moisture;
-                    _moistureCount++;
-                    AverageMoisture = _moistureSum / _moistureCount;
-                }
-
                 // Write to DB once per second; a pass-start point is written
                 // immediately so the ribbon begins exactly where sections came on.
                 if (pt.PassStart || (DateTime.UtcNow - _lastWriteTime).TotalSeconds >= 1.0)
                 {
                     _lastWriteTime = DateTime.UtcNow;
-                    WritePoint(pt, _yieldSum / _yieldSamples, moisture);
+                    WritePoint(pt, _yieldSum / _yieldSamples);
                     _yieldSum = 0;
                     _yieldSamples = 0;
                     _lastDrainedUnwritten = false;
@@ -658,16 +692,16 @@ namespace BeltFlo.Classes
             }
 
             if (_tailActive)
-                AccumulateTail(yield);
+                CheckTail(yield);
 
-            // Bound what a power cut can undo to one minute of harvesting.
+            // Bound what a power cut can undo to one minute of digging.
             SaveTotalsPeriodically();
 
             // Keep the live display honest while idle
             if (!harvestActive && _pipeline.Count == 0)
                 yield.Calculate(gps.Speed);
 
-            // Recording while crop is entering the machine, grain is still in
+            // Recording while crop is entering the machine, crop is still in
             // transit, or the machine is still emptying out the last pass
             bool shouldRecord = harvestActive || _pipeline.Count > 0 || _tailActive;
 
@@ -684,45 +718,26 @@ namespace BeltFlo.Classes
         }
 
         /// <summary>
-        /// Whether the current flow reading can be trusted. Covers both ways it
-        /// fails: the module reporting SensorOK = false, and a hard zero held far
-        /// longer than any running elevator could produce one.
+        /// Whether the current flow reading can be trusted: the module is talking
+        /// and it reports its scale as good.
         /// </summary>
-        private bool SensorUsable(bool harvestActive)
+        private bool ScaleUsable()
         {
-            if (!Core.ModuleConnected || !Core.LastSensor1Valid)
-            {
-                _hardZeroSince = DateTime.MaxValue;
-                return false;
-            }
-
-            // Only meaningful while crop is entering the machine. With the header
-            // up a stopped elevator legitimately reads nothing.
-            if (harvestActive && Core.LastSensor1 < HardZeroRatio)
-            {
-                if (_hardZeroSince == DateTime.MaxValue) _hardZeroSince = DateTime.UtcNow;
-                // Deliberately not cleared once it fires — the timer stays armed
-                // so the fault holds until a real reading arrives, rather than
-                // flickering in and out on the packet that happens to be read.
-                return (DateTime.UtcNow - _hardZeroSince).TotalSeconds < HardZeroFaultSec;
-            }
-
-            _hardZeroSince = DateTime.MaxValue;
-            return true;
+            return Core.ModuleConnected && Core.LastScaleOk;
         }
 
         /// <summary>
-        /// Closes the pass at the last good position when the sensor goes blind.
-        /// Buffered positions are abandoned rather than written: their grain
-        /// reaches the sensor during the blind window, so pairing them with any
+        /// Closes the pass at the last good position when the scale goes blind.
+        /// Buffered positions are abandoned rather than written: their crop
+        /// reaches the scale during the blind window, so pairing them with any
         /// later reading would invent data for ground that was never measured.
         /// The zero-yield marker breaks the map ribbon here for the same reason a
         /// section-off does — without it the map paints straight across the gap.
         /// </summary>
-        private void EndPassOnFault(clsGPS gps, double moisture)
+        private void EndPassOnFault(clsGPS gps)
         {
             if (_lastDrainedUnwritten && _yieldSamples > 0)
-                WritePoint(_lastDrained, _yieldSum / _yieldSamples, moisture);
+                WritePoint(_lastDrained, _yieldSum / _yieldSamples);
 
             if (_lastLat != 0 || _lastLon != 0)
                 WritePoint(new PendingPoint
@@ -734,15 +749,15 @@ namespace BeltFlo.Classes
                     Speed    = gps.Speed,
                     Heading  = gps.Heading,
                     AcresInc = 0
-                }, 0, moisture);
+                }, 0);
 
-            if (_tailActive) EndTailDrain("sensor fault");
-            _coverage.Flush();   // ground cut before the fault is still cut
+            if (_tailActive) EndTailDrain("scale fault");
+            _coverage.Flush();   // ground dug before the fault is still dug
             ResetPipeline();
 
             // Recovery starts a fresh pass. Without this the first good tick
             // measures its distance from the pre-fault position and charges the
-            // whole blind window's travel to the job as harvested acres.
+            // whole blind window's travel to the job as dug acres.
             _lastLat = 0;
             _lastLon = 0;
             _lastFixTime   = DateTime.MinValue;
@@ -753,38 +768,20 @@ namespace BeltFlo.Classes
         {
             _tailActive     = true;
             _tailStart      = DateTime.UtcNow;
-            _tailLastTick   = _tailStart;
             _tailEndsAt     = DateTime.MaxValue;
             _tailEmptySince = DateTime.MaxValue;
-            _tailBushels    = 0;
         }
 
         /// <summary>
-        /// Integrates the grain still leaving the machine after a pass has ended
-        /// into the job total. Runs until the elevator is empty, until the next
-        /// pass's grain is due, or until the fault timeout — whichever comes first.
+        /// Keeps the job in the recording state while crop is still leaving the
+        /// machine after a pass has ended. Runs until the belt is empty, until the
+        /// next pass's crop is due, or until the timeout — whichever comes first.
         /// </summary>
-        private void AccumulateTail(clsYieldCalculator yield)
+        private void CheckTail(clsYieldCalculator yield)
         {
             DateTime now = DateTime.UtcNow;
 
-            double dt = Math.Min((now - _tailLastTick).TotalSeconds, MaxTailTickSec);
-            _tailLastTick = now;
-
-            if (dt > 0)
-            {
-                // Mass only — CurrentBushelsPerSec is read straight off the sensor
-                // and stays valid at a standstill, unlike Calculate().
-                double bushelsInc = yield.CurrentBushelsPerSec() * dt;
-                _tailBushels += bushelsInc;
-                TotalBushels += bushelsInc;
-                // Real grain into the tank, so a cal run has to see it too — a run
-                // that missed one tail per pass would weigh short against the ticket
-                // and bias the computed YieldFactor.
-                yield.AccumulateCalRun(bushelsInc);
-            }
-
-            if (yield.CurrentRatio <= clsYieldCalculator.FlowStopRatio)
+            if (!yield.IsFlowing)
             {
                 if (_tailEmptySince == DateTime.MaxValue) _tailEmptySince = now;
                 if ((now - _tailEmptySince).TotalSeconds >= TailEmptyConfirmSec)
@@ -813,24 +810,29 @@ namespace BeltFlo.Classes
             _tailActive       = false;
             _tailEndsAt       = DateTime.MaxValue;
             _tailEmptySince   = DateTime.MaxValue;
-            LastTailBushels   = _tailBushels;
             LastTailEndReason = reason;
 
-            // A timeout is never normal: it means flow never came back to baseline,
-            // which is the sensor baseline drifting rather than the machine being
+            // A timeout is never normal: it means flow never fell below the
+            // threshold, which is the zero drifting rather than the machine being
             // slow. Worth a line in the log — the symptom otherwise is a job total
             // that quietly disagrees with the weigh ticket.
             if (reason == "timeout")
-                Props.WriteErrorLog("DataCollector/TailDrain still above baseline after "
-                                    + TailTimeoutSec.ToString("0") + " s — check SensorBaseline (drained "
-                                    + _tailBushels.ToString("0.0") + " bu)");
+                Props.WriteErrorLog("DataCollector/TailDrain still flowing after "
+                                    + TailTimeoutSec.ToString("0") + " s — re-zero the scale");
         }
 
-        private void WritePoint(PendingPoint pt, double yieldRate, double moisture)
+        private void WritePoint(PendingPoint pt, double yieldRate)
         {
+            int pulses = 0;
+            if (_hasPulseMark)
+                pulses = (int)Math.Min(int.MaxValue, unchecked(Core.LastCumPulses - _pulsesAtLastWrite));
+            _pulsesAtLastWrite = Core.LastCumPulses;
+            _hasPulseMark = true;
+
             var point = new YieldDataPoint
             {
                 JobId = ActiveJobId,
+                LoadId = LoadPaused ? -1 : ActiveLoadId,
                 Timestamp = pt.Time,
                 Latitude = pt.Lat,
                 Longitude = pt.Lon,
@@ -838,15 +840,16 @@ namespace BeltFlo.Classes
                 Speed = pt.Speed,
                 Heading = pt.Heading,
                 YieldRate = yieldRate,
-                Moisture = moisture,
                 AcresAccumulated = TotalAcres,
-                Sensor1Raw = Core.LastSensor1,
-                Sensor2Raw = Core.LastNoiseCount,
-                ModuleRpm = Core.LastModuleRpm,
-                PaddleHz = Core.LastPaddleHz,
-                MinCycleMs = Core.LastMinCycleMs,
-                GateRejects = Core.LastGateRejects
+                PoundsInc = _poundsSinceWrite,
+                BeltPulses = pulses,
+                BeltFtMin = Core.Yield?.BeltFtPerMin ?? 0,
+                ScaleLb = Core.LastScaleLb,
+                ScaleRaw = Core.LastScaleRaw,
+                CalRev = Core.LastCalRev,
+                RowsInUse = Core.ActiveRowsInUse
             };
+            _poundsSinceWrite = 0;
 
             Core.LastDataWriteOk = Core.Database?.YieldData.Insert(point) ?? true;
         }

@@ -243,5 +243,25 @@ namespace BeltFlo.Language
         internal static string lgLow    => Get("lgLow");
         internal static string lgHigh   => Get("lgHigh");
         internal static string lgNoJobs => Get("lgNoJobs");
+
+        // ── Conveyor / loads ─────────────────────────────────────────────────
+        internal static string lgNoScale          => Get("lgNoScale");
+        internal static string lgScaleFault       => Get("lgScaleFault");
+        internal static string lgScaleRestored    => Get("lgScaleRestored");
+        internal static string lgLoads            => Get("lgLoads");
+        internal static string lgTitleLoads       => Get("lgTitleLoads");
+        internal static string lgNewLoad          => Get("lgNewLoad");
+        internal static string lgFinishLoad       => Get("lgFinishLoad");
+        internal static string lgFlow             => Get("lgFlow");
+        internal static string lgBelt             => Get("lgBelt");
+        internal static string lgRecording        => Get("lgRecording");
+        internal static string lgRecalcLater      => Get("lgRecalcLater");
+        internal static string lgStatusScale       => Get("lgStatusScale");
+        internal static string lgStatusZero        => Get("lgStatusZero");
+        internal static string lgFinishJob         => Get("lgFinishJob");
+        internal static string lgFinishLoadPrompt  => Get("lgFinishLoadPrompt");
+        internal static string lgLoadPaused        => Get("lgLoadPaused");
+        internal static string lgLoadResumed       => Get("lgLoadResumed");
+        internal static string lgBeltSensorSuspect => Get("lgBeltSensorSuspect");
     }
 }

@@ -32,6 +32,7 @@ namespace BeltFlo.Forms
             this.txtNotes        = new System.Windows.Forms.TextBox();
             this.btnNew          = new System.Windows.Forms.Button();
             this.btnLoad         = new System.Windows.Forms.Button();
+            this.btnFinishJob    = new System.Windows.Forms.Button();
             this.btnSave         = new System.Windows.Forms.Button();
             this.btnDelete       = new System.Windows.Forms.Button();
             this.btnJobsClose    = new System.Windows.Forms.Button();
@@ -115,33 +116,41 @@ namespace BeltFlo.Forms
             this.txtNotes.Multiline     = true;
             this.txtNotes.ScrollBars    = System.Windows.Forms.ScrollBars.Vertical;
 
-            // ── Bottom row: New / Load / Save / Delete / Close ────────────────
+            // ── Bottom row: New / Start / Finish / Save / Delete / Close ──────
+            // Jobs are started and finished here and nowhere else — the run
+            // screen's play, pause and stop belong to truck loads.
             this.btnNew.Text      = Lang.lgNew;      this.btnNew.Font      = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
             this.btnNew.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnNew.Size      = new System.Drawing.Size(112, 44); this.btnNew.Location = new System.Drawing.Point(4, 476);
+            this.btnNew.Size      = new System.Drawing.Size(94, 44); this.btnNew.Location = new System.Drawing.Point(4, 476);
             this.btnNew.Click    += new System.EventHandler(this.btnNew_Click);
 
-            this.btnLoad.Text      = Lang.lgLoad;    this.btnLoad.Font      = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
+            this.btnLoad.Text      = Lang.lgStart;   this.btnLoad.Font      = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
             this.btnLoad.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnLoad.Size      = new System.Drawing.Size(112, 44); this.btnLoad.Location = new System.Drawing.Point(122, 476);
+            this.btnLoad.Size      = new System.Drawing.Size(94, 44); this.btnLoad.Location = new System.Drawing.Point(103, 476);
             this.btnLoad.Enabled   = false;
             this.btnLoad.Click    += new System.EventHandler(this.btnLoad_Click);
 
+            this.btnFinishJob.Text      = Lang.lgFinishJob; this.btnFinishJob.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
+            this.btnFinishJob.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnFinishJob.Size      = new System.Drawing.Size(94, 44); this.btnFinishJob.Location = new System.Drawing.Point(202, 476);
+            this.btnFinishJob.Enabled   = false;
+            this.btnFinishJob.Click    += new System.EventHandler(this.btnFinishJob_Click);
+
             this.btnSave.Text      = Lang.lgSave;    this.btnSave.Font      = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
             this.btnSave.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnSave.Size      = new System.Drawing.Size(112, 44); this.btnSave.Location = new System.Drawing.Point(240, 476);
+            this.btnSave.Size      = new System.Drawing.Size(94, 44); this.btnSave.Location = new System.Drawing.Point(301, 476);
             this.btnSave.Enabled   = false;
             this.btnSave.Click    += new System.EventHandler(this.btnSave_Click);
 
             this.btnDelete.Text      = Lang.lgDelete; this.btnDelete.Font      = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
             this.btnDelete.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnDelete.Size      = new System.Drawing.Size(112, 44); this.btnDelete.Location = new System.Drawing.Point(358, 476);
+            this.btnDelete.Size      = new System.Drawing.Size(94, 44); this.btnDelete.Location = new System.Drawing.Point(400, 476);
             this.btnDelete.Enabled   = false;
             this.btnDelete.Click    += new System.EventHandler(this.btnDelete_Click);
 
             this.btnJobsClose.Text      = Lang.lgClose; this.btnJobsClose.Font      = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
             this.btnJobsClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnJobsClose.Size      = new System.Drawing.Size(110, 44); this.btnJobsClose.Location = new System.Drawing.Point(476, 476);
+            this.btnJobsClose.Size      = new System.Drawing.Size(94, 44); this.btnJobsClose.Location = new System.Drawing.Point(499, 476);
             this.btnJobsClose.Click    += new System.EventHandler(this.btnJobsClose_Click);
 
             this.pnlContent.Controls.AddRange(new System.Windows.Forms.Control[] {
@@ -149,7 +158,7 @@ namespace BeltFlo.Forms
                 lblJobName, txtJobName, lblFieldLabel, cboField,
                 lblCropLabel, cboCrop, lblHeaderLabel, cboHeader, lblProfileLabel, cboProfile,
                 lblNotesLabel, txtNotes,
-                btnNew, btnLoad, btnSave, btnDelete, btnJobsClose });
+                btnNew, btnLoad, btnFinishJob, btnSave, btnDelete, btnJobsClose });
 
             // ── Form ──────────────────────────────────────────────────────────
             this.ClientSize      = new System.Drawing.Size(602, 580);
@@ -189,6 +198,7 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.TextBox  txtNotes;
         private System.Windows.Forms.Button   btnNew;
         private System.Windows.Forms.Button   btnLoad;
+        private System.Windows.Forms.Button   btnFinishJob;
         private System.Windows.Forms.Button   btnSave;
         private System.Windows.Forms.Button   btnDelete;
         private System.Windows.Forms.Button   btnJobsClose;

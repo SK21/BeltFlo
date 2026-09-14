@@ -5,7 +5,11 @@ using BeltFlo.Classes;
 namespace BeltFlo.Database
 {
     /// <summary>
-    /// SQLite database wrapper. Creates and migrates all tables on first run.
+    /// SQLite database wrapper. Creates all tables on first run.
+    ///
+    /// There is no installed base to preserve, so a schema change is an edit to
+    /// the create statements below, not an add-column migration. Delete the
+    /// database file to pick it up.
     /// </summary>
     public class DB
     {
@@ -17,7 +21,8 @@ namespace BeltFlo.Database
         public CropRepo Crops { get; private set; }
         public HeaderRepo Headers { get; private set; }
         public FieldRepo Fields { get; private set; }
-        public CalibrationRepo Calibrations { get; private set; }
+        public ConveyorConfigRepo ConveyorConfigs { get; private set; }
+        public LoadRepo Loads { get; private set; }
 
         public DB(string dbPath)
         {
@@ -30,7 +35,6 @@ namespace BeltFlo.Database
             {
                 using var conn = OpenConnection();
                 CreateTables(conn);
-                MigrateSchema(conn);
 
                 Jobs = new JobRepo(_connectionString);
                 YieldData = new YieldDataRepo(_connectionString);
@@ -38,7 +42,8 @@ namespace BeltFlo.Database
                 Crops = new CropRepo(_connectionString);
                 Headers = new HeaderRepo(_connectionString);
                 Fields = new FieldRepo(_connectionString);
-                Calibrations = new CalibrationRepo(_connectionString);
+                ConveyorConfigs = new ConveyorConfigRepo(_connectionString);
+                Loads = new LoadRepo(_connectionString);
             }
             catch (Exception ex)
             {
@@ -61,33 +66,29 @@ namespace BeltFlo.Database
 
         private void CreateTables(SQLiteConnection conn)
         {
+            // Mass is pounds throughout, yield lb/ac, area acres. Display units are
+            // applied on the way out (see Props).
             string sql = @"
 PRAGMA journal_mode=WAL;
 PRAGMA foreign_keys=ON;
 
 CREATE TABLE IF NOT EXISTS profiles (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT    NOT NULL,
-    combine_id  TEXT    NOT NULL DEFAULT '',
-    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
-    sensor_baseline REAL    NOT NULL DEFAULT 0,
-    baseline_set_at  TEXT
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    name          TEXT    NOT NULL,
+    harvester_id  TEXT    NOT NULL DEFAULT '',
+    created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS crops (
-    id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    name             TEXT    NOT NULL,
-    category         TEXT    NOT NULL DEFAULT 'Cereal',
-    test_weight      REAL    NOT NULL DEFAULT 60.0,
-    market_moisture  REAL    NOT NULL DEFAULT 14.0,
-    dry_moisture     REAL    NOT NULL DEFAULT 14.0
+    id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    name  TEXT    NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS headers (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     name        TEXT    NOT NULL,
-    header_type TEXT    NOT NULL DEFAULT 'Draper',
-    cut_width   REAL    NOT NULL DEFAULT 9.144,
+    header_type TEXT    NOT NULL DEFAULT 'Digger',
+    cut_width   REAL    NOT NULL DEFAULT 3.6576,
     fwd_offset  REAL    NOT NULL DEFAULT 0
 );
 
@@ -108,22 +109,45 @@ CREATE TABLE IF NOT EXISTS jobs (
     ended_at     TEXT,
     status       TEXT    NOT NULL DEFAULT 'Active',
     total_acres  REAL    NOT NULL DEFAULT 0,
-    total_volume REAL    NOT NULL DEFAULT 0
+    total_pounds REAL    NOT NULL DEFAULT 0,
+    notes        TEXT    NOT NULL DEFAULT ''
 );
 
-CREATE TABLE IF NOT EXISTS calibrations (
-    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
-    profile_id           INTEGER REFERENCES profiles(id),
-    crop_id              INTEGER REFERENCES crops(id),
-    sensor_baseline      REAL    NOT NULL DEFAULT 0,
-    yield_factor         REAL    NOT NULL DEFAULT 1,
-    processing_delay_sec INTEGER NOT NULL DEFAULT 10,
-    calibrated_at        TEXT    NOT NULL DEFAULT (datetime('now'))
+-- Append-only. The row id is the calibration revision the module reports and
+-- every yield_data row records.
+CREATE TABLE IF NOT EXISTS conveyor_config (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_id          INTEGER NOT NULL REFERENCES profiles(id),
+    zero_counts         REAL    NOT NULL DEFAULT 0,
+    span_lb_per_count   REAL    NOT NULL DEFAULT 1,
+    zero_set_at         TEXT,
+    pulses_per_rev      INTEGER NOT NULL DEFAULT 0,
+    inches_per_pulse    REAL    NOT NULL DEFAULT 1,
+    section_len_in      REAL    NOT NULL DEFAULT 36,
+    flow_threshold_lb_s REAL    NOT NULL DEFAULT 0.05,
+    belt_stop_timeout_s REAL    NOT NULL DEFAULT 2,
+    delay_sec           INTEGER NOT NULL DEFAULT 10,
+    created_at          TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS loads (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id       INTEGER NOT NULL REFERENCES jobs(id),
+    truck        TEXT    NOT NULL DEFAULT '',
+    opened_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+    closed_at    TEXT,
+    monitor_lb   REAL    NOT NULL DEFAULT 0,
+    certified_lb REAL,
+    factor       REAL    NOT NULL DEFAULT 1,
+    cal_rev      INTEGER NOT NULL DEFAULT 0,
+    flag         TEXT    NOT NULL DEFAULT '',
+    status       TEXT    NOT NULL DEFAULT 'Active'
 );
 
 CREATE TABLE IF NOT EXISTS yield_data (
     id                 INTEGER PRIMARY KEY AUTOINCREMENT,
     job_id             INTEGER NOT NULL REFERENCES jobs(id),
+    load_id            INTEGER NOT NULL DEFAULT -1,
     timestamp          TEXT    NOT NULL,
     latitude           REAL    NOT NULL DEFAULT 0,
     longitude          REAL    NOT NULL DEFAULT 0,
@@ -131,124 +155,22 @@ CREATE TABLE IF NOT EXISTS yield_data (
     speed              REAL    NOT NULL DEFAULT 0,
     heading            REAL    NOT NULL DEFAULT 0,
     yield_rate         REAL    NOT NULL DEFAULT 0,
-    moisture           REAL    NOT NULL DEFAULT 0,
     acres_accumulated  REAL    NOT NULL DEFAULT 0,
-    sensor1_raw        REAL    NOT NULL DEFAULT 0,
-    sensor2_raw        REAL    NOT NULL DEFAULT 0,
-    rpm                INTEGER NOT NULL DEFAULT 0,
-    paddle_hz          INTEGER NOT NULL DEFAULT -1,
-    min_cycle_ms       INTEGER NOT NULL DEFAULT -1,
-    gate_rejects       INTEGER NOT NULL DEFAULT -1
+    pounds_inc         REAL    NOT NULL DEFAULT 0,
+    belt_pulses        INTEGER NOT NULL DEFAULT 0,
+    belt_ft_min        REAL    NOT NULL DEFAULT 0,
+    scale_lb           REAL    NOT NULL DEFAULT 0,
+    scale_raw          INTEGER NOT NULL DEFAULT 0,
+    cal_rev            INTEGER NOT NULL DEFAULT 0,
+    rows_in_use        INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE INDEX IF NOT EXISTS idx_yield_data_job ON yield_data(job_id);
+CREATE INDEX IF NOT EXISTS idx_yield_data_job  ON yield_data(job_id);
+CREATE INDEX IF NOT EXISTS idx_yield_data_load ON yield_data(load_id);
+CREATE INDEX IF NOT EXISTS idx_loads_job       ON loads(job_id);
 ";
             using var cmd = new SQLiteCommand(sql, conn);
             cmd.ExecuteNonQuery();
-        }
-
-        private void MigrateSchema(SQLiteConnection conn)
-        {
-            // Add columns introduced after initial release — harmless if they already exist.
-            try
-            {
-                using var cmd = new SQLiteCommand(
-                    "ALTER TABLE crops ADD COLUMN moisture_offset REAL NOT NULL DEFAULT 0;", conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch { }
-            try
-            {
-                using var cmd = new SQLiteCommand(
-                    "ALTER TABLE profiles ADD COLUMN temp_offset REAL NOT NULL DEFAULT 0;", conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch { }
-            try
-            {
-                using var cmd = new SQLiteCommand(
-                    "ALTER TABLE profiles ADD COLUMN temp_scale REAL NOT NULL DEFAULT 0.0125;", conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch { }
-            try
-            {
-                using var cmd = new SQLiteCommand(
-                    "ALTER TABLE profiles ADD COLUMN moist_scale REAL NOT NULL DEFAULT 0.001;", conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch { }
-            try
-            {
-                using var cmd = new SQLiteCommand(
-                    "ALTER TABLE headers ADD COLUMN fwd_offset REAL NOT NULL DEFAULT 0;", conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch { }
-            try
-            {
-                using var cmd = new SQLiteCommand(
-                    "ALTER TABLE jobs ADD COLUMN notes TEXT NOT NULL DEFAULT '';", conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch { }
-            try
-            {
-                using var cmd = new SQLiteCommand(
-                    "ALTER TABLE yield_data ADD COLUMN rpm INTEGER NOT NULL DEFAULT 0;", conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch { }
-            try
-            {
-                using var cmd = new SQLiteCommand(
-                    "ALTER TABLE yield_data ADD COLUMN paddle_hz INTEGER NOT NULL DEFAULT -1;", conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch { }
-            try
-            {
-                using var cmd = new SQLiteCommand(
-                    "ALTER TABLE yield_data ADD COLUMN min_cycle_ms INTEGER NOT NULL DEFAULT -1;", conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch { }
-            try
-            {
-                using var cmd = new SQLiteCommand(
-                    "ALTER TABLE yield_data ADD COLUMN gate_rejects INTEGER NOT NULL DEFAULT -1;", conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch { }
-
-            // Sensor baseline moved from calibrations (per profile+crop) to profiles
-            // (per machine): it is the sensor's zero point and does not depend on the
-            // crop flowing over the plate. The backfill sits inside the same try as
-            // the ALTER, so it runs exactly once — on the release that adds the
-            // column — and never overwrites a baseline set since.
-            //
-            // Each profile is seeded from its most recent calibration row: that row is
-            // where the live baseline was coming from before this change, and its date
-            // is genuinely when that value was last written.
-            try
-            {
-                using (var cmd = new SQLiteCommand(
-                    "ALTER TABLE profiles ADD COLUMN sensor_baseline REAL NOT NULL DEFAULT 0;", conn))
-                    cmd.ExecuteNonQuery();
-                using (var cmd = new SQLiteCommand(
-                    "ALTER TABLE profiles ADD COLUMN baseline_set_at TEXT;", conn))
-                    cmd.ExecuteNonQuery();
-                using (var cmd = new SQLiteCommand(@"
-UPDATE profiles SET
-    sensor_baseline = COALESCE((SELECT c.sensor_baseline FROM calibrations c
-                                WHERE c.profile_id = profiles.id
-                                ORDER BY c.id DESC LIMIT 1), 0),
-    baseline_set_at =           (SELECT c.calibrated_at   FROM calibrations c
-                                WHERE c.profile_id = profiles.id
-                                ORDER BY c.id DESC LIMIT 1);", conn))
-                    cmd.ExecuteNonQuery();
-            }
-            catch { }
         }
     }
 }

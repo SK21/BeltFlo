@@ -5,14 +5,16 @@ using BeltFlo.Classes;
 namespace BeltFlo.Communication.Can
 {
     /// <summary>
-    /// Manages CAN communication with the BeltFlo sensor module.
-    /// Receive-only — filters frame ID 0x18FF00F8, parses 8-byte body, writes Core fields.
-    /// CAN frame ID: Extended 0x18FF00F8 (Priority=6, PF=0xFF ProprietaryB, PS=0x00, SA=0xF8)
+    /// Manages CAN communication with the BeltFlo conveyor module.
+    /// Receive-only. The 19-byte UDP packet does not fit one CAN frame, so the
+    /// module sends it as two: counters and status. Both are extended IDs
+    /// (Priority=6, PF=0xFF ProprietaryB, SA=0xF8); 0x18FF00F8 and 0x18FF01F8
+    /// stay with the grain module so the two can share a bus without confusion.
     /// </summary>
     public class CanModuleComm : IDisposable
     {
-        private const uint ModuleFrameId = 0x18FF00F8u;
-        private const uint TempFrameId = 0x18FF01F8u;
+        private const uint CountersFrameId = 0x18FF02F8u;
+        private const uint StatusFrameId   = 0x18FF03F8u;
         private const int AdapterTimeoutMs = 4000;
         private const int ModuleTimeoutMs = 2000;
 
@@ -26,7 +28,7 @@ namespace BeltFlo.Communication.Can
             _driver != null && _driver.IsOpen &&
             (DateTime.UtcNow - _lastFrameAny).TotalMilliseconds < AdapterTimeoutMs;
 
-        /// <summary>True if a module frame (0x18FF00F8) was received within 2 s.</summary>
+        /// <summary>True if a counters frame was received within 2 s.</summary>
         public bool ModuleReceiving =>
             (DateTime.UtcNow - _lastModuleFrame).TotalMilliseconds < ModuleTimeoutMs;
 
@@ -80,91 +82,43 @@ namespace BeltFlo.Communication.Can
             var mf = Core.MainForm;
             if (mf == null || !mf.IsHandleCreated || mf.IsDisposed || Core.IsShuttingDown) return;
 
-            if (e.Frame.Id == ModuleFrameId)
+            if (e.Frame.Id == CountersFrameId)
             {
                 _lastModuleFrame = DateTime.UtcNow;
                 byte[] data = e.Frame.Data;
-                try { mf.BeginInvoke((Action)(() => ParseModuleData(data))); }
+                try { mf.BeginInvoke((Action)(() => ParseCounters(data))); }
                 catch (InvalidOperationException) { }
             }
-            else if (e.Frame.Id == TempFrameId)
+            else if (e.Frame.Id == StatusFrameId)
             {
                 byte[] data = e.Frame.Data;
-                try { mf.BeginInvoke((Action)(() => ParseTempData(data))); }
+                try { mf.BeginInvoke((Action)(() => ParseStatus(data))); }
                 catch (InvalidOperationException) { }
             }
         }
 
-        private void ParseModuleData(byte[] d)
+        private void ParseCounters(byte[] d)
         {
-            // 8-byte data body (identical layout to bytes [3-10] of the UDP packet):
-            // [0]   status_flags  bit0=SensorOK, bit1=RPMPresent, bit2=MoistureOK,
-            //                     bit3=CompFault (0 on firmware predating the bit)
-            // [1-2] sensor_ratio  uint16 LE  (ratio × 1000, 0–1000 = 0.0–100.0%)
-            // [3-4] moisture_raw  uint16 LE  (value × 10 = tenths of percent)
-            // [5-6] module_rpm    uint16 LE
-            // [7]   noise_count   uint8  (ISR-rejected edges per 200 ms window)
-            byte flags = d[0];
-            ushort ratio = (ushort)(d[1] | (d[2] << 8));
-            ushort moisture = (ushort)(d[3] | (d[4] << 8));
-            ushort rpm = (ushort)(d[5] | (d[6] << 8));
-            byte noise = d[7];
-
-            bool s1Ok = (flags & 0x01) != 0;
-            bool moistureOk = (flags & 0x04) != 0;
-            bool compFault = (flags & 0x08) != 0;
-
-            Core.LastSensor1Valid = s1Ok;
-            Core.LastCompFault = compFault;
-            Core.LastSensor1  = s1Ok       ? ratio    / 1000.0              : 0;
-            Core.LastMoisture = moisture * Core.ActiveMoistScale;
-            Core.LastMoistureOk = moistureOk;
-            Core.LastModuleRpm = rpm;
-            Core.LastNoiseCount = noise;
-            Core.ModuleConnected = true;
-            Core.LastModuleReceive = DateTime.UtcNow;
-
-            Core.Yield?.PushSensorReading(Core.LastSensor1);
-
-            // One diagnostic row per module packet — 5 Hz, independent of whether a
-            // job is recording, so a fault between jobs still leaves evidence.
-            Core.DiagLog?.Log();
+            // Counters frame (0x18FF02F8), DLC=8 — same fields as UDP bytes [3-10]:
+            // [0-3] cum_pounds_x10  uint32 LE  delivered weight, tenths of a pound; wraps
+            // [4-7] cum_pulses      uint32 LE  belt pulses; wraps
+            uint cumLbX10  = BitConverter.ToUInt32(d, 0);
+            uint cumPulses = BitConverter.ToUInt32(d, 4);
+            Core.ApplyConveyorCounters(cumLbX10, cumPulses);
         }
 
-        private void ParseTempData(byte[] d)
+        private void ParseStatus(byte[] d)
         {
-            // Temperature frame (0x18FF01F8), DLC=8:
-            // [0]   flags  bit0=TempOK, bit1=PaddleHzPresent, bit2=MinCycleMsPresent,
-            //              bit3=GateRejectsPresent
-            // [1-2] temp_raw  int16 LE  (raw ADS1115 AIN2 reading)
-            // [3]   paddle_hz uint8  (paddles/s — only when bit1 set)
-            // [4]   min_cycle_ms uint8  (shortest paddle cycle this window, ms — only when bit2 set)
-            // [5]   gate_rejects uint8  (edges the period gate rejected — only when bit3 set)
-            // [6]   median_cycle_ms uint8  (gate's period estimate, ms — only when bit4 set)
-            // [7]   reserved / zero
-            bool tempOk = (d[0] & 0x01) != 0;
-            short tempRaw = (short)(d[1] | (d[2] << 8));
-
-            Core.LastTemperature = tempRaw * Core.ActiveTempScale;
-            Core.LastTemperatureOk = tempOk;
-
-            bool hzOk = (d[0] & 0x02) != 0 && d.Length >= 4;
-            Core.LastPaddleHz = hzOk ? d[3] : -1;
-
-            bool minCycleOk = (d[0] & 0x04) != 0 && d.Length >= 5;
-            Core.LastMinCycleMs = minCycleOk ? d[4] : -1;
-
-            // Paired with min_cycle_ms for diagnosis: rejects counts what the gate
-            // caught, min_cycle_ms shows what still got through. Rejects rising while
-            // min_cycle_ms stays near the paddle period is the gate working.
-            bool gateOk = (d[0] & 0x08) != 0 && d.Length >= 6;
-            Core.LastGateRejects = gateOk ? d[5] : -1;
-
-            // The third of the set: rejects counts what the gate caught, min_cycle_ms
-            // what got through, and this the threshold both were judged against. 0 is
-            // a value, not an absence — it means the gate was open.
-            bool medianOk = (d[0] & 0x10) != 0 && d.Length >= 7;
-            Core.LastMedianCycleMs = medianOk ? d[6] : -1;
+            // Status frame (0x18FF03F8), DLC=8 — same fields as UDP bytes [2] and [11-17]:
+            // [0]   flags  bit0=ScaleOK, bit1=BeltRunning, bit2=Tared, bit3=CalMismatch, bit4=Overload
+            // [1-2] scale_lb_x10  int16 LE   live weigh-section load after zero, tenths
+            // [3-6] scale_raw     int32 LE   raw converter counts
+            // [7]   cal_rev       uint8
+            byte flags     = d[0];
+            short scaleX10 = BitConverter.ToInt16(d, 1);
+            int scaleRaw   = BitConverter.ToInt32(d, 3);
+            int calRev     = d[7];
+            Core.ApplyConveyorStatus(flags, scaleX10 / 10.0, scaleRaw, calRev);
         }
 
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
@@ -174,7 +128,7 @@ namespace BeltFlo.Communication.Can
                 Core.ModuleConnected = false;
                 // Module-reported state does not outlive the module — see the
                 // matching clear in frmMain.CheckModuleTimeout.
-                Core.LastCompFault = false;
+                Core.LastBeltRunning = false;
             }
         }
 

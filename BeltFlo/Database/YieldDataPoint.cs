@@ -6,20 +6,21 @@ namespace BeltFlo.Database
     {
         public int Id { get; set; }
         public int JobId { get; set; }
+        public int LoadId { get; set; } = -1;       // truck load this point was dug into; -1 = none open
         public DateTime Timestamp { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
-        public double Elevation { get; set; }   // metres
-        public float Speed { get; set; }        // km/h
-        public float Heading { get; set; }      // degrees
-        public double YieldRate { get; set; }   // bu/ac
-        public double Moisture { get; set; }    // %
+        public double Elevation { get; set; }       // metres
+        public float Speed { get; set; }            // km/h
+        public float Heading { get; set; }          // degrees
+        public double YieldRate { get; set; }       // lb/ac
         public double AcresAccumulated { get; set; }
-        public double Sensor1Raw { get; set; }
-        public double Sensor2Raw { get; set; }
-        public int ModuleRpm { get; set; }      // elevator RPM from the module packet; fixed reference 200 when no RPM sensor fitted
-        public int PaddleHz { get; set; } = -1;      // paddles/s from the 1 Hz packet; -1 = not reported
-        public int MinCycleMs { get; set; } = -1;    // shortest completed paddle cycle in the 1 Hz packet's window, ms; -1 = not reported
-        public int GateRejects { get; set; } = -1;   // edges the module's period gate rejected in that window; -1 = not reported (old firmware or UDP)
+        public double PoundsInc { get; set; }       // pounds over the scale since the previous row
+        public int BeltPulses { get; set; }         // belt pulses since the previous row
+        public double BeltFtMin { get; set; }       // belt speed at write time
+        public double ScaleLb { get; set; }         // live weigh-section load at write time
+        public int ScaleRaw { get; set; }           // raw converter counts at write time
+        public int CalRev { get; set; }             // conveyor_config row the module was running
+        public int RowsInUse { get; set; }          // 0 = full width
     }
 }

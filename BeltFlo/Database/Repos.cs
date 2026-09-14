@@ -6,7 +6,7 @@ using BeltFlo.Classes;
 namespace BeltFlo.Database
 {
     // Thrown when a delete is blocked by a foreign-key constraint (the row is
-    // still referenced by a job or calibration) so callers can show a friendly
+    // still referenced by a job or a load) so callers can show a friendly
     // message instead of letting the raw SQLiteException surface.
     public class ItemInUseException : Exception
     {
@@ -39,14 +39,14 @@ namespace BeltFlo.Database
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
 
-        public void UpdateTotals(int jobId, double acres, double bushels)
+        public void UpdateTotals(int jobId, double acres, double pounds)
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(
-                "UPDATE jobs SET total_acres=@a, total_volume=@b WHERE id=@id", conn);
+                "UPDATE jobs SET total_acres=@a, total_pounds=@p WHERE id=@id", conn);
             cmd.Parameters.AddWithValue("@a", acres);
-            cmd.Parameters.AddWithValue("@b", bushels);
+            cmd.Parameters.AddWithValue("@p", pounds);
             cmd.Parameters.AddWithValue("@id", jobId);
             cmd.ExecuteNonQuery();
         }
@@ -61,13 +61,15 @@ namespace BeltFlo.Database
             cmd.ExecuteNonQuery();
         }
 
+        // `volume` is total pounds. The name survives from the grain code so the
+        // forms that read the tuple did not all have to change at once.
         public List<(int id, string name, string status, string startedAt, double acres, double volume, int profileId, int cropId, int headerId, int fieldId, string notes)> GetAll()
         {
             var result = new List<(int, string, string, string, double, double, int, int, int, int, string)>();
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(
-                "SELECT id, name, status, started_at, total_acres, total_volume, profile_id, crop_id, header_id, field_id, notes FROM jobs ORDER BY id DESC", conn);
+                "SELECT id, name, status, started_at, total_acres, total_pounds, profile_id, crop_id, header_id, field_id, notes FROM jobs ORDER BY id DESC", conn);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
                 result.Add((reader.GetInt32(0), reader.GetString(1), reader.GetString(2),
@@ -111,9 +113,14 @@ namespace BeltFlo.Database
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var tx = conn.BeginTransaction();
-            // Deleting a job takes its recorded readings with it — with FK
-            // enforcement on, yield_data.job_id would otherwise block this delete.
+            // Deleting a job takes its recorded readings and its loads with it — with
+            // FK enforcement on, either would otherwise block this delete.
             using (var cmd = new SQLiteCommand("DELETE FROM yield_data WHERE job_id=@id", conn, tx))
+            {
+                cmd.Parameters.AddWithValue("@id", jobId);
+                cmd.ExecuteNonQuery();
+            }
+            using (var cmd = new SQLiteCommand("DELETE FROM loads WHERE job_id=@id", conn, tx))
             {
                 cmd.Parameters.AddWithValue("@id", jobId);
                 cmd.ExecuteNonQuery();
@@ -141,14 +148,15 @@ namespace BeltFlo.Database
                 conn.Open();
                 using var cmd = new SQLiteCommand(@"
 INSERT INTO yield_data
-    (job_id, timestamp, latitude, longitude, elevation, speed, heading,
-     yield_rate, moisture, acres_accumulated, sensor1_raw, sensor2_raw,
-     rpm, paddle_hz, min_cycle_ms, gate_rejects)
+    (job_id, load_id, timestamp, latitude, longitude, elevation, speed, heading,
+     yield_rate, acres_accumulated, pounds_inc, belt_pulses, belt_ft_min,
+     scale_lb, scale_raw, cal_rev, rows_in_use)
 VALUES
-    (@jid, @ts, @lat, @lon, @elev, @spd, @hdg,
-     @yr, @mst, @ac, @s1, @s2,
-     @rpm, @phz, @mcm, @gr)", conn);
+    (@jid, @lid, @ts, @lat, @lon, @elev, @spd, @hdg,
+     @yr, @ac, @lb, @bp, @bs,
+     @sl, @sr, @cr, @ru)", conn);
                 cmd.Parameters.AddWithValue("@jid", pt.JobId);
+                cmd.Parameters.AddWithValue("@lid", pt.LoadId);
                 cmd.Parameters.AddWithValue("@ts", pt.Timestamp.ToString("o"));
                 cmd.Parameters.AddWithValue("@lat", pt.Latitude);
                 cmd.Parameters.AddWithValue("@lon", pt.Longitude);
@@ -156,14 +164,14 @@ VALUES
                 cmd.Parameters.AddWithValue("@spd", pt.Speed);
                 cmd.Parameters.AddWithValue("@hdg", pt.Heading);
                 cmd.Parameters.AddWithValue("@yr", pt.YieldRate);
-                cmd.Parameters.AddWithValue("@mst", pt.Moisture);
                 cmd.Parameters.AddWithValue("@ac", pt.AcresAccumulated);
-                cmd.Parameters.AddWithValue("@s1", pt.Sensor1Raw);
-                cmd.Parameters.AddWithValue("@s2", pt.Sensor2Raw);
-                cmd.Parameters.AddWithValue("@rpm", pt.ModuleRpm);
-                cmd.Parameters.AddWithValue("@phz", pt.PaddleHz);
-                cmd.Parameters.AddWithValue("@mcm", pt.MinCycleMs);
-                cmd.Parameters.AddWithValue("@gr", pt.GateRejects);
+                cmd.Parameters.AddWithValue("@lb", pt.PoundsInc);
+                cmd.Parameters.AddWithValue("@bp", pt.BeltPulses);
+                cmd.Parameters.AddWithValue("@bs", pt.BeltFtMin);
+                cmd.Parameters.AddWithValue("@sl", pt.ScaleLb);
+                cmd.Parameters.AddWithValue("@sr", pt.ScaleRaw);
+                cmd.Parameters.AddWithValue("@cr", pt.CalRev);
+                cmd.Parameters.AddWithValue("@ru", pt.RowsInUse);
                 cmd.ExecuteNonQuery();
                 return true;
             }
@@ -179,16 +187,12 @@ VALUES
             var result = new List<YieldDataPoint>();
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
-            // Name every column: the reader below is positional, and SELECT * makes
-            // those positions depend on the schema the database happens to carry.
-            // Method2 adds flow_rate/paddles_per_s/flow_flags, which land at 16-18
-            // and push gate_rejects to 19 — so SELECT * on a database that has ever
-            // run a Method2 build fed a REAL into GetInt32(16) and threw
-            // InvalidCastException on the first row of every job.
+            // Name every column: the reader below is positional, and SELECT * would
+            // make those positions depend on the schema the file happens to carry.
             using var cmd = new SQLiteCommand(
-                "SELECT id, job_id, timestamp, latitude, longitude, elevation, speed, heading, " +
-                "yield_rate, moisture, acres_accumulated, sensor1_raw, sensor2_raw, " +
-                "rpm, paddle_hz, min_cycle_ms, gate_rejects " +
+                "SELECT id, job_id, load_id, timestamp, latitude, longitude, elevation, speed, heading, " +
+                "yield_rate, acres_accumulated, pounds_inc, belt_pulses, belt_ft_min, " +
+                "scale_lb, scale_raw, cal_rev, rows_in_use " +
                 "FROM yield_data WHERE job_id=@jid ORDER BY timestamp", conn);
             cmd.Parameters.AddWithValue("@jid", jobId);
             using var reader = cmd.ExecuteReader();
@@ -198,122 +202,75 @@ VALUES
                 {
                     Id = reader.GetInt32(0),
                     JobId = reader.GetInt32(1),
-                    Timestamp = DateTime.Parse(reader.GetString(2)),
-                    Latitude = reader.GetDouble(3),
-                    Longitude = reader.GetDouble(4),
-                    Elevation = reader.GetDouble(5),
-                    Speed = reader.GetFloat(6),
-                    Heading = reader.GetFloat(7),
-                    YieldRate = reader.GetDouble(8),
-                    Moisture = reader.GetDouble(9),
+                    LoadId = reader.GetInt32(2),
+                    Timestamp = DateTime.Parse(reader.GetString(3)),
+                    Latitude = reader.GetDouble(4),
+                    Longitude = reader.GetDouble(5),
+                    Elevation = reader.GetDouble(6),
+                    Speed = reader.GetFloat(7),
+                    Heading = reader.GetFloat(8),
+                    YieldRate = reader.GetDouble(9),
                     AcresAccumulated = reader.GetDouble(10),
-                    Sensor1Raw = reader.GetDouble(11),
-                    Sensor2Raw = reader.GetDouble(12),
-                    ModuleRpm = reader.GetInt32(13),
-                    PaddleHz = reader.GetInt32(14),
-                    MinCycleMs = reader.GetInt32(15),
-                    GateRejects = reader.GetInt32(16)
+                    PoundsInc = reader.GetDouble(11),
+                    BeltPulses = reader.GetInt32(12),
+                    BeltFtMin = reader.GetDouble(13),
+                    ScaleLb = reader.GetDouble(14),
+                    ScaleRaw = reader.GetInt32(15),
+                    CalRev = reader.GetInt32(16),
+                    RowsInUse = reader.GetInt32(17)
                 });
             }
             return result;
         }
 
-        // Re-derives YieldRate for every point in a job from its stored raw sensor
-        // reading and speed, using the given (typically just-updated) calibration,
-        // and brings jobs.total_volume along with it. Returns the rows rewritten and
-        // the job's new total. Caller repaints the map and, if this is the recording
-        // job, syncs the collector's in-memory total (see clsDataCollector).
-        //
-        // The total is RESCALED by the ratio of area-weighted sums, not recomputed
-        // from the rows. The live total accumulates InstantYield * AcresInc at GPS
-        // rate, whereas a row is a 1 Hz mean — so a row-by-row integration loses the
-        // within-second covariance between yield and distance and would land on a
-        // different number even when nothing changed. Taking a ratio cancels that
-        // bias: an unchanged calibration leaves the total bit-identical, and a pure
-        // YieldFactor change scales it exactly.
-        public (int rows, double totalVolume) RecalculateJob(int jobId, double baseline, double yieldFactor,
-                                   double headerWidthM, double testWeightLbsBu)
+        // Rescales the yield and the incremental pounds of a job's points by one
+        // proportional factor — the whole job, or only the points dug into one load
+        // when loadId is given. This is the per-load correction from a certified
+        // weight: the span carries the whole measurement chain, so a ticket that
+        // says the monitor read 3% high corrects every point of that load by 3%.
+        // Brings jobs.total_pounds along by the same pounds. Returns the rows
+        // rewritten and the job's new total.
+        public (int rows, double totalPounds) RescaleJob(int jobId, double factor, int loadId = -1)
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var tx = conn.BeginTransaction();
 
-            double oldTotal = 0;
-            using (var totCmd = new SQLiteCommand("SELECT total_volume FROM jobs WHERE id=@jid", conn, tx))
+            string where = loadId > 0 ? "job_id=@jid AND load_id=@lid" : "job_id=@jid";
+
+            double poundsBefore = 0;
+            int rows = 0;
+            using (var sumCmd = new SQLiteCommand(
+                "SELECT COALESCE(SUM(pounds_inc), 0), COUNT(*) FROM yield_data WHERE " + where, conn, tx))
             {
-                totCmd.Parameters.AddWithValue("@jid", jobId);
-                object o = totCmd.ExecuteScalar();
-                if (o != null && o != DBNull.Value) oldTotal = Convert.ToDouble(o);
+                sumCmd.Parameters.AddWithValue("@jid", jobId);
+                if (loadId > 0) sumCmd.Parameters.AddWithValue("@lid", loadId);
+                using var r = sumCmd.ExecuteReader();
+                if (r.Read()) { poundsBefore = r.GetDouble(0); rows = r.GetInt32(1); }
             }
 
-            var updates = new List<(int id, double rate)>();
-            double oldSum = 0, newSum = 0, prevAcres = 0;
-
-            // ORDER BY timestamp is load-bearing here, not cosmetic: acres_accumulated
-            // is cumulative, so the per-row area weight is a difference against the
-            // previous row and is meaningless in arbitrary order.
-            using (var selCmd = new SQLiteCommand(
-                "SELECT id, speed, sensor1_raw, yield_rate, acres_accumulated " +
-                "FROM yield_data WHERE job_id=@jid ORDER BY timestamp", conn, tx))
+            using (var updCmd = new SQLiteCommand(
+                "UPDATE yield_data SET yield_rate = yield_rate * @f, pounds_inc = pounds_inc * @f WHERE " + where, conn, tx))
             {
-                selCmd.Parameters.AddWithValue("@jid", jobId);
-                using var reader = selCmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    int id = reader.GetInt32(0);
-                    double speed = reader.GetFloat(1);
-                    double sensor1Raw = reader.GetDouble(2);
-                    double oldRate = reader.GetDouble(3);
-                    double acres = reader.GetDouble(4);
-
-                    double rate = clsYieldCalculator.ComputeYieldRate(
-                        sensor1Raw, speed, baseline, yieldFactor, headerWidthM, testWeightLbsBu);
-                    updates.Add((id, rate));
-
-                    // Guard the delta: a resumed job restarts its accumulator, which
-                    // would otherwise contribute a large negative area.
-                    double dAcres = acres - prevAcres;
-                    if (dAcres > 0)
-                    {
-                        oldSum += oldRate * dAcres;
-                        newSum += rate * dAcres;
-                    }
-                    prevAcres = acres;
-                }
+                updCmd.Parameters.AddWithValue("@f", factor);
+                updCmd.Parameters.AddWithValue("@jid", jobId);
+                if (loadId > 0) updCmd.Parameters.AddWithValue("@lid", loadId);
+                updCmd.ExecuteNonQuery();
             }
 
-            using (var updCmd = new SQLiteCommand("UPDATE yield_data SET yield_rate=@yr WHERE id=@id", conn, tx))
+            double newTotal = 0;
+            using (var jobCmd = new SQLiteCommand(
+                "UPDATE jobs SET total_pounds = total_pounds + @d WHERE id=@jid; " +
+                "SELECT total_pounds FROM jobs WHERE id=@jid", conn, tx))
             {
-                var pYr = updCmd.Parameters.Add("@yr", System.Data.DbType.Double);
-                var pId = updCmd.Parameters.Add("@id", System.Data.DbType.Int32);
-                foreach (var (id, rate) in updates)
-                {
-                    pYr.Value = rate;
-                    pId.Value = id;
-                    updCmd.ExecuteNonQuery();
-                }
-            }
-
-            double newTotal = oldTotal;
-            if (updates.Count > 0)
-            {
-                // Ratio when there is a usable baseline to scale; otherwise fall back
-                // to the direct integration. The fallback covers a job whose total was
-                // never written (0 with rows present) — an approximate total beats
-                // leaving Recalculate visibly doing nothing. Where the job genuinely
-                // harvested nothing, newSum is ~0 anyway, so the fallback is safe.
-                newTotal = (oldSum > 0 && oldTotal > 0) ? oldTotal * (newSum / oldSum) : newSum;
-
-                using var jobCmd = new SQLiteCommand("UPDATE jobs SET total_volume=@v WHERE id=@jid", conn, tx);
-                jobCmd.Parameters.AddWithValue("@v", newTotal);
+                jobCmd.Parameters.AddWithValue("@d", poundsBefore * (factor - 1.0));
                 jobCmd.Parameters.AddWithValue("@jid", jobId);
-                jobCmd.ExecuteNonQuery();
+                object o = jobCmd.ExecuteScalar();
+                if (o != null && o != DBNull.Value) newTotal = Convert.ToDouble(o);
             }
-            // else: no rows — leave the stored total untouched rather than zeroing a
-            // job whose points are missing for some other reason.
 
             tx.Commit();
-            return (updates.Count, newTotal);
+            return (rows, newTotal);
         }
     }
 
@@ -323,103 +280,37 @@ VALUES
         private readonly string _cs;
         public ProfileRepo(string connectionString) { _cs = connectionString; }
 
-        public int Create(string name, string combineId = "")
+        public int Create(string name, string harvesterId = "")
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(
-                "INSERT INTO profiles (name, combine_id) VALUES (@n, @c); SELECT last_insert_rowid();", conn);
+                "INSERT INTO profiles (name, harvester_id) VALUES (@n, @h); SELECT last_insert_rowid();", conn);
             cmd.Parameters.AddWithValue("@n", name);
-            cmd.Parameters.AddWithValue("@c", combineId);
+            cmd.Parameters.AddWithValue("@h", harvesterId);
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
 
-        public List<(int id, string name, string combineId, double tempOffset, double tempScale, double moistScale, double sensorBaseline)> GetAll()
+        public List<(int id, string name, string harvesterId)> GetAll()
         {
-            var result = new List<(int, string, string, double, double, double, double)>();
+            var result = new List<(int, string, string)>();
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
-            using var cmd = new SQLiteCommand("SELECT id, name, combine_id, temp_offset, temp_scale, moist_scale, sensor_baseline FROM profiles ORDER BY name", conn);
+            using var cmd = new SQLiteCommand("SELECT id, name, harvester_id FROM profiles ORDER BY name", conn);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
-                result.Add((reader.GetInt32(0), reader.GetString(1), reader.GetString(2),
-                            reader.IsDBNull(3) ? 0.0    : reader.GetDouble(3),
-                            reader.IsDBNull(4) ? 0.0125 : reader.GetDouble(4),
-                            reader.IsDBNull(5) ? 0.001  : reader.GetDouble(5),
-                            reader.IsDBNull(6) ? 0.0    : reader.GetDouble(6)));
+                result.Add((reader.GetInt32(0), reader.GetString(1), reader.GetString(2)));
             return result;
         }
 
-        // The sensor's zero point belongs to the machine, not the crop — see the
-        // migration note in DB.cs. The date is stamped only when the value actually
-        // moves, so "Baseline last saved" answers "when was this sensor last zeroed"
-        // rather than "when was anything on the Yield Cal form last saved": a
-        // factor-only save writes the same baseline back and must not bump it.
-        // 0.0005 is half a step of numBaseline's 3 decimal places.
-        public void UpdateSensorBaseline(int id, double baseline)
+        public void Update(int id, string name, string harvesterId)
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(
-                "UPDATE profiles SET sensor_baseline=@b, baseline_set_at=datetime('now') " +
-                "WHERE id=@id AND ABS(sensor_baseline - @b) > 0.0005", conn);
-            cmd.Parameters.AddWithValue("@b",  baseline);
-            cmd.Parameters.AddWithValue("@id", id);
-            cmd.ExecuteNonQuery();
-        }
-
-        // When this profile's baseline was last changed (local time), or null if it
-        // has never been set. Stored UTC by datetime('now'), converted here.
-        public DateTime? GetBaselineSetDate(int id)
-        {
-            using var conn = new SQLiteConnection(_cs);
-            conn.Open();
-            using var cmd = new SQLiteCommand(
-                "SELECT datetime(baseline_set_at, 'localtime') FROM profiles WHERE id=@id", conn);
-            cmd.Parameters.AddWithValue("@id", id);
-            if (cmd.ExecuteScalar() is string s && DateTime.TryParse(s, out var dt))
-                return dt;
-            return null;
-        }
-
-        public void UpdateTempOffset(int id, double offset)
-        {
-            using var conn = new SQLiteConnection(_cs);
-            conn.Open();
-            using var cmd = new SQLiteCommand("UPDATE profiles SET temp_offset=@o WHERE id=@id", conn);
-            cmd.Parameters.AddWithValue("@o",  offset);
-            cmd.Parameters.AddWithValue("@id", id);
-            cmd.ExecuteNonQuery();
-        }
-
-        public void UpdateTempScale(int id, double scale)
-        {
-            using var conn = new SQLiteConnection(_cs);
-            conn.Open();
-            using var cmd = new SQLiteCommand("UPDATE profiles SET temp_scale=@s WHERE id=@id", conn);
-            cmd.Parameters.AddWithValue("@s",  scale);
-            cmd.Parameters.AddWithValue("@id", id);
-            cmd.ExecuteNonQuery();
-        }
-
-        public void UpdateMoistScale(int id, double scale)
-        {
-            using var conn = new SQLiteConnection(_cs);
-            conn.Open();
-            using var cmd = new SQLiteCommand("UPDATE profiles SET moist_scale=@s WHERE id=@id", conn);
-            cmd.Parameters.AddWithValue("@s",  scale);
-            cmd.Parameters.AddWithValue("@id", id);
-            cmd.ExecuteNonQuery();
-        }
-
-        public void Update(int id, string name, string combineId)
-        {
-            using var conn = new SQLiteConnection(_cs);
-            conn.Open();
-            using var cmd = new SQLiteCommand(
-                "UPDATE profiles SET name=@n, combine_id=@c WHERE id=@id", conn);
+                "UPDATE profiles SET name=@n, harvester_id=@h WHERE id=@id", conn);
             cmd.Parameters.AddWithValue("@n",  name);
-            cmd.Parameters.AddWithValue("@c",  combineId);
+            cmd.Parameters.AddWithValue("@h",  harvesterId);
             cmd.Parameters.AddWithValue("@id", id);
             cmd.ExecuteNonQuery();
         }
@@ -429,11 +320,10 @@ VALUES
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var tx = conn.BeginTransaction();
-            // Deleting a profile takes its calibration history with it — with FK
-            // enforcement on, calibrations.profile_id would otherwise block this
-            // delete on any profile that has ever been calibrated (the normal
-            // Save workflow), which is every profile in practice.
-            using (var cmd = new SQLiteCommand("DELETE FROM calibrations WHERE profile_id=@id", conn, tx))
+            // Deleting a profile takes its conveyor configuration history with it —
+            // with FK enforcement on, conveyor_config.profile_id would otherwise
+            // block this delete on every profile, since each is seeded with one.
+            using (var cmd = new SQLiteCommand("DELETE FROM conveyor_config WHERE profile_id=@id", conn, tx))
             {
                 cmd.Parameters.AddWithValue("@id", id);
                 cmd.ExecuteNonQuery();
@@ -455,62 +345,34 @@ VALUES
         private readonly string _cs;
         public CropRepo(string connectionString) { _cs = connectionString; }
 
-        public int Create(string name, string category, double testWeight,
-                          double marketMoisture, double dryMoisture, double moistureOffset = 0)
+        public int Create(string name)
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(
-                "INSERT INTO crops (name, category, test_weight, market_moisture, dry_moisture, moisture_offset) " +
-                "VALUES (@n, @cat, @tw, @mm, @dm, @mo); SELECT last_insert_rowid();", conn);
-            cmd.Parameters.AddWithValue("@n",   name);
-            cmd.Parameters.AddWithValue("@cat", category);
-            cmd.Parameters.AddWithValue("@tw",  testWeight);
-            cmd.Parameters.AddWithValue("@mm",  marketMoisture);
-            cmd.Parameters.AddWithValue("@dm",  dryMoisture);
-            cmd.Parameters.AddWithValue("@mo",  moistureOffset);
+                "INSERT INTO crops (name) VALUES (@n); SELECT last_insert_rowid();", conn);
+            cmd.Parameters.AddWithValue("@n", name);
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
 
-        public List<(int id, string name, string category, double testWeight, double marketMoisture, double dryMoisture, double moistureOffset)> GetAll()
+        public List<(int id, string name)> GetAll()
         {
-            var result = new List<(int, string, string, double, double, double, double)>();
+            var result = new List<(int, string)>();
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
-            using var cmd = new SQLiteCommand(
-                "SELECT id, name, category, test_weight, market_moisture, dry_moisture, moisture_offset FROM crops ORDER BY name", conn);
+            using var cmd = new SQLiteCommand("SELECT id, name FROM crops ORDER BY name", conn);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
-                result.Add((reader.GetInt32(0), reader.GetString(1), reader.GetString(2),
-                            reader.GetDouble(3), reader.GetDouble(4), reader.GetDouble(5),
-                            reader.IsDBNull(6) ? 0.0 : reader.GetDouble(6)));
+                result.Add((reader.GetInt32(0), reader.GetString(1)));
             return result;
         }
 
-        public void Update(int id, string name, string category, double testWeight,
-                           double marketMoisture, double dryMoisture, double moistureOffset = 0)
+        public void Update(int id, string name)
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
-            using var cmd = new SQLiteCommand(
-                "UPDATE crops SET name=@n, category=@cat, test_weight=@tw, " +
-                "market_moisture=@mm, dry_moisture=@dm, moisture_offset=@mo WHERE id=@id", conn);
-            cmd.Parameters.AddWithValue("@n",   name);
-            cmd.Parameters.AddWithValue("@cat", category);
-            cmd.Parameters.AddWithValue("@tw",  testWeight);
-            cmd.Parameters.AddWithValue("@mm",  marketMoisture);
-            cmd.Parameters.AddWithValue("@dm",  dryMoisture);
-            cmd.Parameters.AddWithValue("@mo",  moistureOffset);
-            cmd.Parameters.AddWithValue("@id",  id);
-            cmd.ExecuteNonQuery();
-        }
-
-        public void UpdateMoistureOffset(int id, double offset)
-        {
-            using var conn = new SQLiteConnection(_cs);
-            conn.Open();
-            using var cmd = new SQLiteCommand("UPDATE crops SET moisture_offset=@o WHERE id=@id", conn);
-            cmd.Parameters.AddWithValue("@o",  offset);
+            using var cmd = new SQLiteCommand("UPDATE crops SET name=@n WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@n",  name);
             cmd.Parameters.AddWithValue("@id", id);
             cmd.ExecuteNonQuery();
         }
@@ -519,23 +381,11 @@ VALUES
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
-            using var tx = conn.BeginTransaction();
-            // Deleting a crop takes its calibration history with it — same reason
-            // as ProfileRepo.Delete (calibrations.crop_id would otherwise block
-            // this delete on any crop that has ever been calibrated).
-            using (var cmd = new SQLiteCommand("DELETE FROM calibrations WHERE crop_id=@id", conn, tx))
-            {
-                cmd.Parameters.AddWithValue("@id", id);
-                cmd.ExecuteNonQuery();
-            }
-            using (var cmd = new SQLiteCommand("DELETE FROM crops WHERE id=@id", conn, tx))
-            {
-                cmd.Parameters.AddWithValue("@id", id);
-                try { cmd.ExecuteNonQuery(); }
-                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Constraint)
-                { tx.Rollback(); throw new ItemInUseException(); }
-            }
-            tx.Commit();
+            using var cmd = new SQLiteCommand("DELETE FROM crops WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@id", id);
+            try { cmd.ExecuteNonQuery(); }
+            catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Constraint)
+            { throw new ItemInUseException(); }
         }
     }
 
@@ -649,61 +499,224 @@ VALUES
         }
     }
 
-    // ── CalibrationRepo ───────────────────────────────────────────────────────
-    public class CalibrationRepo
+    // ── ConveyorConfigRepo ────────────────────────────────────────────────────
+    public class ConveyorConfigRepo
     {
         private readonly string _cs;
-        public CalibrationRepo(string connectionString) { _cs = connectionString; }
+        public ConveyorConfigRepo(string connectionString) { _cs = connectionString; }
 
-        public int Save(int profileId, int cropId, double baseline,
-                        double yieldFactor, int delaySec)
+        /// <summary>Appends a new revision and returns its id.</summary>
+        public int Save(ConveyorConfig c)
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(@"
-INSERT INTO calibrations
-    (profile_id, crop_id, sensor_baseline, yield_factor, processing_delay_sec)
-VALUES (@p, @c, @b, @f, @d);
+INSERT INTO conveyor_config
+    (profile_id, zero_counts, span_lb_per_count, zero_set_at, pulses_per_rev,
+     inches_per_pulse, section_len_in, flow_threshold_lb_s, belt_stop_timeout_s, delay_sec)
+VALUES (@p, @z, @s, @za, @ppr, @ipp, @sl, @ft, @bst, @d);
 SELECT last_insert_rowid();", conn);
-            cmd.Parameters.AddWithValue("@p", profileId);
-            cmd.Parameters.AddWithValue("@c", cropId);
-            cmd.Parameters.AddWithValue("@b", baseline);
-            cmd.Parameters.AddWithValue("@f", yieldFactor);
-            cmd.Parameters.AddWithValue("@d", delaySec);
+            cmd.Parameters.AddWithValue("@p",   c.ProfileId);
+            cmd.Parameters.AddWithValue("@z",   c.ZeroCounts);
+            cmd.Parameters.AddWithValue("@s",   c.SpanLbPerCount);
+            cmd.Parameters.AddWithValue("@za",  c.ZeroSetAt.HasValue ? (object)c.ZeroSetAt.Value.ToString("o") : DBNull.Value);
+            cmd.Parameters.AddWithValue("@ppr", c.PulsesPerRev);
+            cmd.Parameters.AddWithValue("@ipp", c.InchesPerPulse);
+            cmd.Parameters.AddWithValue("@sl",  c.SectionLenIn);
+            cmd.Parameters.AddWithValue("@ft",  c.FlowThresholdLbS);
+            cmd.Parameters.AddWithValue("@bst", c.BeltStopTimeoutS);
+            cmd.Parameters.AddWithValue("@d",   c.DelaySec);
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
 
-        // When the latest calibration for this profile/crop was saved (local time),
-        // or null if none has been saved yet. calibrated_at is written by SQLite
-        // as UTC (datetime('now')) — converted here so callers only see local.
-        public DateTime? GetLatestDate(int profileId, int cropId)
+        public ConveyorConfig GetLatest(int profileId)
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(
-                "SELECT datetime(calibrated_at, 'localtime') FROM calibrations " +
-                "WHERE profile_id=@p AND crop_id=@c ORDER BY id DESC LIMIT 1", conn);
+                SelectColumns + " FROM conveyor_config WHERE profile_id=@p ORDER BY id DESC LIMIT 1", conn);
             cmd.Parameters.AddWithValue("@p", profileId);
-            cmd.Parameters.AddWithValue("@c", cropId);
-            if (cmd.ExecuteScalar() is string s && DateTime.TryParse(s, out var dt))
-                return dt;
-            return null;
+            using var reader = cmd.ExecuteReader();
+            return reader.Read() ? Map(reader) : null;
         }
 
-        public (double baseline, double yieldFactor, int delaySec) GetLatest(int profileId, int cropId)
+        /// <summary>The revision a stored point or packet names, or null if unknown.</summary>
+        public ConveyorConfig GetById(int id)
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand(SelectColumns + " FROM conveyor_config WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@id", id);
+            using var reader = cmd.ExecuteReader();
+            return reader.Read() ? Map(reader) : null;
+        }
+
+        private const string SelectColumns =
+            "SELECT id, profile_id, zero_counts, span_lb_per_count, zero_set_at, pulses_per_rev, " +
+            "inches_per_pulse, section_len_in, flow_threshold_lb_s, belt_stop_timeout_s, delay_sec, created_at";
+
+        private static ConveyorConfig Map(SQLiteDataReader r)
+        {
+            return new ConveyorConfig
+            {
+                Id               = r.GetInt32(0),
+                ProfileId        = r.GetInt32(1),
+                ZeroCounts       = r.GetDouble(2),
+                SpanLbPerCount   = r.GetDouble(3),
+                ZeroSetAt        = r.IsDBNull(4) ? (DateTime?)null : DateTime.Parse(r.GetString(4)),
+                PulsesPerRev     = r.GetInt32(5),
+                InchesPerPulse   = r.GetDouble(6),
+                SectionLenIn     = r.GetDouble(7),
+                FlowThresholdLbS = r.GetDouble(8),
+                BeltStopTimeoutS = r.GetDouble(9),
+                DelaySec         = r.GetInt32(10),
+                CreatedAt        = DateTime.TryParse(r.GetString(11), out var dt) ? dt : DateTime.MinValue
+            };
+        }
+    }
+
+    // ── LoadRepo ──────────────────────────────────────────────────────────────
+    public class LoadRepo
+    {
+        private readonly string _cs;
+        public LoadRepo(string connectionString) { _cs = connectionString; }
+
+        public int Create(int jobId, string truck, int calRev)
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(
-                "SELECT sensor_baseline, yield_factor, processing_delay_sec " +
-                "FROM calibrations WHERE profile_id=@p AND crop_id=@c " +
-                "ORDER BY id DESC LIMIT 1", conn);
-            cmd.Parameters.AddWithValue("@p", profileId);
-            cmd.Parameters.AddWithValue("@c", cropId);
+                "INSERT INTO loads (job_id, truck, cal_rev) VALUES (@j, @t, @c); SELECT last_insert_rowid();", conn);
+            cmd.Parameters.AddWithValue("@j", jobId);
+            cmd.Parameters.AddWithValue("@t", truck ?? "");
+            cmd.Parameters.AddWithValue("@c", calRev);
+            return Convert.ToInt32(cmd.ExecuteScalar());
+        }
+
+        /// <summary>The truck has left: freeze the monitor weight and wait for its ticket.</summary>
+        public void Close(int id, double monitorLb)
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand(
+                "UPDATE loads SET monitor_lb=@m, closed_at=datetime('now'), status=@s WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@m",  monitorLb);
+            cmd.Parameters.AddWithValue("@s",  LoadRecord.StatusWaiting);
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
+        /// <summary>Periodic crash-safety write of the running weight on the open load.</summary>
+        public void UpdateMonitorLb(int id, double monitorLb)
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand("UPDATE loads SET monitor_lb=@m WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@m",  monitorLb);
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void Rename(int id, string truck)
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand("UPDATE loads SET truck=@t WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@t",  truck ?? "");
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
+        /// <summary>Records the ticket. The caller decides whether to also rescale the load's points.</summary>
+        public void SetCertified(int id, double certifiedLb, double factor, string status, string flag = "")
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand(
+                "UPDATE loads SET certified_lb=@c, factor=@f, status=@s, flag=@fl WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@c",  certifiedLb);
+            cmd.Parameters.AddWithValue("@f",  factor);
+            cmd.Parameters.AddWithValue("@s",  status);
+            cmd.Parameters.AddWithValue("@fl", flag ?? "");
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
+        /// <summary>The load still being filled on this job, or null.</summary>
+        public LoadRecord GetOpen(int jobId)
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand(
+                SelectColumns + " FROM loads WHERE job_id=@j AND status=@s ORDER BY id DESC LIMIT 1", conn);
+            cmd.Parameters.AddWithValue("@j", jobId);
+            cmd.Parameters.AddWithValue("@s", LoadRecord.StatusActive);
             using var reader = cmd.ExecuteReader();
-            if (reader.Read())
-                return (reader.GetDouble(0), reader.GetDouble(1), reader.GetInt32(2));
-            return (0, 1, 10);  // defaults
+            return reader.Read() ? Map(reader) : null;
+        }
+
+        public LoadRecord GetById(int id)
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand(SelectColumns + " FROM loads WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@id", id);
+            using var reader = cmd.ExecuteReader();
+            return reader.Read() ? Map(reader) : null;
+        }
+
+        /// <summary>All loads on a job, newest first; every load when jobId is -1.</summary>
+        public List<LoadRecord> GetAll(int jobId = -1)
+        {
+            var result = new List<LoadRecord>();
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand(
+                SelectColumns + " FROM loads" + (jobId > 0 ? " WHERE job_id=@j" : "") + " ORDER BY id DESC", conn);
+            if (jobId > 0) cmd.Parameters.AddWithValue("@j", jobId);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read()) result.Add(Map(reader));
+            return result;
+        }
+
+        public void Delete(int id)
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var tx = conn.BeginTransaction();
+            // The points stay with the job; they just stop belonging to a load.
+            using (var cmd = new SQLiteCommand("UPDATE yield_data SET load_id=-1 WHERE load_id=@id", conn, tx))
+            {
+                cmd.Parameters.AddWithValue("@id", id);
+                cmd.ExecuteNonQuery();
+            }
+            using (var cmd = new SQLiteCommand("DELETE FROM loads WHERE id=@id", conn, tx))
+            {
+                cmd.Parameters.AddWithValue("@id", id);
+                cmd.ExecuteNonQuery();
+            }
+            tx.Commit();
+        }
+
+        private const string SelectColumns =
+            "SELECT id, job_id, truck, opened_at, closed_at, monitor_lb, certified_lb, factor, cal_rev, flag, status";
+
+        private static LoadRecord Map(SQLiteDataReader r)
+        {
+            return new LoadRecord
+            {
+                Id          = r.GetInt32(0),
+                JobId       = r.GetInt32(1),
+                Truck       = r.GetString(2),
+                OpenedAt    = DateTime.TryParse(r.GetString(3), out var o) ? o : DateTime.MinValue,
+                ClosedAt    = r.IsDBNull(4) ? (DateTime?)null : (DateTime.TryParse(r.GetString(4), out var c) ? c : (DateTime?)null),
+                MonitorLb   = r.GetDouble(5),
+                CertifiedLb = r.IsDBNull(6) ? (double?)null : r.GetDouble(6),
+                Factor      = r.GetDouble(7),
+                CalRev      = r.GetInt32(8),
+                Flag        = r.GetString(9),
+                Status      = r.GetString(10)
+            };
         }
     }
 }

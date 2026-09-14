@@ -49,6 +49,7 @@ namespace BeltFlo.Forms
             this.pnlStatus = new System.Windows.Forms.Panel();
             this.lblStatusGPS = new System.Windows.Forms.Label();
             this.lblStatusModule = new System.Windows.Forms.Label();
+            this.lblStatusScale = new System.Windows.Forms.Label();
             this.lblStatusJob = new System.Windows.Forms.Label();
             this.lblStatusMsg = new System.Windows.Forms.Label();
             this.pnlToolbar.SuspendLayout();
@@ -417,6 +418,7 @@ namespace BeltFlo.Forms
             this.pnlStatus.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(28)))), ((int)(((byte)(28)))), ((int)(((byte)(28)))));
             this.pnlStatus.Controls.Add(this.lblStatusGPS);
             this.pnlStatus.Controls.Add(this.lblStatusModule);
+            this.pnlStatus.Controls.Add(this.lblStatusScale);
             this.pnlStatus.Controls.Add(this.lblStatusJob);
             this.pnlStatus.Controls.Add(this.lblStatusMsg);
             this.pnlStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
@@ -446,14 +448,25 @@ namespace BeltFlo.Forms
             this.lblStatusModule.TabIndex = 1;
             this.lblStatusModule.Text = "Module";
             this.lblStatusModule.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
+            //
+            // lblStatusScale
+            //
+            this.lblStatusScale.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblStatusScale.ForeColor = System.Drawing.Color.Silver;
+            this.lblStatusScale.Location = new System.Drawing.Point(132, 4);
+            this.lblStatusScale.Name = "lblStatusScale";
+            this.lblStatusScale.Size = new System.Drawing.Size(56, 24);
+            this.lblStatusScale.TabIndex = 2;
+            this.lblStatusScale.Text = "Scale";
+            this.lblStatusScale.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            //
             // lblStatusJob
-            // 
+            //
             this.lblStatusJob.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblStatusJob.ForeColor = System.Drawing.Color.Silver;
-            this.lblStatusJob.Location = new System.Drawing.Point(132, 4);
+            this.lblStatusJob.Location = new System.Drawing.Point(191, 4);
             this.lblStatusJob.Name = "lblStatusJob";
-            this.lblStatusJob.Size = new System.Drawing.Size(262, 24);
+            this.lblStatusJob.Size = new System.Drawing.Size(203, 24);
             this.lblStatusJob.TabIndex = 3;
             this.lblStatusJob.Text = "No Active Job";
             this.lblStatusJob.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -508,6 +521,7 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Button btnStop;
         private System.Windows.Forms.Button btnExit;
         private System.Windows.Forms.Button btnMini;
+        private System.Windows.Forms.Label  lblStatusScale;
 
         private System.Windows.Forms.Panel pnlGauges;
         private System.Windows.Forms.Panel pnlYield;

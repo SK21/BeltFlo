@@ -42,68 +42,41 @@ namespace BeltFlo.Classes
         }
 
         // ── Units ─────────────────────────────────────────────────────────────
-        // Internal values are always imperial (acres, bu, bu/ac).
-        // Test weight has a single source of truth — Core.Yield.TestWeightLbsBu,
-        // set from the active crop. This kg/bu view is derived from it so the two
-        // can never disagree (a stored second copy once drifted out of sync and
-        // skewed mass display and calibration). Falls back to the wheat default
-        // when the calculator is not yet constructed during early startup.
-        public static double TestWeightKgPerBu => (Core.Yield?.TestWeightLbsBu ?? 60.0) * 0.453592;
+        // Internal values are always pounds, acres and lb/ac. The scale delivers
+        // pounds, so nothing stored depends on a crop constant; every other unit is
+        // a display conversion applied on the way out.
+        //
+        // Imperial users choose between hundredweight and tons per acre — the two
+        // units potato and beet tickets are written in. Metric is always t/ha.
+        private const double LB_PER_CWT = 100.0;
+        private const double LB_PER_TON = 2000.0;
+        private const double LB_PER_KG  = 2.20462;
+        private const double HA_PER_AC  = 0.404686;
+        private const double M_PER_FT   = 0.3048;
 
         public static bool IsMetric => Properties.Settings.Default.Units == "Metric";
-        public static string AreaUnit => IsMetric ? "ha" : "ac";
-        public static string MassUnit => IsMetric ? "t" : "bu";
-        public static string RateUnit => IsMetric ? "t/ha" : "bu/ac";
+        public static bool YieldInTons => Properties.Settings.Default.YieldUnit == "tons/ac";
+
+        public static string AreaUnit  => IsMetric ? "ha"   : "ac";
+        public static string MassUnit  => IsMetric ? "t"    : (YieldInTons ? "tons"    : "cwt");
+        public static string RateUnit  => IsMetric ? "t/ha" : (YieldInTons ? "tons/ac" : "cwt/ac");
+        public static string LoadUnit  => IsMetric ? "kg"   : "lb";        // truck loads, in ticket units
+        public static string FlowUnit  => IsMetric ? "kg/min" : "lb/min";
         public static string SpeedUnit => IsMetric ? "km/h" : "mph";
+        public static string BeltSpeedUnit => IsMetric ? "m/min" : "ft/min";
 
-        public static string TestWeightUnit => IsMetric ? "kg/hL" : "lb/bu";
+        private static double LbPerMassUnit => IsMetric ? 1000.0 * LB_PER_KG : (YieldInTons ? LB_PER_TON : LB_PER_CWT);
 
-        // Which unit an imperial operator TYPES a weighed calibration amount in.
-        // Display is unaffected — the measured readouts already show bushels with
-        // pounds alongside — this is only about what the entry box expects, because
-        // a weigh ticket arrives in whichever unit its scale happened to use and
-        // converting by hand at the keypad is where mistakes get made.
-        //
-        // Metric entry stays kg, so this is meaningless there.
-        public static bool EntryInBushels =>
-            !IsMetric && Properties.Settings.Default.ImperialMassUnit == "bu";
+        public static double DisplayArea(double acres)      => IsMetric ? acres * HA_PER_AC : acres;
+        public static double DisplayMass(double lb)         => lb / LbPerMassUnit;
+        public static double DisplayRate(double lbPerAc)    => IsMetric ? lbPerAc / LbPerMassUnit / HA_PER_AC : lbPerAc / LbPerMassUnit;
+        public static double DisplayLoad(double lb)         => IsMetric ? lb / LB_PER_KG : lb;
+        public static double DisplayFlow(double lbPerMin)   => IsMetric ? lbPerMin / LB_PER_KG : lbPerMin;
+        public static double DisplaySpeed(double kmh)       => IsMetric ? kmh : kmh * 0.621371;
+        public static double DisplayBeltSpeed(double ftMin) => IsMetric ? ftMin * M_PER_FT : ftMin;
 
-        /// <summary>Unit shown on the calibration entry boxes.</summary>
-        public static string EntryMassUnit => IsMetric ? "kg" : (EntryInBushels ? "bu" : "lbs");
-
-        // Grain test weight (specific / hectolitre weight) is stored internally
-        // as lb/bu (US Winchester bushel = 35.239 L). Metric users work in kg/hL,
-        // the standard European/Canadian grain unit: 1 lb/bu = 1.287184 kg/hL.
-        //
-        // KNOWN LIMITATION. In bu/ac mode this field is the *statutory* bushel
-        // weight — a fixed per-crop constant (wheat 60, barley 48, oats 34) that
-        // makes bu/ac match what the elevator pays on, since grain sells by mass
-        // and converts back at 60. In t/ha mode the same stored value is entered
-        // as a *measured density* off a receipt. Those are different quantities
-        // sharing a column.
-        //
-        // It is harmless as long as the user stays in one mode: in t/ha the value
-        // cancels out entirely (Calculate() divides by it, DisplayRate multiplies
-        // it back), so nothing a metric user sees depends on it. A user who enters
-        // kg/hL and then switches to bu/ac gets kg/hL ÷ 1.287184 as the divisor
-        // instead of the statutory figure — roughly ±5% for wheat, corn, canola
-        // and barley, but up to ~25% for oats, whose statutory 34 lb/bu sits well
-        // below any real oat density. Accepted: that user is rare (Canada is the
-        // only market where kg/hL receipts and bushel usage overlap) and the
-        // "Bushel Wt" label makes a wrong stored value visible on the way out.
-        //
-        // Note this conversion also cannot reproduce the CGC chart's own lb/bu
-        // columns: their kg/hL is a compaction-adjusted regression while their
-        // lb/Winchester bu is pure arithmetic, so applying an arithmetic constant
-        // to their kg/hL lands between the two and matches neither.
-        private const double KgHlPerLbBu = 1.287184;
-        public static double DisplayTestWeight(double lbBu) => IsMetric ? lbBu * KgHlPerLbBu : lbBu;
-        public static double TestWeightToLbBu(double displayTw) => IsMetric ? displayTw / KgHlPerLbBu : displayTw;
-
-        public static double DisplayArea(double acres) => IsMetric ? acres * 0.404686 : acres;
-        public static double DisplayMass(double bushels) => IsMetric ? bushels * TestWeightKgPerBu / 1000.0 : bushels;
-        public static double DisplayRate(double buPerAc) => IsMetric ? buPerAc * TestWeightKgPerBu / 1000.0 / 0.404686 : buPerAc;
-        public static double DisplaySpeed(double kmh) => IsMetric ? kmh : kmh * 0.621371;
+        /// <summary>A weight typed in the display load unit, back to pounds.</summary>
+        public static double LoadToLb(double display)       => IsMetric ? display * LB_PER_KG : display;
 
         public static string ApplicationFolder { get { return cApplicationFolder; } }
         public static string DataFolder { get { return cDataFolder; } }

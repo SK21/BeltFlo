@@ -24,12 +24,10 @@ namespace BeltFlo.Forms
             this.btnCrops = new System.Windows.Forms.Button();
             this.btnHeaders = new System.Windows.Forms.Button();
             this.btnProfiles = new System.Windows.Forms.Button();
-            this.btnCalibrate = new System.Windows.Forms.Button();
             this.btnSettings = new System.Windows.Forms.Button();
             this.btnFields = new System.Windows.Forms.Button();
             this.btnReports = new System.Windows.Forms.Button();
             this.btnYieldMap = new System.Windows.Forms.Button();
-            this.btnSensorCal = new System.Windows.Forms.Button();
             this.btnLanguage = new System.Windows.Forms.Button();
             this.pnlTitle.SuspendLayout();
             this.pnlContent.SuspendLayout();
@@ -103,17 +101,15 @@ namespace BeltFlo.Forms
             this.pnlContent.Controls.Add(this.btnCrops);
             this.pnlContent.Controls.Add(this.btnHeaders);
             this.pnlContent.Controls.Add(this.btnProfiles);
-            this.pnlContent.Controls.Add(this.btnCalibrate);
             this.pnlContent.Controls.Add(this.btnSettings);
             this.pnlContent.Controls.Add(this.btnFields);
             this.pnlContent.Controls.Add(this.btnReports);
             this.pnlContent.Controls.Add(this.btnYieldMap);
-            this.pnlContent.Controls.Add(this.btnSensorCal);
             this.pnlContent.Controls.Add(this.btnLanguage);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContent.Location = new System.Drawing.Point(2, 50);
             this.pnlContent.Name = "pnlContent";
-            this.pnlContent.Size = new System.Drawing.Size(456, 360);
+            this.pnlContent.Size = new System.Drawing.Size(456, 300);
             this.pnlContent.TabIndex = 0;
             //
             // btnJobs — full-width row
@@ -149,33 +145,15 @@ namespace BeltFlo.Forms
             this.btnReports.Text = global::BeltFlo.Language.Lang.lgReports;
             this.btnReports.Click += new System.EventHandler(this.btnReports_Click);
             //
-            // btnCalibrate
             //
-            this.btnCalibrate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCalibrate.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnCalibrate.Location = new System.Drawing.Point(8, 128);
-            this.btnCalibrate.Name = "btnCalibrate";
-            this.btnCalibrate.Size = new System.Drawing.Size(216, 52);
-            this.btnCalibrate.TabIndex = 4;
-            this.btnCalibrate.Text = global::BeltFlo.Language.Lang.lgTitleYieldCal;
-            this.btnCalibrate.Click += new System.EventHandler(this.btnCalibrate_Click);
             //
-            // btnSensorCal
             //
-            this.btnSensorCal.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnSensorCal.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnSensorCal.Location = new System.Drawing.Point(232,128);
-            this.btnSensorCal.Name = "btnSensorCal";
-            this.btnSensorCal.Size = new System.Drawing.Size(216, 52);
-            this.btnSensorCal.TabIndex = 9;
-            this.btnSensorCal.Text = global::BeltFlo.Language.Lang.lgTitleMoistureCal;
-            this.btnSensorCal.Click += new System.EventHandler(this.btnSensorCal_Click);
             //
             // btnCrops
             //
             this.btnCrops.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCrops.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnCrops.Location = new System.Drawing.Point(8, 188);
+            this.btnCrops.Location = new System.Drawing.Point(8, 128);
             this.btnCrops.Name = "btnCrops";
             this.btnCrops.Size = new System.Drawing.Size(216, 52);
             this.btnCrops.TabIndex = 1;
@@ -186,7 +164,7 @@ namespace BeltFlo.Forms
             //
             this.btnHeaders.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnHeaders.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnHeaders.Location = new System.Drawing.Point(232,188);
+            this.btnHeaders.Location = new System.Drawing.Point(232,128);
             this.btnHeaders.Name = "btnHeaders";
             this.btnHeaders.Size = new System.Drawing.Size(216, 52);
             this.btnHeaders.TabIndex = 2;
@@ -197,7 +175,7 @@ namespace BeltFlo.Forms
             //
             this.btnFields.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnFields.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnFields.Location = new System.Drawing.Point(8, 248);
+            this.btnFields.Location = new System.Drawing.Point(8, 188);
             this.btnFields.Name = "btnFields";
             this.btnFields.Size = new System.Drawing.Size(216, 52);
             this.btnFields.TabIndex = 6;
@@ -208,7 +186,7 @@ namespace BeltFlo.Forms
             //
             this.btnProfiles.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnProfiles.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnProfiles.Location = new System.Drawing.Point(232,248);
+            this.btnProfiles.Location = new System.Drawing.Point(232,188);
             this.btnProfiles.Name = "btnProfiles";
             this.btnProfiles.Size = new System.Drawing.Size(216, 52);
             this.btnProfiles.TabIndex = 3;
@@ -219,7 +197,7 @@ namespace BeltFlo.Forms
             //
             this.btnSettings.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnSettings.Location = new System.Drawing.Point(8, 308);
+            this.btnSettings.Location = new System.Drawing.Point(8, 248);
             this.btnSettings.Name = "btnSettings";
             this.btnSettings.Size = new System.Drawing.Size(216, 44);
             this.btnSettings.TabIndex = 5;
@@ -230,7 +208,7 @@ namespace BeltFlo.Forms
             //
             this.btnLanguage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnLanguage.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnLanguage.Location = new System.Drawing.Point(232,308);
+            this.btnLanguage.Location = new System.Drawing.Point(232,248);
             this.btnLanguage.Name = "btnLanguage";
             this.btnLanguage.Size = new System.Drawing.Size(216, 44);
             this.btnLanguage.TabIndex = 10;
@@ -240,7 +218,7 @@ namespace BeltFlo.Forms
             // frmMenu
             //
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(460, 412);
+            this.ClientSize = new System.Drawing.Size(460, 352);
             this.Controls.Add(this.pnlContent);
             this.Controls.Add(this.pnlTitle);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
@@ -268,12 +246,10 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Button btnCrops;
         private System.Windows.Forms.Button btnHeaders;
         private System.Windows.Forms.Button btnProfiles;
-        private System.Windows.Forms.Button btnCalibrate;
         private System.Windows.Forms.Button btnSettings;
         private System.Windows.Forms.Button btnFields;
         private System.Windows.Forms.Button btnReports;
         private System.Windows.Forms.Button btnYieldMap;
-        private System.Windows.Forms.Button btnSensorCal;
         private System.Windows.Forms.Button btnLanguage;
     }
 }

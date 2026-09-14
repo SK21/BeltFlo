@@ -104,7 +104,7 @@ namespace BeltFlo.Properties
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("150")]
+        [global::System.Configuration.DefaultSettingValueAttribute("60000")]
         public double YieldScaleMax
         {
             get { return ((double)(this["YieldScaleMax"])); }
@@ -203,74 +203,11 @@ namespace BeltFlo.Properties
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public double CalRunBushels
+        [global::System.Configuration.DefaultSettingValueAttribute("cwt/ac")]
+        public string YieldUnit
         {
-            get { return ((double)(this["CalRunBushels"])); }
-            set { this["CalRunBushels"] = value; }
-        }
-
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool CalRunActive
-        {
-            get { return ((bool)(this["CalRunActive"])); }
-            set { this["CalRunActive"] = value; }
-        }
-
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool CalRunInterrupted
-        {
-            get { return ((bool)(this["CalRunInterrupted"])); }
-            set { this["CalRunInterrupted"] = value; }
-        }
-
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("-1")]
-        public int CalRunProfileId
-        {
-            get { return ((int)(this["CalRunProfileId"])); }
-            set { this["CalRunProfileId"] = value; }
-        }
-
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("-1")]
-        public int CalRunCropId
-        {
-            get { return ((int)(this["CalRunCropId"])); }
-            set { this["CalRunCropId"] = value; }
-        }
-
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string CalRunStartedUtc
-        {
-            get { return ((string)(this["CalRunStartedUtc"])); }
-            set { this["CalRunStartedUtc"] = value; }
-        }
-
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string CalRunStoppedUtc
-        {
-            get { return ((string)(this["CalRunStoppedUtc"])); }
-            set { this["CalRunStoppedUtc"] = value; }
-        }
-
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("lbs")]
-        public string ImperialMassUnit
-        {
-            get { return ((string)(this["ImperialMassUnit"])); }
-            set { this["ImperialMassUnit"] = value; }
+            get { return ((string)(this["YieldUnit"])); }
+            set { this["YieldUnit"] = value; }
         }
     }
 }

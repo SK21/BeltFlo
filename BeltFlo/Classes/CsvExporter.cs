@@ -19,53 +19,44 @@ namespace BeltFlo.Classes
                 if (points == null || points.Count == 0) return null;
 
                 // Same treatment the map gives them, so the exported file and the
-                // picture on screen agree. Without this the CSV would still carry the
-                // raw pass ends and every downstream map built from it would show the
-                // blue headland the operator was just told had been dealt with.
+                // picture on screen agree.
                 PassTransients.Apply(points);
 
-                // Resolve crop test weight and header width from the job record.
-                double testWeightKgPerBu = Props.TestWeightKgPerBu;
-                double headerWidthM      = 9.144;
+                // Resolve the digging width from the job record.
+                double widthM = 3.6576;
                 foreach (var j in Core.Database.Jobs.GetAll())
                 {
                     if (j.id != jobId) continue;
-                    if (j.cropId > 0)
-                    {
-                        foreach (var c in Core.Database.Crops.GetAll())
-                        {
-                            if (c.id == j.cropId) { testWeightKgPerBu = c.testWeight * 0.453592; break; }
-                        }
-                    }
                     if (j.headerId > 0)
                     {
                         foreach (var h in Core.Database.Headers.GetAll())
                         {
-                            if (h.id == j.headerId) { headerWidthM = h.widthM; break; }
+                            if (h.id == j.headerId) { widthM = h.widthM; break; }
                         }
                     }
                     break;
                 }
 
+                // lb/ac → kg/ha
+                const double KgHaPerLbAc = 0.453592 / 0.404686;
+
                 var sb = new StringBuilder();
                 // Columns 0-5 match RC's YieldOverlayCreator expected format (parsed by position).
                 // Extra columns follow for BeltFlo-specific data.
-                sb.AppendLine("Timestamp,Latitude,Longitude,WidthMeters,Yield_kgha,ElevationMeters,Speed_kmh,Heading,Moisture_pct,HaAccumulated,Sensor1Raw");
+                sb.AppendLine("Timestamp,Latitude,Longitude,WidthMeters,Yield_kgha,ElevationMeters,Speed_kmh,Heading,HaAccumulated,PoundsInc,LoadId,BeltFtMin,CalRev");
 
                 foreach (var p in points)
                 {
-                    double yieldTha  = p.YieldRate * testWeightKgPerBu / 1000.0 / 0.404686;
-                    double yieldKgHa = yieldTha * 1000.0;
+                    double yieldKgHa = p.YieldRate * KgHaPerLbAc;
                     double haAcc     = p.AcresAccumulated * 0.404686;
 
                     sb.AppendLine(
                         $"{p.Timestamp:yyyy-MM-dd HH:mm:ss}," +
                         $"{p.Latitude:F7},{p.Longitude:F7}," +
-                        $"{headerWidthM:F3},{yieldKgHa:F1},{p.Elevation:F1}," +
+                        $"{widthM:F3},{yieldKgHa:F1},{p.Elevation:F1}," +
                         $"{p.Speed:F2},{p.Heading:F1}," +
-                        $"{p.Moisture:F1}," +
                         $"{haAcc:F4}," +
-                        $"{p.Sensor1Raw:F4}");
+                        $"{p.PoundsInc:F2},{p.LoadId},{p.BeltFtMin:F1},{p.CalRev}");
                 }
 
                 File.WriteAllText(path, sb.ToString());

@@ -3,215 +3,118 @@ using System;
 namespace BeltFlo.Classes
 {
     /// <summary>
-    /// Converts raw optical sensor readings into instantaneous yield (bu/ac).
-    /// The transport delay between the header and the clean-grain elevator
-    /// sensor is handled by the position pipeline in clsDataCollector, which
-    /// pairs the current sensor flow with the position harvested
+    /// Turns the module's cumulative conveyor counters into a mass flow and a yield
+    /// rate. The module weighs the belt section, integrates load against belt travel
+    /// and reports cumulative pounds and cumulative belt pulses; this class differences
+    /// them packet to packet, so a dropped packet costs nothing and a module restart
+    /// is detected rather than counted.
+    ///
+    /// The digging-to-scale transport delay is handled by the position pipeline in
+    /// clsDataCollector, which pairs the current flow with the position dug
     /// ProcessingDelaySec earlier.
     /// </summary>
     public class clsYieldCalculator
     {
-        // Calibration values — set from the active Calibration record
-        public double SensorBaseline { get; set; } = 0.0;      // paddle-only obstruction ratio
-        public double YieldFactor { get; set; } = 1.0;         // crop calibration multiplier
-        public int ProcessingDelaySec { get; set; } = 10;
+        // From the active profile's conveyor configuration
+        public int ProcessingDelaySec { get; set; } = 10;             // digging-to-scale delay
+        public double InchesPerPulse { get; set; } = 1.0;             // belt travel per proximity pulse
+        public double FlowThresholdLbPerSec { get; set; } = 0.05;     // below this the belt is running empty
 
-        // Crop / header
-        public double TestWeightLbsBu { get; set; } = 60.0;    // lbs per bushel (wheat default)
-        public double HeaderWidthM { get; set; } = 9.144;      // metres (30 ft default)
-        public double HeaderFwdOffsetM { get; set; } = 0;      // metres the header sits AHEAD of the GPS antenna
+        // Digging width. Named for the header table it still comes from; a digger's
+        // width is rows × row spacing and lives on the harvester profile eventually.
+        public double HeaderWidthM { get; set; } = 3.6576;            // 4 rows at 36 in
+        public double HeaderFwdOffsetM { get; set; } = 0;             // metres the share sits AHEAD of the GPS antenna
 
-        // Latest calculated values (read by DataCollector / UI)
-        public double InstantYield { get; private set; }        // bu/ac
-        public double SmoothedYield { get; private set; }       // exponentially smoothed, display only
-        public double InstantWorkRate { get; private set; }     // bu/hr — grain throughput
-        public double SmoothedWorkRate { get; private set; }    // bu/hr, exponentially smoothed
+        // Latest values (read by the collector and the UI)
+        public double CurrentLbPerSec { get; private set; }           // mass flow over the scale, lightly smoothed
+        public double BeltFtPerMin { get; private set; }              // from differenced pulses
         public bool IsFlowing { get; private set; }
-        public double CurrentRatio { get; private set; }        // latest baseline-corrected reading
-
-        // Below this the elevator is considered empty. Shared with the collector's
-        // tail drain so "still flowing" means the same thing in both places.
-        public const double FlowStopRatio = 0.01;
+        public double InstantYield { get; private set; }              // lb/ac
+        public double SmoothedYield { get; private set; }             // exponentially smoothed, display only
+        public double InstantWorkRate { get; private set; }           // lb/hr
+        public double SmoothedWorkRate { get; private set; }
+        public bool HasReading { get; private set; }
 
         private const double M2_PER_ACRE = 4046.856;
-        private const double KG_PER_BUSHEL_WHEAT = 27.215;     // approx — overridden by TestWeight
-        private const double LBS_PER_KG = 2.20462;
-        // 1 lb/ac = 1/(27.215*2.20462) bu/ac  →  use TestWeightLbsBu directly
 
-        // Calibration run accumulators
-        public bool IsCalRunActive { get; private set; }
-        public double CalRunBushels { get; private set; }
+        // Packet-to-packet state
+        private bool _seeded;
+        private uint _prevLbX10, _prevPulses;
+        private DateTime _prevUtc;
 
-        // When the run was started and stopped. A run is routinely left standing for
-        // hours — Stop Run freezes the total and the operator weighs and enters it
-        // whenever the cart next crosses a scale — so the screen has to say WHICH run
-        // the standing number came from. Without it a total surviving overnight is
-        // indistinguishable from one taken ten minutes ago.
-        public DateTime? CalRunStartedUtc { get; private set; }
-        public DateTime? CalRunStoppedUtc { get; private set; }
+        // Packets arrive at 5 Hz. 0.3 gives a time constant of about three packets,
+        // enough to take the quantisation out of a tenth-of-a-pound counter without
+        // hiding a real change in flow.
+        private const double RateAlpha = 0.3;
 
-        // The profile and crop the run was recorded under. ComputeNewFactor scales
-        // the CURRENT YieldFactor and the weight is converted with the CURRENT test
-        // weight, so applying a run after a crop change silently fits the wrong
-        // reference and saves it to the wrong crop. Captured at Start so Apply can
-        // tell.
-        public int CalRunProfileId { get; private set; } = -1;
-        public int CalRunCropId { get; private set; } = -1;
-
-        // Set when a run was still active at shutdown. The grain harvested between
-        // the last autosave and the outage is missing from the total but WILL be on
-        // the operator's ticket, so the fitted factor would read high. Surfaced, not
-        // blocked — same reasoning as the high-baseline warning: the operator may
-        // know the run is still good.
-        public bool CalRunInterrupted { get; private set; }
+        // A counter that appears to go backwards by more than this has not wrapped,
+        // it has been reset — the module rebooted or its counters were cleared.
+        private const uint ResetThreshold = 0x80000000u;
 
         /// <summary>
-        /// Raised whenever the persisted shape of the cal run changes — Start, Stop,
-        /// and at most once per AutosaveIntervalSec while accumulating. Core listens
-        /// and writes the run to settings so it survives a restart. Kept as an event
-        /// so this class stays free of any settings dependency.
-        /// </summary>
-        public event EventHandler CalRunStateChanged;
-
-        // Accumulation runs at GPS rate; persisting every tick would write the
-        // settings file several times a second for a number that only has to be
-        // good to the last half minute.
-        private const int AutosaveIntervalSec = 30;
-        private DateTime _calRunLastSaveUtc = DateTime.MinValue;
-
-        public void StartCalRun()
-        {
-            CalRunBushels     = 0;
-            IsCalRunActive    = true;
-            CalRunInterrupted = false;
-            CalRunStartedUtc  = DateTime.UtcNow;
-            CalRunStoppedUtc  = null;
-            CalRunProfileId   = Core.ActiveProfileId;
-            CalRunCropId      = Core.ActiveCropId;
-            _calRunLastSaveUtc = DateTime.UtcNow;
-            SafeEvent.Raise(CalRunStateChanged, sender: this);
-        }
-
-        public void StopCalRun()
-        {
-            IsCalRunActive   = false;
-            CalRunStoppedUtc = DateTime.UtcNow;
-            SafeEvent.Raise(CalRunStateChanged, sender: this);
-        }
-
-        /// <summary>
-        /// Rehydrates a run persisted by Core at startup. Always restores as STOPPED:
-        /// the combine is not mid-pass across an app restart, and leaving it armed
-        /// would resume accumulating onto a total with an unmeasured hole in it.
-        /// A run that was active at shutdown comes back flagged interrupted instead.
-        /// </summary>
-        public void RestoreCalRun(double bushels, bool wasActive, bool interrupted,
-                                  int profileId, int cropId,
-                                  DateTime? startedUtc, DateTime? stoppedUtc)
-        {
-            CalRunBushels     = bushels;
-            IsCalRunActive    = false;
-            CalRunInterrupted = interrupted || wasActive;
-            CalRunProfileId   = profileId;
-            CalRunCropId      = cropId;
-            CalRunStartedUtc  = startedUtc;
-            // An interrupted run never reached Stop, so the last autosave is the
-            // honest "as at" time for the number being shown.
-            CalRunStoppedUtc  = stoppedUtc;
-            _calRunLastSaveUtc = DateTime.UtcNow;
-        }
-
-        /// <summary>
-        /// Discards the standing run once its weight has been applied and saved.
-        /// A run is spent at that point: ComputeNewFactor does not consume it, and
-        /// now that runs persist across restarts an applied one would otherwise sit
-        /// on screen for days inviting a second application against the factor it
-        /// already corrected.
-        /// </summary>
-        public void ClearCalRun()
-        {
-            CalRunBushels     = 0;
-            IsCalRunActive    = false;
-            CalRunInterrupted = false;
-            CalRunStartedUtc  = null;
-            CalRunStoppedUtc  = null;
-            CalRunProfileId   = -1;
-            CalRunCropId      = -1;
-            SafeEvent.Raise(CalRunStateChanged, sender: this);
-        }
-
-        /// <summary>Called by DataCollector each GPS tick to accumulate cal-run bushels.</summary>
-        public void AccumulateCalRun(double bushelsInc)
-        {
-            if (!IsCalRunActive) return;
-
-            CalRunBushels += bushelsInc;
-
-            DateTime now = DateTime.UtcNow;
-            if ((now - _calRunLastSaveUtc).TotalSeconds >= AutosaveIntervalSec)
-            {
-                _calRunLastSaveUtc = now;
-                SafeEvent.Raise(CalRunStateChanged, sender: this);
-            }
-        }
-
-        /// <summary>
-        /// Computes a corrected YieldFactor from the actual weighed mass.
-        /// actualBushels must be in internal bushels (already converted from display unit).
-        /// Pure calculation — does not change YieldFactor; the caller decides
-        /// whether/when to apply the result (Save).
-        /// </summary>
-        public double ComputeNewFactor(double actualBushels)
-        {
-            if (CalRunBushels <= 0) return YieldFactor;
-            return YieldFactor * (actualBushels / CalRunBushels);
-        }
-
-        // Display damping. 0.2 is the loosest coefficient that beats the block
-        // average it replaced on both spread and step: measured on the bench at
-        // 5 bridging kernels/s, sd 3.6%→3.2% and the jump between shown values
-        // 1.19→0.64 bu/ac. At 0.3 the readout chases excursions and sd gets
-        // worse than the block average. Drop to 0.1 if the field turns out as
-        // noisy as that bench case — it costs ~1 s more lag for sd 1.9%.
-        private const double SmoothAlpha = 0.1;
-        private bool _smoothSeeded = false;
-        // Full-precision EMA state. The exposed properties are rounded for
-        // display, but the state must not be: feeding a rounded value back in
-        // latches it. At 0.1 bu/ac with zeros arriving, 0.1*0.8 = 0.08 rounds
-        // straight back to 0.1 and the readout never reaches zero.
-        private double _emaYield = 0;
-        private double _emaWork = 0;
-
-        /// <summary>
-        /// Called each time a sensor packet arrives (~10 Hz).
-        /// Stores the latest baseline-corrected reading.
-        /// </summary>
-        public void PushSensorReading(double sensor1Raw)
-        {
-            CurrentRatio = Math.Max(0.0, Math.Min(1.0, sensor1Raw - SensorBaseline));
-        }
-
-        /// <summary>
-        /// Grain mass rate in bushels/second from the sensor reading alone.
+        /// Called for every conveyor packet. Returns the pounds delivered since the
+        /// previous packet, which the collector credits to the job and the load. Zero
+        /// on the first packet and after a counter reset.
         ///
-        /// Deliberately independent of ground speed: this is what the elevator is
-        /// delivering, not what the ground is yielding. Calculate() cannot be used
-        /// for this — it returns 0 below 0.5 km/h, which is exactly the situation
-        /// it is needed in, a combine crawling round a headland while the machine
-        /// finishes emptying. With no new ground being cut there is no bu/ac to
-        /// compute, only mass.
+        /// Never reseeded on a link dropout: the module kept counting while the packets
+        /// were lost, so the first packet after the gap carries every pound in between.
         /// </summary>
-        public double CurrentBushelsPerSec()
+        public double PushConveyorReading(uint cumPoundsX10, uint cumPulses, DateTime utc)
         {
-            if (TestWeightLbsBu <= 0) return 0;
-            // CurrentRatio * YieldFactor is the calibrated flow in lbs/s
-            return CurrentRatio * YieldFactor / TestWeightLbsBu;
+            HasReading = true;
+
+            if (!_seeded)
+            {
+                Reseed(cumPoundsX10, cumPulses, utc);
+                return 0;
+            }
+
+            uint dLbX10  = unchecked(cumPoundsX10 - _prevLbX10);
+            uint dPulses = unchecked(cumPulses - _prevPulses);
+            double dt    = (utc - _prevUtc).TotalSeconds;
+
+            if (dLbX10 >= ResetThreshold || dPulses >= ResetThreshold)
+            {
+                Props.WriteActivityLog("Conveyor counters reset by module");
+                Reseed(cumPoundsX10, cumPulses, utc);
+                return 0;
+            }
+
+            _prevLbX10  = cumPoundsX10;
+            _prevPulses = cumPulses;
+            _prevUtc    = utc;
+
+            double dLb = dLbX10 / 10.0;
+
+            // Two packets inside 10 ms is a transport hiccup, not a measurement. The
+            // pounds are still real and are still returned; only the rate is skipped.
+            if (dt < 0.01) return dLb;
+
+            double rate = dLb / dt;
+            double belt = dPulses * InchesPerPulse / 12.0 / dt * 60.0;
+
+            CurrentLbPerSec = CurrentLbPerSec * (1 - RateAlpha) + rate * RateAlpha;
+            BeltFtPerMin    = BeltFtPerMin    * (1 - RateAlpha) + belt * RateAlpha;
+            IsFlowing       = CurrentLbPerSec > FlowThresholdLbPerSec;
+
+            return dLb;
+        }
+
+        private void Reseed(uint cumPoundsX10, uint cumPulses, DateTime utc)
+        {
+            _seeded     = true;
+            _prevLbX10  = cumPoundsX10;
+            _prevPulses = cumPulses;
+            _prevUtc    = utc;
+            CurrentLbPerSec = 0;
+            BeltFtPerMin    = 0;
+            IsFlowing       = false;
         }
 
         /// <summary>
-        /// Pairs the current sensor flow with a buffered position point.
+        /// Pairs the current flow with a buffered position point.
         /// speedKmh is the ground speed recorded at that position.
-        /// Returns the yield value for that position.
+        /// Returns the yield value for that position, lb/ac.
         /// </summary>
         public double Calculate(double speedKmh)
         {
@@ -219,32 +122,18 @@ namespace BeltFlo.Classes
         }
 
         /// <summary>
-        /// As Calculate(speed), but divides by the width actually cutting new crop
-        /// rather than the full header.
+        /// As Calculate(speed), but divides by the width actually digging new crop
+        /// rather than the full width.
         ///
-        /// On a half-overlapped pass only half the header meets standing crop, so
-        /// the flow arriving is half — dividing that by the full width returns half
-        /// the true yield and paints a cold streak on ground that yielded normally.
-        /// Dividing by the width that did the cutting returns the field's actual
-        /// yield. Mass is unaffected either way: the caller's acres carry the same
-        /// factor, so effective width cancels out of bushels entirely.
+        /// On a half-overlapped pass only half the digger meets standing crop, so the
+        /// flow arriving is half — dividing that by the full width returns half the
+        /// true yield and paints a cold streak on ground that yielded normally.
+        /// Dividing by the width that did the digging returns the field's actual
+        /// yield. Mass is unaffected either way: pounds come straight off the scale.
         /// </summary>
         public double Calculate(double speedKmh, double effectiveWidthM)
         {
-            if (speedKmh < 0.5 || effectiveWidthM <= 0 || TestWeightLbsBu <= 0)
-            {
-                InstantYield = 0;
-                InstantWorkRate = 0;
-                IsFlowing = false;
-                Smooth(0, 0);
-                return 0;
-            }
-
-            double ratio = CurrentRatio;
-
-            IsFlowing = ratio > FlowStopRatio;
-
-            if (!IsFlowing)
+            if (speedKmh < 0.5 || effectiveWidthM <= 0 || !IsFlowing)
             {
                 InstantYield = 0;
                 InstantWorkRate = 0;
@@ -256,48 +145,33 @@ namespace BeltFlo.Classes
             double speedMs = speedKmh / 3.6;
             double areaRateM2s = speedMs * effectiveWidthM;
 
-            // Grain flow index (arbitrary volume/s) — calibrated via YieldFactor
-            double grainFlowIndex = ratio * YieldFactor;
+            // lb/s ÷ m²/s = lb/m², then to the acre
+            double yieldLbPerM2 = CurrentLbPerSec / areaRateM2s;
+            InstantYield = Math.Round(yieldLbPerM2 * M2_PER_ACRE, 1);
 
-            // Yield in lbs/m²·s / (area m²/s) → lbs/m²
-            // Then convert lbs/m² → bu/ac
-            // bu/ac = (lbs/m²) * M2_PER_ACRE / TestWeightLbsBu
-            double yieldLbsPerM2 = grainFlowIndex / areaRateM2s;
-            double yieldBuAc = yieldLbsPerM2 * M2_PER_ACRE / TestWeightLbsBu;
-
-            InstantYield = Math.Round(yieldBuAc, 1);
-
-            // Throughput (bu/hr). grainFlowIndex is the calibrated grain flow in
-            // lbs/s, so bu/hr = flow * 3600 / testweight — independent of ground
-            // speed and consistent with the accumulated bushel total.
-            InstantWorkRate = Math.Round(grainFlowIndex * 3600.0 / TestWeightLbsBu, 1);
+            // Throughput is independent of ground speed and consistent with the
+            // accumulated total, which comes from the same counter.
+            InstantWorkRate = Math.Round(CurrentLbPerSec * 3600.0, 0);
 
             Smooth(InstantYield, InstantWorkRate);
 
             return InstantYield;
         }
 
-        /// <summary>
-        /// Exponential smoothing for the displayed figures: new = previous*(1-a)
-        /// + current*a. Zeros must be pushed through here when flow stops so
-        /// SmoothedYield decays to 0 instead of freezing at the last flowing
-        /// value — the decay is now a ~6 s fade rather than a step, which is no
-        /// worse than honest given grain keeps arriving for the transport delay.
-        ///
-        /// This replaced a block average that summed five samples, emitted, and
-        /// reset. Consecutive shown values there shared no data, so the readout
-        /// sat still and then snapped to an independent estimate — that stepping
-        /// was most of what read as a jumpy display. Updating every sample makes
-        /// the number drift instead.
-        ///
-        /// Display only. Totals, the map and yield_data all record InstantYield,
-        /// so damping here cannot affect a measurement.
-        /// </summary>
+        // Display damping. Updating every sample makes the readout drift rather than
+        // step. Display only: totals, the map and yield_data all record InstantYield.
+        private const double SmoothAlpha = 0.1;
+        private bool _smoothSeeded = false;
+        // Full-precision EMA state — the exposed properties are rounded for display,
+        // but the state must not be, or a small value latches instead of decaying.
+        private double _emaYield = 0;
+        private double _emaWork = 0;
+
         private void Smooth(double instantYield, double instantWork)
         {
-            // Seed on the first sample after a reset. Starting from zero would
-            // make the readout crawl up to the true value over a couple of
-            // seconds every time a job starts, which looks like a fault.
+            // Seed on the first sample after a reset. Starting from zero would make
+            // the readout crawl up to the true value every time a job starts, which
+            // looks like a fault.
             if (!_smoothSeeded)
             {
                 _emaYield = instantYield;
@@ -311,16 +185,16 @@ namespace BeltFlo.Classes
             }
 
             SmoothedYield = Math.Round(_emaYield, 1);
-            SmoothedWorkRate = Math.Round(_emaWork, 1);
+            SmoothedWorkRate = Math.Round(_emaWork, 0);
         }
 
         /// <summary>
         /// Calculate incremental acres from a distance travelled.
         /// distanceM: metres travelled since last call.
         /// </summary>
-        public static double MetresToAcres(double distanceM, double headerWidthM)
+        public static double MetresToAcres(double distanceM, double widthM)
         {
-            return (distanceM * headerWidthM) / M2_PER_ACRE;
+            return (distanceM * widthM) / M2_PER_ACRE;
         }
 
         public void ResetSmoothing()
@@ -330,30 +204,6 @@ namespace BeltFlo.Classes
             _smoothSeeded = false;
             SmoothedYield = 0;
             SmoothedWorkRate = 0;
-        }
-
-        /// <summary>
-        /// Recomputes a single yield value from a stored raw sensor reading, using
-        /// the same math as Calculate() but with no instance state (no smoothing,
-        /// no side effects). Used to re-derive already-logged YieldDataPoints under
-        /// a new calibration (see YieldDataRepo.RecalculateJob) without disturbing
-        /// the live calculator mid-job.
-        /// </summary>
-        public static double ComputeYieldRate(double sensor1Raw, double speedKmh, double baseline,
-            double yieldFactor, double headerWidthM, double testWeightLbsBu)
-        {
-            if (speedKmh < 0.5 || headerWidthM <= 0 || testWeightLbsBu <= 0) return 0;
-
-            double ratio = Math.Max(0.0, Math.Min(1.0, sensor1Raw - baseline));
-            if (ratio <= 0.01) return 0;
-
-            double speedMs = speedKmh / 3.6;
-            double areaRateM2s = speedMs * headerWidthM;
-            double grainFlowIndex = ratio * yieldFactor;
-            double yieldLbsPerM2 = grainFlowIndex / areaRateM2s;
-            double yieldBuAc = yieldLbsPerM2 * M2_PER_ACRE / testWeightLbsBu;
-
-            return Math.Round(yieldBuAc, 1);
         }
     }
 }

@@ -11,8 +11,8 @@ namespace BeltFlo.Classes
     {
         // Subsystems
         public static UDPComm UDPaog;                           // GPS from AOG       recv:17777 send:15555
-        public static UDPComm UDPmodule;                        // BeltFlo module    recv:30100 (WiFi mode)
-        public static CanModuleComm CanModule = new CanModuleComm(); // BeltFlo module    CAN mode
+        public static UDPComm UDPmodule;                        // BeltFlo module     recv:30300 (WiFi mode)
+        public static CanModuleComm CanModule = new CanModuleComm(); // BeltFlo module  CAN mode
         public static clsGPS GPS = new clsGPS();
         public static clsYieldCalculator Yield;
         public static clsDataCollector Collector;
@@ -24,41 +24,23 @@ namespace BeltFlo.Classes
         // Shared tools
         public static clsTools Tls = new clsTools();
 
-        // Live sensor state (written by UDPComm/CanModuleComm, read by UI + DataCollector)
-        public static double LastMoisture     { get; set; }
-        public static double LastTemperature  { get; set; }
-        public static bool   LastMoistureOk   { get; set; }
-        public static bool   LastTemperatureOk { get; set; }
-        public static double LastSensor1      { get; set; }
-        // The module's own SensorOK flag, carried alongside the reading it belongs to.
-        // When it is false LastSensor1 is set to 0 — a value indistinguishable from a
-        // genuine empty elevator, which is how a blind sensor used to be recorded as
-        // 13,000 real no-flow points with acres and a full map behind them. Anything
-        // that stores or integrates LastSensor1 must check this first.
-        public static bool   LastSensor1Valid { get; set; } = true;
-        // The module reporting that its comp cross-check is discarding every edge:
-        // Main + Comp is selected but Comp is not wired, so one edge of each paddle
-        // fails the cross-check and the other is dropped as a duplicate, and nothing
-        // is ever measured. Distinct from LastSensor1Valid, which cannot tell a dead
-        // sensor from a stopped elevator — this one can only be raised while edges
-        // are actually arriving, so it needs no "is it harvesting" gate and is worth
-        // showing the moment the elevator spins up. Carried on both transports
-        // (status_flags bit 3). False on firmware that predates the flag.
-        public static bool   LastCompFault    { get; set; }
-        public static int    LastNoiseCount   { get; set; }
-        public static int    LastPaddleHz     { get; set; } = -1;   // paddles/s from the 1 Hz packet; -1 = not reported (old firmware)
-        public static int    LastModuleRpm    { get; set; }         // elevator RPM from the 5 Hz packet; fixed reference 200 when no RPM sensor fitted
-        public static int    LastMinCycleMs   { get; set; } = -1;   // shortest completed paddle cycle in the 1 Hz packet's window, ms; -1 = not reported (old firmware)
-        // Leading edges the module's period gate rejected in the 1 Hz packet's window —
-        // grain bridging the inter-paddle gap, caught before it could split a cycle.
-        // Carried on both transports (CAN frame byte 5, UDP PGN 40002 byte 7).
-        public static int    LastGateRejects  { get; set; } = -1;   // -1 = not reported (firmware predates the field)
-        // The gate's own period estimate, ms — the median of recent raw leading-edge
-        // intervals that its threshold is 75% of. Carried on both transports (CAN
-        // frame byte 6, UDP PGN 40002 byte 8). 0 means the estimator is unarmed and
-        // the gate is passing everything, which no other field reveals; comparing it
-        // against 1000/LastPaddleHz measures how many spurious edges are arriving.
-        public static int    LastMedianCycleMs { get; set; } = -1;  // -1 = not reported (firmware predates the field)
+        // Live conveyor state (written by the packet parsers through the two Apply
+        // methods below, read by UI + DataCollector)
+        public static uint   LastCumPoundsX10 { get; set; }   // module's cumulative delivered weight, tenths of a pound; wraps
+        public static uint   LastCumPulses    { get; set; }   // module's cumulative belt pulses; wraps
+        public static double LastScaleLb      { get; set; }   // live weigh-section load after zero, lb
+        public static int    LastScaleRaw     { get; set; }   // raw converter counts, for the calibration screen
+        public static byte   LastFlags        { get; set; }
+        // The module's own verdict on the converter and the cells. When it is false
+        // the counters may still tick, but nothing they say can be trusted, so the
+        // collector pauses recording the same way it does for a GPS dropout.
+        public static bool   LastScaleOk      { get; set; } = true;
+        public static bool   LastBeltRunning  { get; set; }
+        public static bool   LastTared        { get; set; }   // the module holds a zero
+        public static bool   LastCalMismatch  { get; set; }   // module's calibration is not the one the app expects
+        public static bool   LastOverload     { get; set; }   // cells at their rated limit
+        public static int    LastCalRev       { get; set; } = -1;   // conveyor_config id the module says it is running; -1 = not reported
+
         /// <summary>Per-session diagnostic CSV, one row per module packet. Always running.</summary>
         public static clsDiagLogger DiagLog { get; private set; }
 
@@ -67,13 +49,11 @@ namespace BeltFlo.Classes
         public static bool   LastDataWriteOk  { get; set; } = true;
 
         // Active session configuration
-        public static int    ActiveProfileId      { get; set; } = -1;
-        public static int    ActiveCropId         { get; set; } = -1;
-        public static int    ActiveHeaderId       { get; set; } = -1;
-        public static double ActiveMoistureOffset { get; set; } = 0;
-        public static double ActiveMoistScale     { get; set; } = 0.001;
-        public static double ActiveTempOffset     { get; set; } = 0;
-        public static double ActiveTempScale      { get; set; } = 0.0125;
+        public static int ActiveProfileId { get; set; } = -1;
+        public static int ActiveCropId    { get; set; } = -1;
+        public static int ActiveHeaderId  { get; set; } = -1;
+        public static int ActiveCalRev    { get; set; } = -1;   // conveyor_config row the app expects the module to run
+        public static int ActiveRowsInUse { get; set; } = 0;    // 0 = full width; fewer when the digger lifts fewer rows
 
         // Flags
         public static bool IsShuttingDown { get; private set; }
@@ -113,8 +93,6 @@ namespace BeltFlo.Classes
                 // Yield engine
                 Yield = new clsYieldCalculator();
                 Yield.ProcessingDelaySec = Properties.Settings.Default.ProcessingDelaySec;
-                Yield.CalRunStateChanged += (s, ev) => SaveCalRunState();
-                RestoreCalRunState();
                 Collector = new clsDataCollector();
 
                 SeedDefaultData();
@@ -128,7 +106,7 @@ namespace BeltFlo.Classes
 
                 // UDP
                 UDPaog = new UDPComm(MainForm, 17777, 15555, 1461, "UDPaog", "127.255.255.255"); // send-from 1461 (RC uses 1460)
-                UDPmodule = new UDPComm(MainForm, 30100, 30200, 1500, "UDPmodule");
+                UDPmodule = new UDPComm(MainForm, 30300, 30400, 1500, "UDPmodule");
 
                 UDPmodule.Start();
                 if (!UDPmodule.IsRunning)
@@ -183,96 +161,131 @@ namespace BeltFlo.Classes
                     SafeTry(() => Collector?.StopJob());
                 SafeTry(() => Database?.Close());
                 SafeTry(() => DiagLog?.Stop());
-                // Final flush of the cal run, so a clean exit loses at most nothing
-                // rather than up to one autosave interval.
-                SafeTry(() => SaveCalRunState());
                 SafeTry(() => SafeEvent.Raise(AppExit));
                 SafeTry(() => LogRunTime());
             }
             return allow;
         }
 
-        // ── Calibration run persistence ───────────────────────────────────────
+        // ── Module packets ────────────────────────────────────────────────────
         //
-        // A cal run is stopped and then left standing until the cart crosses a
-        // scale, which can be hours and can span a shutdown. Held only in
-        // clsYieldCalculator it died with the process, silently: the operator came
-        // back with a weigh ticket to a screen that had forgotten the run. These
-        // two mirror it into user settings.
-        //
-        // Settings rather than the database because the run belongs to the
-        // installation, not to a job — it survives job changes and exists before
-        // any job has been started.
+        // Both transports land here, so UDP and CAN cannot drift apart in what they
+        // do with a packet. Counters and status arrive together on UDP and as two
+        // frames on CAN; each half is applied on its own.
 
-        private const string CalRunTimeFormat = "o";   // round-trip, culture-invariant
-
-        private static void SaveCalRunState()
+        /// <summary>
+        /// The module's cumulative counters. Differences them, credits the pounds to
+        /// the job and the open load, and writes one diagnostic row.
+        /// </summary>
+        public static void ApplyConveyorCounters(uint cumPoundsX10, uint cumPulses)
         {
-            try
-            {
-                if (Yield == null) return;
-                var s = Properties.Settings.Default;
-                s.CalRunBushels     = Yield.CalRunBushels;
-                s.CalRunActive      = Yield.IsCalRunActive;
-                s.CalRunInterrupted = Yield.CalRunInterrupted;
-                s.CalRunProfileId   = Yield.CalRunProfileId;
-                s.CalRunCropId      = Yield.CalRunCropId;
-                s.CalRunStartedUtc  = Yield.CalRunStartedUtc?.ToString(CalRunTimeFormat,
-                                          System.Globalization.CultureInfo.InvariantCulture) ?? "";
+            DateTime now = DateTime.UtcNow;
+            if (cumPulses != LastCumPulses) _lastPulseChangeUtc = now;
 
-                // "Good as at" rather than strictly the stop time: the stop time once
-                // stopped, the autosave time while still running. An interrupted run
-                // then carries an honest timestamp instead of a blank, which is the
-                // whole basis for deciding whether to trust its total.
-                DateTime? asAt = Yield.CalRunStoppedUtc
-                                 ?? (Yield.IsCalRunActive ? DateTime.UtcNow : (DateTime?)null);
-                s.CalRunStoppedUtc = asAt?.ToString(CalRunTimeFormat,
-                                          System.Globalization.CultureInfo.InvariantCulture) ?? "";
-                s.Save();
-            }
-            catch (Exception ex)
-            {
-                // Never let a settings write take down the GPS tick that triggered it.
-                Props.WriteErrorLog("SaveCalRunState " + ex.Message);
-            }
+            LastCumPoundsX10  = cumPoundsX10;
+            LastCumPulses     = cumPulses;
+            ModuleConnected   = true;
+            LastModuleReceive = DateTime.UtcNow;
+
+            double dLb = Yield?.PushConveyorReading(cumPoundsX10, cumPulses, DateTime.UtcNow) ?? 0;
+            if (dLb > 0) Collector?.OnPoundsDelta(dLb);
+
+            // After the pulse time above is current, so weight and pulses are judged
+            // from the same packet.
+            EvaluateBeltSensor(now);
+
+            // One diagnostic row per counter packet — 5 Hz, independent of whether a
+            // job is recording, so a fault between jobs still leaves evidence.
+            DiagLog?.Log();
         }
 
-        private static void RestoreCalRunState()
+        /// <summary>The module's status flags, live section weight and calibration revision.</summary>
+        public static void ApplyConveyorStatus(byte flags, double scaleLb, int scaleRaw, int calRev)
         {
-            try
-            {
-                var s = Properties.Settings.Default;
-                if (s.CalRunBushels <= 0) return;
+            LastFlags        = flags;
+            LastScaleOk      = (flags & 0x01) != 0;
+            LastBeltRunning  = (flags & 0x02) != 0;
+            LastTared        = (flags & 0x04) != 0;
+            LastCalMismatch  = (flags & 0x08) != 0;
+            LastOverload     = (flags & 0x10) != 0;
+            LastScaleLb      = scaleLb;
+            LastScaleRaw     = scaleRaw;
+            LastCalRev       = calRev;
+            ModuleConnected   = true;
+            LastModuleReceive = DateTime.UtcNow;
 
-                Yield.RestoreCalRun(
-                    s.CalRunBushels,
-                    s.CalRunActive,
-                    s.CalRunInterrupted,
-                    s.CalRunProfileId,
-                    s.CalRunCropId,
-                    ParseCalRunTime(s.CalRunStartedUtc),
-                    ParseCalRunTime(s.CalRunStoppedUtc));
+            _scaleWindow.Enqueue((LastModuleReceive, scaleLb));
+            while (_scaleWindow.Count > 0
+                   && (LastModuleReceive - _scaleWindow.Peek().utc).TotalSeconds > BeltCheckSec)
+                _scaleWindow.Dequeue();
 
-                if (s.CalRunActive)
-                    Props.WriteErrorLog(
-                        $"CalRun restored INTERRUPTED: bushels={s.CalRunBushels:F4} " +
-                        $"profileId={s.CalRunProfileId} cropId={s.CalRunCropId} " +
-                        $"started={s.CalRunStartedUtc} lastSave={s.CalRunStoppedUtc}");
-            }
-            catch (Exception ex)
-            {
-                Props.WriteErrorLog("RestoreCalRunState " + ex.Message);
-            }
+            // Not evaluated here. UDP applies status before counters, so judging now
+            // would pair this packet's weight with the previous packet's pulses — a
+            // belt that has just restarted would flash a false Belt warning.
         }
 
-        private static DateTime? ParseCalRunTime(string value)
+        // ── Belt sensor check ─────────────────────────────────────────────────
+        //
+        // A disconnected proximity sensor sends no pulses, which is exactly what a
+        // stopped belt sends, so the packet cannot tell them apart. What does tell
+        // them apart is the weight: crop sitting on a stopped belt reads steady,
+        // crop moving over the section on a running belt rises and falls. Weight
+        // present AND moving with no pulses for a few seconds means the belt is
+        // running and its sensor is not being heard.
+        //
+        // That matters more than it looks. The module multiplies weight by belt
+        // travel, so with no pulses it records zero pounds while crop is still
+        // going into the truck, and nothing else on screen would show it.
+        //
+        // The thresholds are first guesses, to be set from bench and field
+        // readings: 2 lb is well above a clean zero, and a 1 lb swing in 3 s is
+        // beyond converter noise on a stopped belt but well within the lumpiness
+        // of crop on a moving one.
+
+        private const double BeltCheckSec        = 3.0;
+        private const double BeltCheckMinLb      = 2.0;
+        private const double BeltCheckMinSwingLb = 1.0;
+
+        private static DateTime _lastPulseChangeUtc = DateTime.MinValue;
+        private static readonly System.Collections.Generic.Queue<(DateTime utc, double lb)> _scaleWindow
+            = new System.Collections.Generic.Queue<(DateTime utc, double lb)>();
+
+        /// <summary>True while crop appears to be moving over the scale with no belt pulses arriving.</summary>
+        public static bool BeltSensorSuspect { get; private set; }
+
+        private static void EvaluateBeltSensor(DateTime now)
         {
-            if (string.IsNullOrWhiteSpace(value)) return null;
-            return DateTime.TryParse(value,
-                       System.Globalization.CultureInfo.InvariantCulture,
-                       System.Globalization.DateTimeStyles.RoundtripKind,
-                       out DateTime dt)
-                   ? dt : (DateTime?)null;
+            bool suspect = false;
+
+            // Only judge a full window, and only once pulses have been still for all of it.
+            if (_scaleWindow.Count > 1
+                && (now - _scaleWindow.Peek().utc).TotalSeconds >= BeltCheckSec - 0.5
+                && (now - _lastPulseChangeUtc).TotalSeconds >= BeltCheckSec)
+            {
+                double min = double.MaxValue, max = double.MinValue, sum = 0;
+                foreach (var s in _scaleWindow)
+                {
+                    if (s.lb < min) min = s.lb;
+                    if (s.lb > max) max = s.lb;
+                    sum += s.lb;
+                }
+                double mean = sum / _scaleWindow.Count;
+                suspect = mean >= BeltCheckMinLb && (max - min) >= BeltCheckMinSwingLb;
+            }
+
+            if (suspect == BeltSensorSuspect) return;
+            BeltSensorSuspect = suspect;
+
+            if (suspect)
+            {
+                Props.WriteErrorLog("Belt sensor suspect: weight moving on the section with no pulses for "
+                                    + BeltCheckSec.ToString("0") + " s (scale " + LastScaleLb.ToString("0.0") + " lb)");
+                Props.ShowMessage(Language.Lang.lgBeltSensorSuspect, "", 5000, true);
+            }
+            else
+            {
+                Props.WriteActivityLog("Belt sensor OK again");
+            }
         }
 
         public static void RequestUserExit()
@@ -316,14 +329,6 @@ namespace BeltFlo.Classes
 
             if (Database == null || Yield == null) return;
 
-            foreach (var c in Database.Crops.GetAll())
-            {
-                if (c.id != cropId) continue;
-                Yield.TestWeightLbsBu = c.testWeight;   // Props.TestWeightKgPerBu derives from this
-                ActiveMoistureOffset  = c.moistureOffset;
-                break;
-            }
-
             foreach (var h in Database.Headers.GetAll())
             {
                 if (h.id != headerId) continue;
@@ -332,26 +337,20 @@ namespace BeltFlo.Classes
                 break;
             }
 
-            foreach (var p in Database.Profiles.GetAll())
+            // The conveyor configuration belongs to the machine, not the crop: the
+            // scale does not care what is running over it.
+            if (profileId > 0)
             {
-                if (p.id != profileId) continue;
-                ActiveTempOffset  = p.tempOffset;
-                ActiveTempScale   = p.tempScale  > 0 ? p.tempScale  : 0.0125;
-                ActiveMoistScale  = p.moistScale > 0 ? p.moistScale : 0.001;
-                // Baseline is a property of the sensor, so it loads with the profile
-                // and survives a crop change — the plate's zero point does not care
-                // what is flowing over it.
-                Yield.SensorBaseline = p.sensorBaseline;
-                break;
-            }
-
-            if (profileId > 0 && cropId > 0)
-            {
-                var cal = Database.Calibrations.GetLatest(profileId, cropId);
-                Yield.YieldFactor        = cal.yieldFactor;
-                Yield.ProcessingDelaySec = cal.delaySec > 0
-                    ? cal.delaySec
-                    : Properties.Settings.Default.ProcessingDelaySec;
+                var cfg = Database.ConveyorConfigs.GetLatest(profileId);
+                if (cfg != null)
+                {
+                    ActiveCalRev                = cfg.Id;
+                    Yield.InchesPerPulse        = cfg.InchesPerPulse > 0 ? cfg.InchesPerPulse : 1.0;
+                    Yield.FlowThresholdLbPerSec = cfg.FlowThresholdLbS;
+                    Yield.ProcessingDelaySec    = cfg.DelaySec > 0
+                        ? cfg.DelaySec
+                        : Properties.Settings.Default.ProcessingDelaySec;
+                }
             }
         }
 
@@ -360,28 +359,24 @@ namespace BeltFlo.Classes
             try
             {
                 if (Database.Profiles.GetAll().Count == 0)
-                    Database.Profiles.Create("Default", "Combine 1");
+                    Database.Profiles.Create("Default", "Harvester 1");
 
                 if (Database.Crops.GetAll().Count == 0)
                 {
-                    // Test weight is the statutory bushel weight in lb/bu — a fixed
-                    // conversion constant per crop, not a measured density. Moisture
-                    // values are the CGC straight-grade "dry" thresholds (Sorghum is
-                    // not CGC-graded; 14.0 is the US No.2 limit).
-                    Database.Crops.Create("Barley",   "Cereal",  48.0, 14.8, 14.8);
-                    Database.Crops.Create("Canola",   "OilSeed", 50.0, 10.0, 10.0);
-                    Database.Crops.Create("Corn",     "Corn",    56.0, 15.5, 15.5);
-                    Database.Crops.Create("Flax",     "OilSeed", 56.0, 10.0, 10.0);
-                    Database.Crops.Create("Lentils",  "Pulse",   60.0, 14.0, 14.0);
-                    Database.Crops.Create("Oats",     "Cereal",  34.0, 14.0, 14.0);
-                    Database.Crops.Create("Peas",     "Pulse",   60.0, 16.0, 16.0);
-                    Database.Crops.Create("Sorghum",  "Cereal",  56.0, 14.0, 14.0);
-                    Database.Crops.Create("Soybeans", "OilSeed", 60.0, 14.0, 14.0);
-                    Database.Crops.Create("Wheat",    "Cereal",  60.0, 14.5, 14.5);
+                    Database.Crops.Create("Potato");
+                    Database.Crops.Create("Sugar Beet");
+                    Database.Crops.Create("Carrot");
+                    Database.Crops.Create("Onion");
                 }
 
                 if (Database.Headers.GetAll().Count == 0)
-                    Database.Headers.Create("30ft Draper", "Draper", 9.144);
+                    Database.Headers.Create("4 Row 36 in", "Digger", 3.6576);
+
+                // Every profile carries a conveyor configuration from the start, so a
+                // packet always has a revision to be checked against.
+                foreach (var p in Database.Profiles.GetAll())
+                    if (Database.ConveyorConfigs.GetLatest(p.id) == null)
+                        Database.ConveyorConfigs.Save(new ConveyorConfig { ProfileId = p.id });
 
                 // Set active to first available so yield calc has reasonable defaults
                 var profiles = Database.Profiles.GetAll();

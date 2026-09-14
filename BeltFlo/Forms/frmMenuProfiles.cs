@@ -11,7 +11,7 @@ namespace BeltFlo.Forms
     {
         private bool _dragging;
         private Point _dragStart;
-        private List<(int id, string name, string combineId, double tempOffset, double tempScale, double moistScale, double sensorBaseline)> _profiles;
+        private List<(int id, string name, string harvesterId)> _profiles;
         private int _editingId = -1;
 
         public frmMenuProfiles()
@@ -44,7 +44,7 @@ namespace BeltFlo.Forms
         private void frmMenuProfiles_Shown(object sender, EventArgs e)
         {
             KeyboardHelper.Wire(this, txtProfileName, "Profile Name");
-            KeyboardHelper.Wire(this, txtCombineId,   "Combine ID");
+            KeyboardHelper.Wire(this, txtCombineId,   "Harvester ID");
             btnSave.Focus();
         }
 
@@ -75,7 +75,7 @@ namespace BeltFlo.Forms
             _profiles = Core.Database.Profiles.GetAll();
             lbProfiles.Items.Clear();
             foreach (var p in _profiles)
-                lbProfiles.Items.Add($"{p.name}  –  {p.combineId}");
+                lbProfiles.Items.Add($"{p.name}  –  {p.harvesterId}");
         }
 
         private void ClearEdit()
@@ -93,7 +93,7 @@ namespace BeltFlo.Forms
             var p = _profiles[idx];
             _editingId          = p.id;
             txtProfileName.Text = p.name;
-            txtCombineId.Text   = p.combineId;
+            txtCombineId.Text   = p.harvesterId;
         }
 
         private void btnNew_Click(object sender, EventArgs e) => ClearEdit();

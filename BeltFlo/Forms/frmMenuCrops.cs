@@ -7,13 +7,15 @@ using BeltFlo.Language;
 
 namespace BeltFlo.Forms
 {
+    // A crop is a name. The scale weighs whatever runs over it, so there is no
+    // per-crop constant to keep — the name is there so a job and its report can
+    // say what was dug.
     public partial class frmMenuCrops : Form
     {
         private bool _dragging;
         private Point _dragStart;
-        private List<(int id, string name, string category, double testWeight, double marketMoisture, double dryMoisture, double moistureOffset)> _crops;
+        private List<(int id, string name)> _crops;
         private int _editingId = -1;
-        private double _editingMoistureOffset = 0;
 
         public frmMenuCrops()
         {
@@ -23,13 +25,6 @@ namespace BeltFlo.Forms
         private void frmMenuCrops_Load(object sender, EventArgs e)
         {
             ApplyTheme();
-            // Metric keeps "Test Wt … kg/hL", which is what the field genuinely is
-            // to a metric user and what their receipt quotes. Imperial says
-            // "Bushel Wt … lb/bu" instead, because there the value is the statutory
-            // per-crop constant (wheat 60) — labelling it "Test Wt" invited users to
-            // enter their measured ticket figure, which skews every bushel total.
-            lblTestWeight.Text     = Props.IsMetric ? Lang.lgTestWeight : Lang.lgBushelWeight;
-            lblTestWeightUnit.Text = Props.TestWeightUnit;   // "kg/hL" in metric, "lb/bu" imperial
             FormPositions.Restore(this);
             this.FormClosed += (s2, ev2) => FormPositions.Save(this);
             foreach (Control c in new Control[] { pnlTitle, lblTitle })
@@ -51,9 +46,6 @@ namespace BeltFlo.Forms
         private void frmMenuCrops_Shown(object sender, EventArgs e)
         {
             KeyboardHelper.Wire(this, txtCropName, "Crop Name");
-            NumpadHelper.Wire(this, numTestWeight,     0,   200, 0,
-                (Props.IsMetric ? "Test Weight (" : "Bushel Weight (") + Props.TestWeightUnit + ")");
-            NumpadHelper.Wire(this, numMarketMoisture, 0,    40, 1, "Market Moisture (%)");
             btnSave.Focus();
         }
 
@@ -71,9 +63,7 @@ namespace BeltFlo.Forms
             foreach (Control c in pnlEdit.Controls)
             {
                 c.ForeColor = fore;
-                if (c is TextBox tb)       { tb.BackColor  = ctrl; tb.ForeColor  = fore; }
-                if (c is ComboBox cb)      { cb.BackColor  = ctrl; cb.ForeColor  = fore; }
-                if (c is NumericUpDown nd) { nd.BackColor  = ctrl; nd.ForeColor  = fore; }
+                if (c is TextBox tb) { tb.BackColor = ctrl; tb.ForeColor = fore; }
             }
             btnNew.BackColor    = Color.FromArgb(60, 60, 60); btnNew.ForeColor    = Color.White;
             btnSave.BackColor   = Color.FromArgb(0, 90, 0);   btnSave.ForeColor   = Color.White;
@@ -86,17 +76,13 @@ namespace BeltFlo.Forms
             _crops = Core.Database.Crops.GetAll();
             lbCrops.Items.Clear();
             foreach (var c in _crops)
-                lbCrops.Items.Add($"{c.name}  –  {c.category}  –  {Props.DisplayTestWeight(c.testWeight):F0} {Props.TestWeightUnit}");
+                lbCrops.Items.Add(c.name);
         }
 
         private void ClearEdit()
         {
             _editingId = -1;
-            _editingMoistureOffset = 0;
             txtCropName.Text = "";
-            cboCropCategory.SelectedIndex = 0;
-            numTestWeight.Value     = (decimal)Props.DisplayTestWeight(60);   // 60 lb/bu default, shown in active unit
-            numMarketMoisture.Value = 14;
             lbCrops.ClearSelected();
         }
 
@@ -106,14 +92,7 @@ namespace BeltFlo.Forms
             if (idx < 0 || _crops == null || idx >= _crops.Count) return;
             var c = _crops[idx];
             _editingId = c.id;
-            _editingMoistureOffset = c.moistureOffset;
             txtCropName.Text = c.name;
-            cboCropCategory.SelectedIndex = cboCropCategory.Items.IndexOf(c.category);
-            if (cboCropCategory.SelectedIndex < 0) cboCropCategory.SelectedIndex = 0;
-            numTestWeight.Value     = (decimal)System.Math.Max((double)numTestWeight.Minimum,
-                                        System.Math.Min((double)numTestWeight.Maximum, Props.DisplayTestWeight(c.testWeight)));
-            numMarketMoisture.Value = (decimal)System.Math.Max((double)numMarketMoisture.Minimum,
-                                        System.Math.Min((double)numMarketMoisture.Maximum, c.marketMoisture));
         }
 
         private void btnNew_Click(object sender, EventArgs e)  => ClearEdit();
@@ -122,17 +101,13 @@ namespace BeltFlo.Forms
         {
             string name = txtCropName.Text.Trim();
             if (string.IsNullOrEmpty(name)) { Props.ShowMessage(Lang.lgEnterCropName, "", 2000, true); return; }
-            string cat = cboCropCategory.SelectedItem?.ToString() ?? "Cereal";
-            double tw  = Props.TestWeightToLbBu((double)numTestWeight.Value);   // store internally as lb/bu
-            if (tw <= 0) { Props.ShowMessage(Lang.lgTestWeightRequired, "", 2000, true); return; }
-            double mm  = (double)numMarketMoisture.Value;
 
             int savedId;
             if (_editingId < 0)
-                savedId = Core.Database.Crops.Create(name, cat, tw, mm, mm);
+                savedId = Core.Database.Crops.Create(name);
             else
             {
-                Core.Database.Crops.Update(_editingId, name, cat, tw, mm, mm, _editingMoistureOffset);
+                Core.Database.Crops.Update(_editingId, name);
                 savedId = _editingId;
             }
 

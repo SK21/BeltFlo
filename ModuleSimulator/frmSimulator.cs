@@ -7,27 +7,41 @@ using System.Windows.Forms;
 namespace ModuleSimulator
 {
     /// <summary>
-    /// Simulates a BeltFlo hardware module — sends PK1 (sensor, 5 Hz) and
-    /// PK2 (temperature, 1 Hz) UDP packets to the BeltFlo PC app on port 30100.
+    /// Simulates a BeltFlo conveyor module — sends the conveyor packet (PGN 40010,
+    /// 5 Hz) over UDP to the BeltFlo PC app on port 30300.
     ///
-    /// Moisture and temperature sliders represent calibrated values.
-    /// Raw counts sent = value / default_scale so the PC app reads correctly
-    /// at default scale settings (moist_scale=0.001, temp_scale=0.0125).
+    /// The sliders set what a real machine would present to the scale: the load
+    /// sitting on the weighed section and the belt speed. The module's job is to
+    /// integrate load against belt travel, and that is done here the same way:
+    /// pounds per inch of belt × inches of belt that passed this tick.
     /// </summary>
     public partial class frmSimulator : Form
     {
-        private const int PC_RECV_PORT  = 30100;
-        private const int SIM_SEND_PORT = 30201;
+        private const int PC_RECV_PORT  = 30300;
+        private const int SIM_SEND_PORT = 30301;
 
-        // Default scales — must match Core.cs defaults so slider values display correctly
-        private const double DefaultMoistScale = 0.001;   // %/count
-        private const double DefaultTempScale  = 0.0125;  // °C/count
+        // Geometry — must match the PC app's default conveyor configuration so the
+        // belt speed it derives from pulses agrees with the slider.
+        private const double InchesPerPulse = 1.0;
+        private const double SectionLenIn   = 36.0;
+
+        // The calibration revision the simulated module claims to be running. The
+        // PC app seeds each profile with one conveyor_config row, so 1 matches a
+        // fresh database.
+        private const byte CalRev = 1;
 
         private System.Windows.Forms.Timer _sendTimer;
         private UdpClient  _udp;
         private IPEndPoint _target;
-        private double _simAngle  = 0;
-        private int    _pk2Ticks  = 0;   // PK2 sent every 10 ticks (1 Hz at 100 ms timer)
+        private double _simAngle = 0;
+        private int    _ticks    = 0;
+
+        // Cumulative counters, kept as doubles so fractional pounds and pulses
+        // carry over between ticks, and truncated to uint32 on the wire so they
+        // wrap the way the module's will.
+        private double _cumLb     = 0;
+        private double _cumPulses = 0;
+        private double _lbPerSec  = 0;
 
         public frmSimulator()
         {
@@ -52,7 +66,7 @@ namespace ModuleSimulator
                 return;
             }
 
-            _sendTimer = new System.Windows.Forms.Timer { Interval = 100 };  // 10 Hz
+            _sendTimer = new System.Windows.Forms.Timer { Interval = 100 };  // 10 Hz integration, 5 Hz send
             _sendTimer.Tick += SendTimer_Tick;
             _sendTimer.Start();
             lblStatus.Text = "Sending to 127.0.0.1:" + PC_RECV_PORT;
@@ -98,75 +112,88 @@ namespace ModuleSimulator
             // of silence, which is the only path to a red Module label.
             if (chkModuleOffline.Checked)
             {
-                lblSensor1.Text     = "S1: --";
+                lblFlow.Text        = "Flow: --";
                 lblStatus.Text      = "Module offline — sending nothing";
                 lblStatus.ForeColor = System.Drawing.Color.Red;
                 return;
             }
 
             _simAngle += 0.05;
-            _pk2Ticks++;
+            _ticks++;
 
-            double yieldSlider    = trkYield.Value    / 100.0;   // 0.0 – 1.0
-            double moistureSlider = trkMoisture.Value / 10.0;    // 0.0 – 30.0 %
-            double tempSlider     = trkTemperature.Value / 10.0; // -10.0 – 50.0 °C
-            double variation      = trkVariation.Value / 100.0;
+            double loadLb    = trkLoad.Value / 10.0;      // 0.0 – 50.0 lb on the section
+            double beltFtMin = trkBelt.Value;             // 0 – 300 ft/min
+            double variation = trkVariation.Value / 100.0;
 
             lblVariationSlider.Text = $"Variation: {trkVariation.Value}%";
 
-            // Sensor obstruction ratio
-            const double SimBaseline = 0.2;
-            double ratio = 0;
-            if (chkSections.Checked)
+            // Nothing on the belt unless the digger is in the ground.
+            if (!chkSections.Checked) loadLb = 0;
+            if (chkBeltStopped.Checked)
             {
-                double flow = chkSineWave.Checked
-                    ? yieldSlider * (1.0 + variation * Math.Sin(_simAngle))
-                    : yieldSlider;
-                ratio = SimBaseline + flow * (1.0 - SimBaseline);
+                // Crop left sitting on a stopped belt: the section reads steady.
+                beltFtMin = 0;
+            }
+            else
+            {
+                if (chkSineWave.Checked) loadLb *= 1.0 + variation * Math.Sin(_simAngle);
+                // Crop moving over the section is lumpy, and that lumpiness is what
+                // the PC app uses to tell a running belt from a stopped one when no
+                // pulses arrive.
+                loadLb *= 1.0 + 0.15 * Math.Sin(_simAngle * 9.7) + 0.08 * Math.Sin(_simAngle * 23.3);
             }
 
-            // A blocked or unpowered sensor still reports — it reports nothing seen.
-            // The module cannot tell that from a genuinely empty elevator, so its
-            // SensorOK flag stays set and the PC app has to catch it by holding: a
-            // hard zero for 30 s while harvesting is not a measurement any running
-            // elevator can produce.
-            if (chkHardZero.Checked) ratio = 0;
+            // Integrate. lb per inch of belt × inches that passed this tick. With a
+            // dead belt sensor the belt still moves but the module hears no pulses,
+            // so it integrates nothing — the failure the app's Belt warning exists for.
+            const double dt = 0.1;
+            double beltInPerSec   = beltFtMin * 12.0 / 60.0;
+            double sensedInPerSec = chkBeltSensorDead.Checked ? 0 : beltInPerSec;
+            _lbPerSec   = loadLb / SectionLenIn * sensedInPerSec;
+            _cumLb     += _lbPerSec * dt;
+            _cumPulses += sensedInPerSec * dt / InchesPerPulse;
 
-            // sensor_ratio: uint16, 0–1000 (ratio × 1000)
-            ushort sensorRatio = (ushort)Math.Max(0, Math.Min(1000, ratio * 1000));
-
-            // moisture_raw: raw ADS1115 count — back-calculated from % using default scale
-            ushort moistRaw = (ushort)Math.Max(0, Math.Min(65535, moistureSlider / DefaultMoistScale));
-
-            // bit0=SensorOK, bit2=MoistureOK (no RPM sensor in sim). Clearing bit0 is
-            // the module diagnosing its own sensor — an unplugged or shorted head,
-            // which the PC app acts on immediately rather than waiting out a timer.
-            byte flags = chkSensorFlag.Checked ? (byte)0x04 : (byte)0x05;
-            ushort rpm = 200;   // fixed RPM-absent sentinel
-
-            SendPK1(sensorRatio, moistRaw, rpm, flags);
-
-            if (_pk2Ticks >= 10)
+            if (_ticks % 2 == 0)
             {
-                _pk2Ticks = 0;
-                // temp_raw: raw ADS1115 count — back-calculated from °C using default scale
-                short tempRaw = (short)Math.Max(-32768, Math.Min(32767, tempSlider / DefaultTempScale));
-                SendPK2(tempRaw);
+                // bit0 ScaleOK, bit1 BeltRunning, bit2 Tared. Clearing bit0 is the
+                // module diagnosing its own converter or cells, which the PC app
+                // acts on immediately.
+                byte flags = 0;
+                if (!chkNotZeroed.Checked)  flags |= 0x04;
+                if (!chkScaleFault.Checked) flags |= 0x01;
+                if (sensedInPerSec > 0)     flags |= 0x02;
+
+                uint cumLbX10  = unchecked((uint)(long)(_cumLb * 10.0));
+                uint cumPulses = unchecked((uint)(long)_cumPulses);
+                short scaleX10 = (short)Math.Max(-32768, Math.Min(32767, loadLb * 10.0));
+                int scaleRaw   = 100000 + (int)(loadLb * 2000.0);   // arbitrary counts, for the calibration screen
+
+                SendConveyorPacket(flags, cumLbX10, cumPulses, scaleX10, scaleRaw);
             }
 
             // Update UI labels
-            lblSensor1.Text   = $"S1: {ratio:F3}";
-            lblMoistureVal.Text = $"Mst: {moistureSlider:F1}%";
-            lblTempVal.Text   = $"Tmp: {tempSlider:F1}°C";
+            lblFlow.Text   = $"Flow: {_lbPerSec:F2} lb/s  ({_lbPerSec * 60:F0} lb/min)";
+            lblTotal.Text  = $"Total: {_cumLb:F1} lb";
+            lblPulses.Text = $"Pulses: {(long)_cumPulses}  ({beltFtMin:F0} ft/min)";
 
-            if (chkSensorFlag.Checked)
+            if (chkScaleFault.Checked)
             {
-                lblStatus.Text      = "Sending SensorOK = 0 — app should show NO SENSOR now";
+                lblStatus.Text      = "Sending ScaleOK = 0 — app should show NO SCALE now";
                 lblStatus.ForeColor = System.Drawing.Color.DarkOrange;
             }
-            else if (chkHardZero.Checked)
+            else if (chkBeltSensorDead.Checked)
             {
-                lblStatus.Text      = "Sending hard zero — app shows NO SENSOR after 30 s harvesting";
+                lblStatus.Text      = "Belt sensor dead — app shows Belt after 3 s with crop on";
+                lblStatus.ForeColor = System.Drawing.Color.DarkOrange;
+            }
+            else if (chkBeltStopped.Checked)
+            {
+                lblStatus.Text      = "Belt stopped — pulses and pounds frozen";
+                lblStatus.ForeColor = System.Drawing.Color.DarkOrange;
+            }
+            else if (chkNotZeroed.Checked)
+            {
+                lblStatus.Text      = "Not zeroed — app shows Zero";
                 lblStatus.ForeColor = System.Drawing.Color.DarkOrange;
             }
             else
@@ -176,54 +203,30 @@ namespace ModuleSimulator
             }
         }
 
-        private void SendPK1(ushort sensorRatio, ushort moistureRaw, ushort rpm, byte flags)
+        private void SendConveyorPacket(byte flags, uint cumLbX10, uint cumPulses, short scaleX10, int scaleRaw)
         {
-            // PK1 — 11 bytes:
-            // [0-1]  PGN 40001 LE
-            // [2]    flags  bit0=SensorOK, bit1=RPMPresent, bit2=MoistureOK
-            // [3-4]  sensor_ratio  uint16 LE  (ratio × 1000)
-            // [5-6]  moisture_raw  uint16 LE  (raw ADS1115 AIN0-AIN1 count)
-            // [7-8]  module_rpm    uint16 LE
-            // [9]    noise_count   uint8
-            // [10]   CRC8
-            byte[] pkt = new byte[11];
-            pkt[0] = 0x41;
+            // Conveyor packet — 19 bytes:
+            // [0-1]   PGN 40010 LE (0x4A 0x9C)
+            // [2]     flags  bit0=ScaleOK, bit1=BeltRunning, bit2=Tared, bit3=CalMismatch, bit4=Overload
+            // [3-6]   cum_pounds_x10  uint32 LE
+            // [7-10]  cum_pulses      uint32 LE
+            // [11-12] scale_lb_x10    int16 LE
+            // [13-16] scale_raw       int32 LE
+            // [17]    cal_rev         uint8
+            // [18]    CRC8 — byte sum of everything before it
+            byte[] pkt = new byte[19];
+            pkt[0] = 0x4A;
             pkt[1] = 0x9C;
             pkt[2] = flags;
-            pkt[3] = (byte)(sensorRatio & 0xFF);
-            pkt[4] = (byte)(sensorRatio >> 8);
-            pkt[5] = (byte)(moistureRaw & 0xFF);
-            pkt[6] = (byte)(moistureRaw >> 8);
-            pkt[7] = (byte)(rpm & 0xFF);
-            pkt[8] = (byte)(rpm >> 8);
-            pkt[9] = 0;  // noise_count
+            Array.Copy(BitConverter.GetBytes(cumLbX10),  0, pkt, 3,  4);
+            Array.Copy(BitConverter.GetBytes(cumPulses), 0, pkt, 7,  4);
+            Array.Copy(BitConverter.GetBytes(scaleX10),  0, pkt, 11, 2);
+            Array.Copy(BitConverter.GetBytes(scaleRaw),  0, pkt, 13, 4);
+            pkt[17] = CalRev;
 
             int ck = 0;
-            for (int i = 0; i < 10; i++) ck += pkt[i];
-            pkt[10] = (byte)ck;
-
-            try { _udp.Send(pkt, pkt.Length, _target); } catch { }
-        }
-
-        private void SendPK2(short tempRaw)
-        {
-            // PK2 — 7 bytes:
-            // [0-1] PGN 40002 LE
-            // [2]   flags  bit0=TempOK, bit1=PaddleHzPresent
-            // [3-4] temp_raw  int16 LE  (raw ADS1115 AIN2 count)
-            // [5]   paddle_hz uint8  (paddles/s)
-            // [6]   CRC8
-            byte[] pkt = new byte[7];
-            pkt[0] = 0x42;
-            pkt[1] = 0x9C;
-            pkt[2] = 0x03;  // TempOK + PaddleHzPresent
-            pkt[3] = (byte)(tempRaw & 0xFF);
-            pkt[4] = (byte)((tempRaw >> 8) & 0xFF);
-            pkt[5] = 7;     // fixed simulated paddle rate
-
-            int ck = 0;
-            for (int i = 0; i < 6; i++) ck += pkt[i];
-            pkt[6] = (byte)ck;
+            for (int i = 0; i < 18; i++) ck += pkt[i];
+            pkt[18] = (byte)ck;
 
             try { _udp.Send(pkt, pkt.Length, _target); } catch { }
         }

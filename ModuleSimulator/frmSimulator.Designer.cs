@@ -12,151 +12,146 @@ namespace ModuleSimulator
 
         private void InitializeComponent()
         {
-            this.lblTitle          = new System.Windows.Forms.Label();
-            this.lblYieldSlider    = new System.Windows.Forms.Label();
-            this.trkYield          = new System.Windows.Forms.TrackBar();
-            this.lblMoistureSlider = new System.Windows.Forms.Label();
-            this.trkMoisture       = new System.Windows.Forms.TrackBar();
-            this.lblTempSlider     = new System.Windows.Forms.Label();
-            this.trkTemperature    = new System.Windows.Forms.TrackBar();
-            this.chkSections       = new System.Windows.Forms.CheckBox();
-            this.chkSineWave       = new System.Windows.Forms.CheckBox();
+            this.lblTitle           = new System.Windows.Forms.Label();
+            this.lblLoadSlider      = new System.Windows.Forms.Label();
+            this.trkLoad            = new System.Windows.Forms.TrackBar();
+            this.lblBeltSlider      = new System.Windows.Forms.Label();
+            this.trkBelt            = new System.Windows.Forms.TrackBar();
+            this.chkSections        = new System.Windows.Forms.CheckBox();
+            this.chkSineWave        = new System.Windows.Forms.CheckBox();
             this.lblVariationSlider = new System.Windows.Forms.Label();
-            this.trkVariation      = new System.Windows.Forms.TrackBar();
-            this.lblFaults         = new System.Windows.Forms.Label();
-            this.chkModuleOffline  = new System.Windows.Forms.CheckBox();
-            this.chkSensorFlag     = new System.Windows.Forms.CheckBox();
-            this.chkHardZero       = new System.Windows.Forms.CheckBox();
-            this.lblSensor1        = new System.Windows.Forms.Label();
-            this.lblMoistureVal    = new System.Windows.Forms.Label();
-            this.lblTempVal        = new System.Windows.Forms.Label();
-            this.lblStatus         = new System.Windows.Forms.Label();
-            ((System.ComponentModel.ISupportInitialize)(this.trkYield)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trkMoisture)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trkTemperature)).BeginInit();
+            this.trkVariation       = new System.Windows.Forms.TrackBar();
+            this.lblFaults          = new System.Windows.Forms.Label();
+            this.chkModuleOffline   = new System.Windows.Forms.CheckBox();
+            this.chkScaleFault      = new System.Windows.Forms.CheckBox();
+            this.chkBeltStopped     = new System.Windows.Forms.CheckBox();
+            this.chkBeltSensorDead  = new System.Windows.Forms.CheckBox();
+            this.chkNotZeroed       = new System.Windows.Forms.CheckBox();
+            this.lblFlow            = new System.Windows.Forms.Label();
+            this.lblTotal           = new System.Windows.Forms.Label();
+            this.lblPulses          = new System.Windows.Forms.Label();
+            this.lblStatus          = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.trkLoad)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trkBelt)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkVariation)).BeginInit();
             this.SuspendLayout();
 
             // lblTitle
-            this.lblTitle.Text     = "BeltFlo Simulator";
+            this.lblTitle.Text     = "BeltFlo Conveyor Simulator";
             this.lblTitle.Font     = new System.Drawing.Font("Microsoft Sans Serif", 13F, System.Drawing.FontStyle.Bold);
             this.lblTitle.Location = new System.Drawing.Point(10, 10);
             this.lblTitle.AutoSize = true;
 
-            // Yield
-            this.lblYieldSlider.Text     = "Yield Flow (0–100%):";
-            this.lblYieldSlider.Location = new System.Drawing.Point(10, 55);
-            this.lblYieldSlider.AutoSize = true;
+            // Section load. 6 lb on a 3 ft section at 180 ft/min is 12 lb/s — a
+            // digger doing about 20 t/h.
+            this.lblLoadSlider.Text     = "Load on weigh section (0–50 lb):";
+            this.lblLoadSlider.Location = new System.Drawing.Point(10, 55);
+            this.lblLoadSlider.AutoSize = true;
 
-            this.trkYield.Location      = new System.Drawing.Point(10, 75);
-            this.trkYield.Size          = new System.Drawing.Size(360, 45);
-            this.trkYield.Minimum       = 0;
-            this.trkYield.Maximum       = 100;
-            this.trkYield.Value         = 75;
-            this.trkYield.TickFrequency = 10;
+            this.trkLoad.Location      = new System.Drawing.Point(10, 75);
+            this.trkLoad.Size          = new System.Drawing.Size(360, 45);
+            this.trkLoad.Minimum       = 0;
+            this.trkLoad.Maximum       = 500;
+            this.trkLoad.Value         = 60;    // 6.0 lb
+            this.trkLoad.TickFrequency = 50;
 
-            // Moisture
-            this.lblMoistureSlider.Text     = "Moisture (0–30%):";
-            this.lblMoistureSlider.Location = new System.Drawing.Point(10, 130);
-            this.lblMoistureSlider.AutoSize = true;
+            // Belt speed
+            this.lblBeltSlider.Text     = "Belt speed (0–300 ft/min):";
+            this.lblBeltSlider.Location = new System.Drawing.Point(10, 130);
+            this.lblBeltSlider.AutoSize = true;
 
-            this.trkMoisture.Location      = new System.Drawing.Point(10, 150);
-            this.trkMoisture.Size          = new System.Drawing.Size(360, 45);
-            this.trkMoisture.Minimum       = 0;
-            this.trkMoisture.Maximum       = 300;
-            this.trkMoisture.Value         = 140;   // 14.0 %
-            this.trkMoisture.TickFrequency = 30;
+            this.trkBelt.Location      = new System.Drawing.Point(10, 150);
+            this.trkBelt.Size          = new System.Drawing.Size(360, 45);
+            this.trkBelt.Minimum       = 0;
+            this.trkBelt.Maximum       = 300;
+            this.trkBelt.Value         = 180;
+            this.trkBelt.TickFrequency = 30;
 
-            // Temperature
-            this.lblTempSlider.Text     = "Temperature (–10 to 50°C):";
-            this.lblTempSlider.Location = new System.Drawing.Point(10, 205);
-            this.lblTempSlider.AutoSize = true;
-
-            this.trkTemperature.Location      = new System.Drawing.Point(10, 225);
-            this.trkTemperature.Size          = new System.Drawing.Size(360, 45);
-            this.trkTemperature.Minimum       = -100;  // –10.0°C
-            this.trkTemperature.Maximum       = 500;   // 50.0°C
-            this.trkTemperature.Value         = 200;   // 20.0°C
-            this.trkTemperature.TickFrequency = 50;
-
-            // Harvesting checkbox
-            this.chkSections.Text          = "Harvesting";
-            this.chkSections.Location      = new System.Drawing.Point(10, 282);
+            // Harvesting checkbox — crop on the belt or not
+            this.chkSections.Text          = "Harvesting (crop on the belt)";
+            this.chkSections.Location      = new System.Drawing.Point(10, 207);
             this.chkSections.AutoSize      = true;
             this.chkSections.Checked       = false;
             this.chkSections.Font          = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.chkSections.ForeColor     = System.Drawing.Color.DarkGreen;
+            this.chkSections.ForeColor     = System.Drawing.Color.Red;
             this.chkSections.CheckedChanged += new System.EventHandler(this.chkSections_CheckedChanged);
 
             // Sine wave checkbox + variation
             this.chkSineWave.Text     = "Yield variation";
-            this.chkSineWave.Location = new System.Drawing.Point(10, 310);
+            this.chkSineWave.Location = new System.Drawing.Point(10, 235);
             this.chkSineWave.AutoSize = true;
             this.chkSineWave.Checked  = true;
 
             this.lblVariationSlider.Text     = "Variation: 5%";
-            this.lblVariationSlider.Location = new System.Drawing.Point(200, 310);
+            this.lblVariationSlider.Location = new System.Drawing.Point(200, 235);
             this.lblVariationSlider.AutoSize = true;
 
-            this.trkVariation.Location      = new System.Drawing.Point(200, 327);
+            this.trkVariation.Location      = new System.Drawing.Point(200, 252);
             this.trkVariation.Size          = new System.Drawing.Size(180, 45);
             this.trkVariation.Minimum       = 1;
             this.trkVariation.Maximum       = 50;
             this.trkVariation.Value         = 5;
             this.trkVariation.TickFrequency = 5;
 
-            // Faults — one per way the PC app can lose the sensor, so each branch of
+            // Faults — one per way the PC app can lose the scale, so each branch of
             // its status bar can be reached without unplugging hardware.
             this.lblFaults.Text     = "Faults";
             this.lblFaults.Font     = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.lblFaults.Location = new System.Drawing.Point(10, 380);
+            this.lblFaults.Location = new System.Drawing.Point(10, 305);
             this.lblFaults.AutoSize = true;
 
             this.chkModuleOffline.Text     = "Module offline — send nothing";
-            this.chkModuleOffline.Location = new System.Drawing.Point(10, 404);
+            this.chkModuleOffline.Location = new System.Drawing.Point(10, 329);
             this.chkModuleOffline.AutoSize = true;
 
-            this.chkSensorFlag.Text     = "Sensor fault flag — SensorOK = 0";
-            this.chkSensorFlag.Location  = new System.Drawing.Point(10, 428);
-            this.chkSensorFlag.AutoSize  = true;
+            this.chkScaleFault.Text     = "Scale fault flag — ScaleOK = 0";
+            this.chkScaleFault.Location = new System.Drawing.Point(10, 353);
+            this.chkScaleFault.AutoSize = true;
 
-            this.chkHardZero.Text     = "Sensor dead — hard zero, flag still OK";
-            this.chkHardZero.Location = new System.Drawing.Point(10, 452);
-            this.chkHardZero.AutoSize = true;
+            this.chkBeltStopped.Text     = "Belt stopped — pulses frozen";
+            this.chkBeltStopped.Location = new System.Drawing.Point(10, 377);
+            this.chkBeltStopped.AutoSize = true;
+
+            this.chkBeltSensorDead.Text     = "Belt sensor dead — belt runs, no pulses";
+            this.chkBeltSensorDead.Location = new System.Drawing.Point(10, 401);
+            this.chkBeltSensorDead.AutoSize = true;
+
+            this.chkNotZeroed.Text     = "Not zeroed — Tared = 0";
+            this.chkNotZeroed.Location = new System.Drawing.Point(10, 425);
+            this.chkNotZeroed.AutoSize = true;
 
             // Readout labels
-            this.lblSensor1.Text     = "S1: 0.000";
-            this.lblSensor1.Font     = new System.Drawing.Font("Courier New", 11F);
-            this.lblSensor1.Location = new System.Drawing.Point(10, 486);
-            this.lblSensor1.AutoSize = true;
+            this.lblFlow.Text     = "Flow: 0.00 lb/s";
+            this.lblFlow.Font     = new System.Drawing.Font("Courier New", 11F);
+            this.lblFlow.Location = new System.Drawing.Point(10, 459);
+            this.lblFlow.AutoSize = true;
 
-            this.lblMoistureVal.Text     = "Mst: 0.0%";
-            this.lblMoistureVal.Font     = new System.Drawing.Font("Courier New", 11F);
-            this.lblMoistureVal.Location = new System.Drawing.Point(140, 486);
-            this.lblMoistureVal.AutoSize = true;
+            this.lblTotal.Text     = "Total: 0.0 lb";
+            this.lblTotal.Font     = new System.Drawing.Font("Courier New", 11F);
+            this.lblTotal.Location = new System.Drawing.Point(10, 481);
+            this.lblTotal.AutoSize = true;
 
-            this.lblTempVal.Text     = "Tmp: 0.0°C";
-            this.lblTempVal.Font     = new System.Drawing.Font("Courier New", 11F);
-            this.lblTempVal.Location = new System.Drawing.Point(270, 486);
-            this.lblTempVal.AutoSize = true;
+            this.lblPulses.Text     = "Pulses: 0";
+            this.lblPulses.Font     = new System.Drawing.Font("Courier New", 11F);
+            this.lblPulses.Location = new System.Drawing.Point(10, 503);
+            this.lblPulses.AutoSize = true;
 
             // Status
             this.lblStatus.Text      = "Initializing...";
-            this.lblStatus.Location  = new System.Drawing.Point(10, 518);
+            this.lblStatus.Location  = new System.Drawing.Point(10, 535);
             this.lblStatus.AutoSize  = true;
             this.lblStatus.ForeColor = System.Drawing.Color.DarkGreen;
 
             // Form
-            this.ClientSize      = new System.Drawing.Size(400, 548);
+            this.ClientSize      = new System.Drawing.Size(400, 564);
             this.Controls.AddRange(new System.Windows.Forms.Control[] {
                 lblTitle,
-                lblYieldSlider, trkYield,
-                lblMoistureSlider, trkMoisture,
-                lblTempSlider, trkTemperature,
+                lblLoadSlider, trkLoad,
+                lblBeltSlider, trkBelt,
                 chkSections,
                 chkSineWave, lblVariationSlider, trkVariation,
-                lblFaults, chkModuleOffline, chkSensorFlag, chkHardZero,
-                lblSensor1, lblMoistureVal, lblTempVal,
+                lblFaults, chkModuleOffline, chkScaleFault, chkBeltStopped, chkBeltSensorDead, chkNotZeroed,
+                lblFlow, lblTotal, lblPulses,
                 lblStatus });
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox     = false;
@@ -165,32 +160,31 @@ namespace ModuleSimulator
             this.Icon            = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);
             this.Load           += new System.EventHandler(this.frmSimulator_Load);
 
-            ((System.ComponentModel.ISupportInitialize)(this.trkYield)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trkMoisture)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trkTemperature)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trkLoad)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trkBelt)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkVariation)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
         }
 
         private System.Windows.Forms.Label    lblTitle;
-        private System.Windows.Forms.Label    lblYieldSlider;
-        private System.Windows.Forms.TrackBar trkYield;
-        private System.Windows.Forms.Label    lblMoistureSlider;
-        private System.Windows.Forms.TrackBar trkMoisture;
-        private System.Windows.Forms.Label    lblTempSlider;
-        private System.Windows.Forms.TrackBar trkTemperature;
+        private System.Windows.Forms.Label    lblLoadSlider;
+        private System.Windows.Forms.TrackBar trkLoad;
+        private System.Windows.Forms.Label    lblBeltSlider;
+        private System.Windows.Forms.TrackBar trkBelt;
         private System.Windows.Forms.CheckBox chkSections;
         private System.Windows.Forms.CheckBox chkSineWave;
         private System.Windows.Forms.Label    lblVariationSlider;
         private System.Windows.Forms.TrackBar trkVariation;
         private System.Windows.Forms.Label    lblFaults;
         private System.Windows.Forms.CheckBox chkModuleOffline;
-        private System.Windows.Forms.CheckBox chkSensorFlag;
-        private System.Windows.Forms.CheckBox chkHardZero;
-        private System.Windows.Forms.Label    lblSensor1;
-        private System.Windows.Forms.Label    lblMoistureVal;
-        private System.Windows.Forms.Label    lblTempVal;
+        private System.Windows.Forms.CheckBox chkScaleFault;
+        private System.Windows.Forms.CheckBox chkBeltStopped;
+        private System.Windows.Forms.CheckBox chkBeltSensorDead;
+        private System.Windows.Forms.CheckBox chkNotZeroed;
+        private System.Windows.Forms.Label    lblFlow;
+        private System.Windows.Forms.Label    lblTotal;
+        private System.Windows.Forms.Label    lblPulses;
         private System.Windows.Forms.Label    lblStatus;
     }
 }

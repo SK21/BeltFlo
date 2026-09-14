@@ -101,7 +101,7 @@ namespace BeltFlo.Forms
             int cur = cboCrop.SelectedIndex >= 0 ? _cropIds[cboCrop.SelectedIndex] : -1;
             cboCrop.Items.Clear(); _cropIds.Clear();
             foreach (var c in Core.Database.Crops.GetAll())
-            { cboCrop.Items.Add($"{c.name}  ({Props.DisplayTestWeight(c.testWeight):F0} {Props.TestWeightUnit})"); _cropIds.Add(c.id); }
+            { cboCrop.Items.Add(c.name); _cropIds.Add(c.id); }
             int idx = _cropIds.IndexOf(cur);
             cboCrop.SelectedIndex = idx >= 0 ? idx : (cboCrop.Items.Count > 0 ? 0 : -1);
         }
@@ -164,7 +164,7 @@ namespace BeltFlo.Forms
             cboField.Items.Clear();   _fieldIds.Clear();
 
             foreach (var c in Core.Database.Crops.GetAll())
-            { cboCrop.Items.Add($"{c.name}  ({Props.DisplayTestWeight(c.testWeight):F0} {Props.TestWeightUnit})"); _cropIds.Add(c.id); }
+            { cboCrop.Items.Add(c.name); _cropIds.Add(c.id); }
 
             foreach (var h in Core.Database.Headers.GetAll())
             { double w = Props.IsMetric ? h.widthM : h.widthM * 3.28084; string wu = Props.IsMetric ? "m" : "ft"; string wf = Props.IsMetric ? "F2" : "F1"; cboHeader.Items.Add($"{h.name}  ({w.ToString(wf)} {wu})"); _headerIds.Add(h.id); }
@@ -202,6 +202,9 @@ namespace BeltFlo.Forms
                 _jobData.Add((j.id, j.name, j.status, date, j.profileId, j.cropId, j.headerId, j.fieldId, j.acres, j.volume, fname, j.notes));
             }
             SortJobs();
+
+            // Finish acts on the running job, whichever row is selected.
+            btnFinishJob.Enabled = Core.Collector.ActiveJobId > 0;
         }
 
         private void RefreshListFromData()
@@ -472,6 +475,22 @@ namespace BeltFlo.Forms
             Core.RaiseJobStateChanged();
             LoadRecentJobs();
             SelectInitialJob();
+        }
+
+        // ── Finish (close the running job) ────────────────────────────────────
+        // The only place a job ends. Finishing the job also finishes its open
+        // load, which then waits for its certified weight like any other.
+        private void btnFinishJob_Click(object sender, EventArgs e)
+        {
+            if (Core.Collector.ActiveJobId <= 0) return;
+
+            using var dlg = new frmMsgBox(Lang.lgStopJobPrompt);
+            dlg.ShowDialog(this);
+            if (!dlg.Result) return;
+
+            Core.Collector.StopJob();
+            Core.RaiseJobStateChanged();
+            LoadRecentJobs();
         }
 
         private void lvJobs_ColumnClick(object sender, System.Windows.Forms.ColumnClickEventArgs e)
