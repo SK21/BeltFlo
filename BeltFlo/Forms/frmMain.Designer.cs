@@ -37,7 +37,6 @@ namespace BeltFlo.Forms
             this.lblTotTotal = new System.Windows.Forms.Label();
             this.lblTotArea = new System.Windows.Forms.Label();
             this.pnlSensors = new System.Windows.Forms.Panel();
-            this.lblSensorHeader = new System.Windows.Forms.Label();
             this.lblSensor1Title = new System.Windows.Forms.Label();
             this.pnlSensor1 = new System.Windows.Forms.Panel();
             this.pnlSensor1Fill = new System.Windows.Forms.Panel();
@@ -315,7 +314,6 @@ namespace BeltFlo.Forms
             // 
             // pnlSensors
             // 
-            this.pnlSensors.Controls.Add(this.lblSensorHeader);
             this.pnlSensors.Controls.Add(this.lblSensor1Title);
             this.pnlSensors.Controls.Add(this.pnlSensor1);
             this.pnlSensors.Controls.Add(this.lblSensor1Value);
@@ -325,25 +323,14 @@ namespace BeltFlo.Forms
             this.pnlSensors.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlSensors.Location = new System.Drawing.Point(2, 266);
             this.pnlSensors.Name = "pnlSensors";
-            this.pnlSensors.Size = new System.Drawing.Size(398, 66);
+            this.pnlSensors.Size = new System.Drawing.Size(398, 56);
             this.pnlSensors.TabIndex = 0;
-            // 
-            // lblSensorHeader
-            // 
-            this.lblSensorHeader.AutoSize = true;
-            this.lblSensorHeader.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Bold);
-            this.lblSensorHeader.ForeColor = System.Drawing.Color.Silver;
-            this.lblSensorHeader.Location = new System.Drawing.Point(4, 2);
-            this.lblSensorHeader.Name = "lblSensorHeader";
-            this.lblSensorHeader.Size = new System.Drawing.Size(76, 18);
-            this.lblSensorHeader.TabIndex = 0;
-            this.lblSensorHeader.Text = "Sensors:";
             // 
             // lblSensor1Title
             // 
             this.lblSensor1Title.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Bold);
             this.lblSensor1Title.ForeColor = System.Drawing.Color.Silver;
-            this.lblSensor1Title.Location = new System.Drawing.Point(4, 22);
+            this.lblSensor1Title.Location = new System.Drawing.Point(4, 6);
             this.lblSensor1Title.Name = "lblSensor1Title";
             this.lblSensor1Title.Size = new System.Drawing.Size(78, 20);
             this.lblSensor1Title.TabIndex = 1;
@@ -354,7 +341,7 @@ namespace BeltFlo.Forms
             this.pnlSensor1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
             this.pnlSensor1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlSensor1.Controls.Add(this.pnlSensor1Fill);
-            this.pnlSensor1.Location = new System.Drawing.Point(86, 22);
+            this.pnlSensor1.Location = new System.Drawing.Point(86, 6);
             this.pnlSensor1.Name = "pnlSensor1";
             this.pnlSensor1.Size = new System.Drawing.Size(245, 20);
             this.pnlSensor1.TabIndex = 2;
@@ -371,17 +358,18 @@ namespace BeltFlo.Forms
             // 
             this.lblSensor1Value.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Bold);
             this.lblSensor1Value.ForeColor = System.Drawing.Color.White;
-            this.lblSensor1Value.Location = new System.Drawing.Point(334, 22);
+            this.lblSensor1Value.Location = new System.Drawing.Point(336, 6);
             this.lblSensor1Value.Name = "lblSensor1Value";
-            this.lblSensor1Value.Size = new System.Drawing.Size(60, 20);
+            this.lblSensor1Value.Size = new System.Drawing.Size(58, 20);
             this.lblSensor1Value.TabIndex = 3;
             this.lblSensor1Value.Text = "0%";
+            this.lblSensor1Value.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblSensor2Title
             // 
             this.lblSensor2Title.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Bold);
             this.lblSensor2Title.ForeColor = System.Drawing.Color.Silver;
-            this.lblSensor2Title.Location = new System.Drawing.Point(4, 46);
+            this.lblSensor2Title.Location = new System.Drawing.Point(4, 30);
             this.lblSensor2Title.Name = "lblSensor2Title";
             this.lblSensor2Title.Size = new System.Drawing.Size(78, 20);
             this.lblSensor2Title.TabIndex = 4;
@@ -392,7 +380,7 @@ namespace BeltFlo.Forms
             this.pnlSensor2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
             this.pnlSensor2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlSensor2.Controls.Add(this.pnlSensor2Fill);
-            this.pnlSensor2.Location = new System.Drawing.Point(86, 46);
+            this.pnlSensor2.Location = new System.Drawing.Point(86, 30);
             this.pnlSensor2.Name = "pnlSensor2";
             this.pnlSensor2.Size = new System.Drawing.Size(245, 20);
             this.pnlSensor2.TabIndex = 5;
@@ -409,11 +397,12 @@ namespace BeltFlo.Forms
             // 
             this.lblSensor2Value.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Bold);
             this.lblSensor2Value.ForeColor = System.Drawing.Color.White;
-            this.lblSensor2Value.Location = new System.Drawing.Point(337, 46);
+            this.lblSensor2Value.Location = new System.Drawing.Point(336, 30);
             this.lblSensor2Value.Name = "lblSensor2Value";
-            this.lblSensor2Value.Size = new System.Drawing.Size(57, 20);
+            this.lblSensor2Value.Size = new System.Drawing.Size(58, 20);
             this.lblSensor2Value.TabIndex = 6;
             this.lblSensor2Value.Text = "0%";
+            this.lblSensor2Value.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlStatus
             // 
@@ -487,7 +476,7 @@ namespace BeltFlo.Forms
             // frmMain
             // 
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(402, 366);
+            this.ClientSize = new System.Drawing.Size(402, 356);
             this.Controls.Add(this.pnlSensors);
             this.Controls.Add(this.pnlTotals);
             this.Controls.Add(this.pnlGauges);
@@ -543,7 +532,6 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Label lblWorkRate;
 
         private System.Windows.Forms.Panel pnlSensors;
-        private System.Windows.Forms.Label lblSensorHeader;
         private System.Windows.Forms.Label lblSensor1Title;
         private System.Windows.Forms.Panel pnlSensor1;
         private System.Windows.Forms.Panel pnlSensor1Fill;
