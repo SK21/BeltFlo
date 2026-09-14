@@ -428,6 +428,14 @@ namespace BeltFlo.Forms
             new frmMini().Show();
         }
 
+        // The LOAD tile title is a shortcut to the loads list, as on
+        // RateController's run screen. The screen doesn't exist yet, so it says so
+        // until it is built.
+        private void lblMoistureTitle_Click(object sender, EventArgs e)
+        {
+            Props.ShowMessage(string.Format(Lang.lgScreenNotBuilt, Lang.lgTitleLoads), "", 3000);
+        }
+
         // Full-strength colours for each load button when it is available.
         // Okabe-Ito: same hues used for the status-bar labels, so "good/active",
         // "warning/paused" and "bad/stopped" mean the same color everywhere.

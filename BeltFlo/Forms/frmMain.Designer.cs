@@ -30,7 +30,7 @@ namespace BeltFlo.Forms
             this.pnlMoisture = new System.Windows.Forms.Panel();
             this.lblMoistureUnit = new System.Windows.Forms.Label();
             this.lblMoisture = new System.Windows.Forms.Label();
-            this.lblMoistureTitle = new System.Windows.Forms.Label();
+            this.lblMoistureTitle = new BeltFlo.Classes.RoundedButton();
             this.pnlTotals = new System.Windows.Forms.Panel();
             this.lblTotRate = new System.Windows.Forms.Label();
             this.lblWorkRate = new System.Windows.Forms.Label();
@@ -196,19 +196,19 @@ namespace BeltFlo.Forms
             // lblYield
             // 
             this.lblYield.Font = new System.Drawing.Font("Microsoft Sans Serif", 32F, System.Drawing.FontStyle.Bold);
-            this.lblYield.Location = new System.Drawing.Point(0, 28);
+            this.lblYield.Location = new System.Drawing.Point(0, 36);
             this.lblYield.Name = "lblYield";
-            this.lblYield.Size = new System.Drawing.Size(214, 72);
+            this.lblYield.Size = new System.Drawing.Size(214, 64);
             this.lblYield.TabIndex = 1;
             this.lblYield.Text = "--.-";
             this.lblYield.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
+            //
             // lblYieldTitle
-            // 
+            //
             this.lblYieldTitle.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
             this.lblYieldTitle.Location = new System.Drawing.Point(0, 0);
             this.lblYieldTitle.Name = "lblYieldTitle";
-            this.lblYieldTitle.Size = new System.Drawing.Size(214, 28);
+            this.lblYieldTitle.Size = new System.Drawing.Size(214, 36);
             this.lblYieldTitle.TabIndex = 2;
             this.lblYieldTitle.Text = "YIELD";
             this.lblYieldTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -238,22 +238,24 @@ namespace BeltFlo.Forms
             // lblMoisture
             // 
             this.lblMoisture.Font = new System.Drawing.Font("Microsoft Sans Serif", 32F, System.Drawing.FontStyle.Bold);
-            this.lblMoisture.Location = new System.Drawing.Point(0, 28);
+            this.lblMoisture.Location = new System.Drawing.Point(0, 36);
             this.lblMoisture.Name = "lblMoisture";
-            this.lblMoisture.Size = new System.Drawing.Size(174, 72);
+            this.lblMoisture.Size = new System.Drawing.Size(174, 64);
             this.lblMoisture.TabIndex = 1;
             this.lblMoisture.Text = "--.-";
             this.lblMoisture.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lblMoistureTitle
-            // 
+            //
+            // lblMoistureTitle — a shortcut button to the loads list
+            //
             this.lblMoistureTitle.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
-            this.lblMoistureTitle.Location = new System.Drawing.Point(0, 0);
+            this.lblMoistureTitle.Location = new System.Drawing.Point(3, 2);
             this.lblMoistureTitle.Name = "lblMoistureTitle";
-            this.lblMoistureTitle.Size = new System.Drawing.Size(174, 28);
+            this.lblMoistureTitle.Size = new System.Drawing.Size(168, 32);
             this.lblMoistureTitle.TabIndex = 2;
-            this.lblMoistureTitle.Text = "MOISTURE";
+            this.lblMoistureTitle.TabStop = false;
+            this.lblMoistureTitle.Text = "LOAD";
             this.lblMoistureTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblMoistureTitle.Click += new System.EventHandler(this.lblMoistureTitle_Click);
             // 
             // pnlTotals
             // 
@@ -530,7 +532,7 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Label lblYieldUnit;
 
         private System.Windows.Forms.Panel pnlMoisture;
-        private System.Windows.Forms.Label lblMoistureTitle;
+        private BeltFlo.Classes.RoundedButton lblMoistureTitle;
         private System.Windows.Forms.Label lblMoisture;
         private System.Windows.Forms.Label lblMoistureUnit;
 

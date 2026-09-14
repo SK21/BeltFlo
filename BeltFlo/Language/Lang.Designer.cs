@@ -266,6 +266,7 @@ namespace BeltFlo.Language
         internal static string lgPausedSectionsOn  => Get("lgPausedSectionsOn");
         internal static string lgJobStatusPaused   => Get("lgJobStatusPaused");
         internal static string lgAutoResumePause   => Get("lgAutoResumePause");
+        internal static string lgScreenNotBuilt    => Get("lgScreenNotBuilt");
         internal static string lgBeltSensorSuspect => Get("lgBeltSensorSuspect");
     }
 }

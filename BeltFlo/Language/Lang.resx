@@ -325,7 +325,7 @@ Rewrite this job's recorded points and total using the new factor, so the map an
   <data name="lgResumedSectionsOn" xml:space="preserve"><value>Sections on - counting resumed</value></data>
   <data name="lgPausedSectionsOn" xml:space="preserve"><value>PAUSED - sections on, nothing counted. Press ▶</value></data>
   <data name="lgJobStatusPaused" xml:space="preserve"><value> - Paused</value></data>
-  <data name="lgAutoResumePause" xml:space="preserve"><value>Resume from Pause when Sections On</value></data>
+  <data name="lgAutoResumePause" xml:space="preserve"><value>Resume from Pause when Sections On</value></data>  <data name="lgScreenNotBuilt" xml:space="preserve"><value>{0} screen is not built yet</value></data>
   <data name="lgBeltSensorSuspect" xml:space="preserve"><value>No belt pulses - weight not recorded</value></data>
 
 </root>
