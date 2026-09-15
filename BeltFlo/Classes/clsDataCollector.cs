@@ -898,7 +898,9 @@ namespace BeltFlo.Classes
                 BeltFtMin = Core.Yield?.BeltFtPerMin ?? 0,
                 ScaleLb = Core.LastScaleLb,
                 ScaleRaw = Core.LastScaleRaw,
-                CalRev = Core.LastCalRev,
+                // The full revision id from the database, which never wraps. The
+                // module's settings checksum only confirms it is weighing with it.
+                CalRev = Core.ActiveCalRev,
                 RowsInUse = Core.ActiveRowsInUse
             };
             _poundsSinceWrite = 0;

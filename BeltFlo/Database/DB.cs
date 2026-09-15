@@ -113,8 +113,11 @@ CREATE TABLE IF NOT EXISTS jobs (
     notes        TEXT    NOT NULL DEFAULT ''
 );
 
--- Append-only. The row id is the calibration revision the module reports and
--- every yield_data row records.
+-- The row id is the calibration revision every load and yield_data row records.
+-- A new row only when span, section length or inches per pulse change (the
+-- things that change pounds already recorded); zero, delay, threshold and
+-- belt-stopped timeout update the current row. The module confirms it holds the
+-- active row by reporting a CRC-16 of its settings, not the id.
 CREATE TABLE IF NOT EXISTS conveyor_config (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     profile_id          INTEGER NOT NULL REFERENCES profiles(id),

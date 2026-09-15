@@ -68,6 +68,25 @@ namespace BeltFlo.Communication
             }
         }
 
+        /// <summary>
+        /// Sends straight to the module the last packet came from, so it arrives even
+        /// where broadcasts are filtered. Broadcasts only until a module has been heard.
+        /// </summary>
+        public void SendToModule(byte[] byteData)
+        {
+            if (!Running || sendSocket == null || byteData == null || byteData.Length == 0) return;
+            try
+            {
+                IPAddress dest = IPAddress.TryParse(cModuleIP ?? "", out IPAddress ip) ? ip : cNetworkEP;
+                sendSocket.BeginSendTo(byteData, 0, byteData.Length, SocketFlags.None,
+                    new IPEndPoint(dest, cSendToPort), new AsyncCallback(HandleSend), null);
+            }
+            catch (Exception ex)
+            {
+                Props.WriteErrorLog("UDPComm/SendToModule " + ex.Message);
+            }
+        }
+
         public void Start()
         {
             try
@@ -80,6 +99,8 @@ namespace BeltFlo.Communication
 
                 sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 sendSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                // Windows refuses a send to a broadcast address without this.
+                sendSocket.EnableBroadcast = true;
                 sendSocket.Bind(new IPEndPoint(IPAddress.Any, cSendFromPort));
 
                 EndPoint client = new IPEndPoint(IPAddress.Any, 0);
@@ -168,12 +189,12 @@ namespace BeltFlo.Communication
             // read as a scale.
             // [0-1]   PGN 40010 little-endian (0x4A 0x9C)
             // [2]     flags  bit0=ScaleOK, bit1=BeltRunning, bit2=Tared,
-            //                bit3=CalMismatch, bit4=Overload
+            //                bit3=ReceivingFromPC (settings within 4 s), bit4=Overload
             // [3-6]   cum_pounds_x10  uint32 LE  delivered weight, tenths of a pound; wraps
             // [7-10]  cum_pulses      uint32 LE  belt pulses; wraps
             // [11-12] scale_lb_x10    int16 LE   live weigh-section load after zero, tenths
             // [13-16] scale_raw       int32 LE   raw converter counts
-            // [17]    cal_rev         uint8      conveyor_config id the module is running
+            // [17]    reserved
             // [18]    CRC8 — over everything before it
             if (data.Length < 19) return;
             if (!Core.Tls.GoodCRC(data)) return;
@@ -183,11 +204,10 @@ namespace BeltFlo.Communication
             uint cumPulses  = BitConverter.ToUInt32(data, 7);
             short scaleX10  = BitConverter.ToInt16(data, 11);
             int scaleRaw    = BitConverter.ToInt32(data, 13);
-            int calRev      = data[17];
 
             // Status first, so the diagnostic row the counters write sees this
             // packet's flags rather than the previous one's.
-            Core.ApplyConveyorStatus(flags, scaleX10 / 10.0, scaleRaw, calRev);
+            Core.ApplyConveyorStatus(flags, scaleX10 / 10.0, scaleRaw);
             Core.ApplyConveyorCounters(cumLbX10, cumPulses);
         }
 

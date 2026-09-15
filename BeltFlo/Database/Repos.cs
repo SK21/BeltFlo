@@ -529,6 +529,30 @@ SELECT last_insert_rowid();", conn);
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
 
+        /// <summary>
+        /// Updates the settings that do not change pounds already recorded — zero,
+        /// pulses per revolution, empty-belt threshold, belt-stopped timeout, delay —
+        /// on an existing revision, without starting a new one.
+        /// </summary>
+        public void UpdateInPlace(ConveyorConfig c)
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand(@"
+UPDATE conveyor_config SET
+    zero_counts=@z, zero_set_at=@za, pulses_per_rev=@ppr,
+    flow_threshold_lb_s=@ft, belt_stop_timeout_s=@bst, delay_sec=@d
+WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@id",  c.Id);
+            cmd.Parameters.AddWithValue("@z",   c.ZeroCounts);
+            cmd.Parameters.AddWithValue("@za",  c.ZeroSetAt.HasValue ? (object)c.ZeroSetAt.Value.ToString("o") : DBNull.Value);
+            cmd.Parameters.AddWithValue("@ppr", c.PulsesPerRev);
+            cmd.Parameters.AddWithValue("@ft",  c.FlowThresholdLbS);
+            cmd.Parameters.AddWithValue("@bst", c.BeltStopTimeoutS);
+            cmd.Parameters.AddWithValue("@d",   c.DelaySec);
+            cmd.ExecuteNonQuery();
+        }
+
         public ConveyorConfig GetLatest(int profileId)
         {
             using var conn = new SQLiteConnection(_cs);

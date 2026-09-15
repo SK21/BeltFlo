@@ -258,6 +258,7 @@ namespace BeltFlo.Language
         internal static string lgRecalcLater      => Get("lgRecalcLater");
         internal static string lgStatusScale       => Get("lgStatusScale");
         internal static string lgStatusZero        => Get("lgStatusZero");
+        internal static string lgModuleNotReceiving => Get("lgModuleNotReceiving");
         internal static string lgFinishJob         => Get("lgFinishJob");
         internal static string lgFinishLoadPrompt  => Get("lgFinishLoadPrompt");
         internal static string lgPaused            => Get("lgPaused");

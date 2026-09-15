@@ -37,9 +37,18 @@ namespace BeltFlo.Classes
         public static bool   LastScaleOk      { get; set; } = true;
         public static bool   LastBeltRunning  { get; set; }
         public static bool   LastTared        { get; set; }   // the module holds a zero
-        public static bool   LastCalMismatch  { get; set; }   // module's calibration is not the one the app expects
+        public static bool   LastReceivingFromPc { get; set; } // flags bit 3: a settings message reached the module within 4 s
         public static bool   LastOverload     { get; set; }   // cells at their rated limit
-        public static int    LastCalRev       { get; set; } = -1;   // conveyor_config id the module says it is running; -1 = not reported
+
+        /// <summary>Two-way link, as in RateController: packets arriving and the module hearing the PC.</summary>
+        public static bool ModuleReceiving => ModuleConnected && LastReceivingFromPc;
+        private static bool _lastModuleReceiving;
+
+        // The conveyor settings the module should be weighing with. Sent every
+        // SettingsResendSec as a heartbeat, and at once when they change.
+        private static ConveyorConfig _activeConveyor;
+        private static DateTime _lastSettingsSent = DateTime.MinValue;
+        private const double SettingsResendSec = 2.0;
 
         /// <summary>Per-session diagnostic CSV, one row per module packet. Always running.</summary>
         public static clsDiagLogger DiagLog { get; private set; }
@@ -203,20 +212,46 @@ namespace BeltFlo.Classes
             DiagLog?.Log();
         }
 
-        /// <summary>The module's status flags, live section weight and calibration revision.</summary>
-        public static void ApplyConveyorStatus(byte flags, double scaleLb, int scaleRaw, int calRev)
+        /// <summary>The module's status flags and live section weight.</summary>
+        public static void ApplyConveyorStatus(byte flags, double scaleLb, int scaleRaw)
         {
-            LastFlags        = flags;
-            LastScaleOk      = (flags & 0x01) != 0;
-            LastBeltRunning  = (flags & 0x02) != 0;
-            LastTared        = (flags & 0x04) != 0;
-            LastCalMismatch  = (flags & 0x08) != 0;
-            LastOverload     = (flags & 0x10) != 0;
-            LastScaleLb      = scaleLb;
-            LastScaleRaw     = scaleRaw;
-            LastCalRev       = calRev;
+            bool reconnected = !ModuleConnected;
+
+            LastFlags           = flags;
+            LastScaleOk         = (flags & 0x01) != 0;
+            LastBeltRunning     = (flags & 0x02) != 0;
+            LastTared           = (flags & 0x04) != 0;
+            LastReceivingFromPc = (flags & 0x08) != 0;
+            LastOverload        = (flags & 0x10) != 0;
+            LastScaleLb         = scaleLb;
+            LastScaleRaw        = scaleRaw;
             ModuleConnected   = true;
             LastModuleReceive = DateTime.UtcNow;
+
+            if (reconnected)
+            {
+                // A module that has just appeared, or come back after a restart, has
+                // not heard the settings yet. Send them now, and don't call its clear
+                // bit a fault before it has had the chance.
+                _lastModuleReceiving = false;
+                SendModuleSettings(true);
+            }
+
+            // Log each change, as RateController does. Losing it is said once across
+            // the status bar; the Module label stays orange while it lasts.
+            if (ModuleReceiving != _lastModuleReceiving)
+            {
+                _lastModuleReceiving = ModuleReceiving;
+                if (ModuleReceiving)
+                {
+                    Props.WriteActivityLog("Module receiving: True");
+                }
+                else
+                {
+                    Props.WriteErrorLog("Module receiving: False - settings are not reaching the module");
+                    Props.ShowMessage(Language.Lang.lgModuleNotReceiving, "", 5000, true);
+                }
+            }
 
             _scaleWindow.Enqueue((LastModuleReceive, scaleLb));
             while (_scaleWindow.Count > 0
@@ -331,6 +366,14 @@ namespace BeltFlo.Classes
             ActiveCropId    = cropId;
             ActiveHeaderId  = headerId;
 
+            // Remembered so the next start, with no job to resume, comes up on the
+            // same harvester rather than the first profile in the list.
+            if (profileId > 0 && Properties.Settings.Default.CurrentProfile != profileId.ToString())
+            {
+                Properties.Settings.Default.CurrentProfile = profileId.ToString();
+                Properties.Settings.Default.Save();
+            }
+
             if (Database == null || Yield == null) return;
 
             foreach (var h in Database.Headers.GetAll())
@@ -349,13 +392,69 @@ namespace BeltFlo.Classes
                 if (cfg != null)
                 {
                     ActiveCalRev                = cfg.Id;
+                    _activeConveyor             = cfg;
                     Yield.InchesPerPulse        = cfg.InchesPerPulse > 0 ? cfg.InchesPerPulse : 1.0;
                     Yield.FlowThresholdLbPerSec = cfg.FlowThresholdLbS;
                     Yield.ProcessingDelaySec    = cfg.DelaySec > 0
                         ? cfg.DelaySec
                         : Properties.Settings.Default.ProcessingDelaySec;
+                    SendModuleSettings(true);
                 }
             }
+        }
+
+        /// <summary>
+        /// Saves a profile's conveyor settings. A new calibration revision starts only
+        /// when something that changes pounds already recorded changes — span, weigh
+        /// section length or belt travel per pulse — so old points can be rescaled
+        /// by the revision they carry. Zero, delay, the empty-belt threshold and the
+        /// belt-stopped timeout update the current revision in place. Returns the
+        /// revision id. The active profile's settings go to the module at once.
+        /// </summary>
+        public static int SaveConveyorConfig(ConveyorConfig edited)
+        {
+            var latest = Database.ConveyorConfigs.GetLatest(edited.ProfileId);
+            bool newRevision = latest == null
+                || !SameValue(latest.SpanLbPerCount, edited.SpanLbPerCount)
+                || !SameValue(latest.SectionLenIn,   edited.SectionLenIn)
+                || !SameValue(latest.InchesPerPulse, edited.InchesPerPulse);
+
+            if (newRevision)
+            {
+                edited.Id = Database.ConveyorConfigs.Save(edited);
+            }
+            else
+            {
+                edited.Id = latest.Id;
+                Database.ConveyorConfigs.UpdateInPlace(edited);
+            }
+            Props.WriteActivityLog("Conveyor settings saved, revision " + edited.Id
+                                   + (newRevision ? " (new)" : " (updated)"));
+
+            if (edited.ProfileId == ActiveProfileId)
+                LoadJobConfig(ActiveProfileId, ActiveCropId, ActiveHeaderId);
+            return edited.Id;
+        }
+
+        private static bool SameValue(double a, double b) =>
+            Math.Abs(a - b) <= 1e-9 * Math.Max(1.0, Math.Abs(a));
+
+        /// <summary>
+        /// Sends the active conveyor settings to the module over whichever link is in
+        /// use. The 1 s timer calls it unforced, which sends every SettingsResendSec as
+        /// the heartbeat the module's "receiving from PC" bit is built on; a change
+        /// or a module reconnecting forces an immediate send.
+        /// </summary>
+        public static void SendModuleSettings(bool force)
+        {
+            if (_activeConveyor == null) return;
+            if (!force && (DateTime.UtcNow - _lastSettingsSent).TotalSeconds < SettingsResendSec) return;
+            _lastSettingsSent = DateTime.UtcNow;
+
+            if (Props.CanEnabled)
+                CanModule?.SendSettings(_activeConveyor);
+            else
+                UDPmodule?.SendToModule(ModuleSettings.UdpPacket(_activeConveyor));
         }
 
         private static void SeedDefaultData()
@@ -387,7 +486,14 @@ namespace BeltFlo.Classes
                 var crops    = Database.Crops.GetAll();
                 var headers  = Database.Headers.GetAll();
 
-                if (profiles.Count > 0) ActiveProfileId = profiles[0].id;
+                // The last profile used, if it still exists; otherwise the first.
+                if (profiles.Count > 0)
+                {
+                    ActiveProfileId = profiles[0].id;
+                    if (int.TryParse(Properties.Settings.Default.CurrentProfile, out int lastId)
+                        && profiles.Exists(p => p.id == lastId))
+                        ActiveProfileId = lastId;
+                }
                 if (crops.Count    > 0) ActiveCropId    = crops[0].id;
                 if (headers.Count  > 0) ActiveHeaderId  = headers[0].id;
 
@@ -452,6 +558,7 @@ namespace BeltFlo.Classes
 
         private static void MainTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            SafeTry(() => SendModuleSettings(false));   // heartbeat, throttled to every 2 s
             SafeEvent.Raise(UpdateDisplay);
         }
 

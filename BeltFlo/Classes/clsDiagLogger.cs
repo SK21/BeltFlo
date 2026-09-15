@@ -19,7 +19,7 @@ namespace BeltFlo.Classes
     ///   ScaleLb       - live weigh-section load after zero, lb
     ///   ScaleRaw      - raw converter counts
     ///   Flags         - status byte, hex (bit0 ScaleOK, bit1 BeltRunning, bit2 Tared,
-    ///                   bit3 CalMismatch, bit4 Overload)
+    ///                   bit3 ReceivingFromPC, bit4 Overload)
     ///   LbPerSec      - differenced flow, lightly smoothed
     ///   BeltFtMin     - belt speed from differenced pulses
     ///   SpeedKmh      - ground speed

@@ -27,9 +27,11 @@ namespace ModuleSimulator
             this.chkBeltStopped     = new System.Windows.Forms.CheckBox();
             this.chkBeltSensorDead  = new System.Windows.Forms.CheckBox();
             this.chkNotZeroed       = new System.Windows.Forms.CheckBox();
+            this.chkIgnoreSettings  = new System.Windows.Forms.CheckBox();
             this.lblFlow            = new System.Windows.Forms.Label();
             this.lblTotal           = new System.Windows.Forms.Label();
             this.lblPulses          = new System.Windows.Forms.Label();
+            this.lblSettings        = new System.Windows.Forms.Label();
             this.lblStatus          = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.trkLoad)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkBelt)).BeginInit();
@@ -120,30 +122,40 @@ namespace ModuleSimulator
             this.chkNotZeroed.Location = new System.Drawing.Point(10, 425);
             this.chkNotZeroed.AutoSize = true;
 
+            // Old firmware: ignores the settings message, so its checksum never matches
+            this.chkIgnoreSettings.Text     = "Ignore settings — old firmware";
+            this.chkIgnoreSettings.Location = new System.Drawing.Point(10, 449);
+            this.chkIgnoreSettings.AutoSize = true;
+
             // Readout labels
             this.lblFlow.Text     = "Flow: 0.00 lb/s";
             this.lblFlow.Font     = new System.Drawing.Font("Courier New", 11F);
-            this.lblFlow.Location = new System.Drawing.Point(10, 459);
+            this.lblFlow.Location = new System.Drawing.Point(10, 483);
             this.lblFlow.AutoSize = true;
 
             this.lblTotal.Text     = "Total: 0.0 lb";
             this.lblTotal.Font     = new System.Drawing.Font("Courier New", 11F);
-            this.lblTotal.Location = new System.Drawing.Point(10, 481);
+            this.lblTotal.Location = new System.Drawing.Point(10, 505);
             this.lblTotal.AutoSize = true;
 
             this.lblPulses.Text     = "Pulses: 0";
             this.lblPulses.Font     = new System.Drawing.Font("Courier New", 11F);
-            this.lblPulses.Location = new System.Drawing.Point(10, 503);
+            this.lblPulses.Location = new System.Drawing.Point(10, 527);
             this.lblPulses.AutoSize = true;
+
+            this.lblSettings.Text     = "Settings: none received";
+            this.lblSettings.Font     = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
+            this.lblSettings.Location = new System.Drawing.Point(10, 551);
+            this.lblSettings.AutoSize = true;
 
             // Status
             this.lblStatus.Text      = "Initializing...";
-            this.lblStatus.Location  = new System.Drawing.Point(10, 535);
+            this.lblStatus.Location  = new System.Drawing.Point(10, 577);
             this.lblStatus.AutoSize  = true;
             this.lblStatus.ForeColor = System.Drawing.Color.DarkGreen;
 
             // Form
-            this.ClientSize      = new System.Drawing.Size(400, 564);
+            this.ClientSize      = new System.Drawing.Size(400, 606);
             this.Controls.AddRange(new System.Windows.Forms.Control[] {
                 lblTitle,
                 lblLoadSlider, trkLoad,
@@ -151,7 +163,8 @@ namespace ModuleSimulator
                 chkSections,
                 chkSineWave, lblVariationSlider, trkVariation,
                 lblFaults, chkModuleOffline, chkScaleFault, chkBeltStopped, chkBeltSensorDead, chkNotZeroed,
-                lblFlow, lblTotal, lblPulses,
+                chkIgnoreSettings,
+                lblFlow, lblTotal, lblPulses, lblSettings,
                 lblStatus });
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox     = false;
@@ -182,9 +195,11 @@ namespace ModuleSimulator
         private System.Windows.Forms.CheckBox chkBeltStopped;
         private System.Windows.Forms.CheckBox chkBeltSensorDead;
         private System.Windows.Forms.CheckBox chkNotZeroed;
+        private System.Windows.Forms.CheckBox chkIgnoreSettings;
         private System.Windows.Forms.Label    lblFlow;
         private System.Windows.Forms.Label    lblTotal;
         private System.Windows.Forms.Label    lblPulses;
+        private System.Windows.Forms.Label    lblSettings;
         private System.Windows.Forms.Label    lblStatus;
     }
 }

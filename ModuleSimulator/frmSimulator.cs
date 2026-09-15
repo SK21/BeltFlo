@@ -8,30 +8,41 @@ namespace ModuleSimulator
 {
     /// <summary>
     /// Simulates a BeltFlo conveyor module — sends the conveyor packet (PGN 40010,
-    /// 5 Hz) over UDP to the BeltFlo PC app on port 30300.
+    /// 5 Hz) over UDP to the BeltFlo PC app on port 30300, and takes the conveyor
+    /// settings (PGN 40011) the app sends every 2 s on port 30400.
     ///
     /// The sliders set what a real machine would present to the scale: the load
     /// sitting on the weighed section and the belt speed. The module's job is to
     /// integrate load against belt travel, and that is done here the same way:
-    /// pounds per inch of belt × inches of belt that passed this tick.
+    /// pounds per inch of belt × inches of belt that passed this tick, using the
+    /// section length and inches per pulse the app sent.
+    ///
+    /// While settings keep arriving (within 4 s) the packet sets flags bit 3,
+    /// "receiving from PC", so the app knows the link works both ways.
+    ///
+    /// Zero and span are not applied: there are no load cells, so the slider is
+    /// already a calibrated weight. They only shape the raw counts reported.
     /// </summary>
     public partial class frmSimulator : Form
     {
-        private const int PC_RECV_PORT  = 30300;
-        private const int SIM_SEND_PORT = 30301;
+        private const int PC_RECV_PORT     = 30300;
+        private const int SIM_SEND_PORT    = 30301;
+        private const int MODULE_RECV_PORT = 30400;
+        private const ushort SETTINGS_PGN  = 40011;
+        private const double ReceivingWindowSec = 4.0;
 
-        // Geometry — must match the PC app's default conveyor configuration so the
-        // belt speed it derives from pulses agrees with the slider.
-        private const double InchesPerPulse = 1.0;
-        private const double SectionLenIn   = 36.0;
-
-        // The calibration revision the simulated module claims to be running. The
-        // PC app seeds each profile with one conveyor_config row, so 1 matches a
-        // fresh database.
-        private const byte CalRev = 1;
+        // Settings as held by the module. Until the app sends some, geometry matches
+        // the app's default conveyor configuration.
+        private double _inchesPerPulse = 1.0;
+        private double _sectionLenIn   = 36.0;
+        private double _zeroCounts     = 0;
+        private double _spanLbPerCount = 0;
+        private double _beltStopS      = 2.0;
+        private DateTime _lastSettingsUtc = DateTime.MinValue;
 
         private System.Windows.Forms.Timer _sendTimer;
         private UdpClient  _udp;
+        private UdpClient  _rx;
         private IPEndPoint _target;
         private double _simAngle = 0;
         private int    _ticks    = 0;
@@ -59,6 +70,10 @@ namespace ModuleSimulator
             {
                 _udp    = new UdpClient(SIM_SEND_PORT);
                 _target = new IPEndPoint(IPAddress.Loopback, PC_RECV_PORT);
+
+                _rx = new UdpClient();
+                _rx.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                _rx.Client.Bind(new IPEndPoint(IPAddress.Any, MODULE_RECV_PORT));
             }
             catch (Exception ex)
             {
@@ -70,6 +85,7 @@ namespace ModuleSimulator
             _sendTimer.Tick += SendTimer_Tick;
             _sendTimer.Start();
             lblStatus.Text = "Sending to 127.0.0.1:" + PC_RECV_PORT;
+            ShowSettings();
         }
 
         private void RestorePosition()
@@ -105,8 +121,82 @@ namespace ModuleSimulator
                 : System.Drawing.Color.Red;
         }
 
+        // ── Settings from the app ─────────────────────────────────────────────
+
+        private bool ReceivingFromPc =>
+            (DateTime.UtcNow - _lastSettingsUtc).TotalSeconds < ReceivingWindowSec;
+
+        private void ReceiveSettings()
+        {
+            try
+            {
+                while (_rx != null && _rx.Available > 0)
+                {
+                    IPEndPoint from = null;
+                    byte[] d = _rx.Receive(ref from);
+                    HandleSettings(d);
+                }
+            }
+            catch { }
+        }
+
+        private void HandleSettings(byte[] d)
+        {
+            // PGN 40011, 18 bytes: [0-1] PGN, [2-14] settings block, [15-16] CRC-16,
+            // [17] byte-sum CRC8. Layout in the app's ModuleSettings.cs.
+            if (d.Length < 18) return;
+            if ((d[0] | (d[1] << 8)) != SETTINGS_PGN) return;
+
+            int ck = 0;
+            for (int i = 0; i < 17; i++) ck += d[i];
+            if ((byte)ck != d[17]) return;
+
+            byte[] block = new byte[13];
+            Array.Copy(d, 2, block, 0, 13);
+            if (Crc16(block) != BitConverter.ToUInt16(d, 15)) return;
+
+            // Old firmware knows nothing of this message: drop it, so bit 3 clears
+            // and the app shows the link as one-way.
+            if (chkIgnoreSettings.Checked) return;
+
+            _zeroCounts     = BitConverter.ToInt32(block, 0);
+            _spanLbPerCount = BitConverter.ToSingle(block, 4);
+            double section  = BitConverter.ToUInt16(block, 8) / 10.0;
+            double ipp      = BitConverter.ToUInt16(block, 10) / 1000.0;
+            _beltStopS      = block[12] / 10.0;
+            if (section > 0) _sectionLenIn   = section;
+            if (ipp > 0)     _inchesPerPulse = ipp;
+            _lastSettingsUtc = DateTime.UtcNow;
+        }
+
+        private void ShowSettings()
+        {
+            lblSettings.Text = _lastSettingsUtc == DateTime.MinValue
+                ? "Settings: none received"
+                : $"Settings: {_sectionLenIn:F1} in section, {_inchesPerPulse:F3} in/pulse — "
+                  + (ReceivingFromPc ? "receiving" : "not receiving");
+        }
+
+        // CRC-16/CCITT-FALSE, the same as the app's ModuleSettings.Crc16.
+        private static ushort Crc16(byte[] data)
+        {
+            ushort crc = 0xFFFF;
+            foreach (byte x in data)
+            {
+                crc ^= (ushort)(x << 8);
+                for (int i = 0; i < 8; i++)
+                    crc = (crc & 0x8000) != 0 ? (ushort)((crc << 1) ^ 0x1021) : (ushort)(crc << 1);
+            }
+            return crc;
+        }
+
+        // ── Module loop ───────────────────────────────────────────────────────
+
         private void SendTimer_Tick(object sender, EventArgs e)
         {
+            ReceiveSettings();
+            ShowSettings();
+
             // A module that has lost power or its wiring sends nothing at all. The
             // PC app has no packet to read a fault out of — it times out after 5 s
             // of silence, which is the only path to a red Module label.
@@ -149,24 +239,30 @@ namespace ModuleSimulator
             const double dt = 0.1;
             double beltInPerSec   = beltFtMin * 12.0 / 60.0;
             double sensedInPerSec = chkBeltSensorDead.Checked ? 0 : beltInPerSec;
-            _lbPerSec   = loadLb / SectionLenIn * sensedInPerSec;
+            _lbPerSec   = loadLb / _sectionLenIn * sensedInPerSec;
             _cumLb     += _lbPerSec * dt;
-            _cumPulses += sensedInPerSec * dt / InchesPerPulse;
+            _cumPulses += sensedInPerSec * dt / _inchesPerPulse;
 
             if (_ticks % 2 == 0)
             {
-                // bit0 ScaleOK, bit1 BeltRunning, bit2 Tared. Clearing bit0 is the
-                // module diagnosing its own converter or cells, which the PC app
-                // acts on immediately.
+                // bit0 ScaleOK, bit1 BeltRunning, bit2 Tared, bit3 ReceivingFromPC.
+                // Clearing bit0 is the module diagnosing its own converter or cells,
+                // which the PC app acts on immediately.
                 byte flags = 0;
                 if (!chkNotZeroed.Checked)  flags |= 0x04;
                 if (!chkScaleFault.Checked) flags |= 0x01;
                 if (sensedInPerSec > 0)     flags |= 0x02;
+                if (ReceivingFromPc)        flags |= 0x08;
 
                 uint cumLbX10  = unchecked((uint)(long)(_cumLb * 10.0));
                 uint cumPulses = unchecked((uint)(long)_cumPulses);
                 short scaleX10 = (short)Math.Max(-32768, Math.Min(32767, loadLb * 10.0));
-                int scaleRaw   = 100000 + (int)(loadLb * 2000.0);   // arbitrary counts, for the calibration screen
+
+                // Counts a real converter would read for this load under the settings
+                // the app sent; arbitrary counts until a usable span arrives.
+                int scaleRaw = _spanLbPerCount > 0
+                    ? (int)Math.Round(_zeroCounts + loadLb / _spanLbPerCount)
+                    : 100000 + (int)(loadLb * 2000.0);
 
                 SendConveyorPacket(flags, cumLbX10, cumPulses, scaleX10, scaleRaw);
             }
@@ -196,6 +292,11 @@ namespace ModuleSimulator
                 lblStatus.Text      = "Not zeroed — app shows Zero";
                 lblStatus.ForeColor = System.Drawing.Color.DarkOrange;
             }
+            else if (chkIgnoreSettings.Checked)
+            {
+                lblStatus.Text      = "Ignoring settings — app Module label turns orange";
+                lblStatus.ForeColor = System.Drawing.Color.DarkOrange;
+            }
             else
             {
                 lblStatus.Text      = "Sending to 127.0.0.1:" + PC_RECV_PORT;
@@ -207,12 +308,12 @@ namespace ModuleSimulator
         {
             // Conveyor packet — 19 bytes:
             // [0-1]   PGN 40010 LE (0x4A 0x9C)
-            // [2]     flags  bit0=ScaleOK, bit1=BeltRunning, bit2=Tared, bit3=CalMismatch, bit4=Overload
+            // [2]     flags  bit0=ScaleOK, bit1=BeltRunning, bit2=Tared, bit3=ReceivingFromPC, bit4=Overload
             // [3-6]   cum_pounds_x10  uint32 LE
             // [7-10]  cum_pulses      uint32 LE
             // [11-12] scale_lb_x10    int16 LE
             // [13-16] scale_raw       int32 LE
-            // [17]    cal_rev         uint8
+            // [17]    reserved
             // [18]    CRC8 — byte sum of everything before it
             byte[] pkt = new byte[19];
             pkt[0] = 0x4A;
@@ -222,7 +323,7 @@ namespace ModuleSimulator
             Array.Copy(BitConverter.GetBytes(cumPulses), 0, pkt, 7,  4);
             Array.Copy(BitConverter.GetBytes(scaleX10),  0, pkt, 11, 2);
             Array.Copy(BitConverter.GetBytes(scaleRaw),  0, pkt, 13, 4);
-            pkt[17] = CalRev;
+            pkt[17] = 0;
 
             int ck = 0;
             for (int i = 0; i < 18; i++) ck += pkt[i];
@@ -236,6 +337,7 @@ namespace ModuleSimulator
             SavePosition();
             _sendTimer?.Stop();
             _udp?.Close();
+            _rx?.Close();
             base.OnFormClosed(e);
         }
     }

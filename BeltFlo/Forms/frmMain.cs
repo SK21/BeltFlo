@@ -286,8 +286,13 @@ namespace BeltFlo.Forms
             lblStatusGPS.Text = Lang.lgGPS;
             lblStatusGPS.ForeColor = gpsOk ? StatusOk : StatusBad;
 
+            // Green only when the link works both ways, as in RateController: packets
+            // arriving, and the module saying it is receiving the settings. Orange
+            // when it sends but doesn't hear the PC.
             lblStatusModule.Text = Lang.lgModule;
-            lblStatusModule.ForeColor = modOk ? StatusOk : StatusBad;
+            lblStatusModule.ForeColor = !modOk ? StatusBad
+                                      : Core.ModuleReceiving ? StatusOk
+                                      : OkabeIto.Orange;
 
             // Scale — the module's verdict on its converter and cells, plus the one
             // belt-sensor fault the app can infer for itself. The module field

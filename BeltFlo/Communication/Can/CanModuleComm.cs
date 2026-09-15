@@ -1,15 +1,17 @@
 using System;
 using System.Timers;
 using BeltFlo.Classes;
+using BeltFlo.Database;
 
 namespace BeltFlo.Communication.Can
 {
     /// <summary>
     /// Manages CAN communication with the BeltFlo conveyor module.
-    /// Receive-only. The 19-byte UDP packet does not fit one CAN frame, so the
-    /// module sends it as two: counters and status. Both are extended IDs
-    /// (Priority=6, PF=0xFF ProprietaryB, SA=0xF8); 0x18FF00F8 and 0x18FF01F8
-    /// stay with the grain module so the two can share a bus without confusion.
+    /// The 19-byte UDP packet does not fit one CAN frame, so the module sends it as
+    /// two: counters and status. Both are extended IDs (Priority=6, PF=0xFF
+    /// ProprietaryB, SA=0xF8); 0x18FF00F8 and 0x18FF01F8 stay with the grain module
+    /// so the two can share a bus without confusion. The PC sends the conveyor
+    /// settings back as two frames from SA 0xF9 — see ModuleSettings.
     /// </summary>
     public class CanModuleComm : IDisposable
     {
@@ -110,15 +112,14 @@ namespace BeltFlo.Communication.Can
         private void ParseStatus(byte[] d)
         {
             // Status frame (0x18FF03F8), DLC=8 — same fields as UDP bytes [2] and [11-17]:
-            // [0]   flags  bit0=ScaleOK, bit1=BeltRunning, bit2=Tared, bit3=CalMismatch, bit4=Overload
+            // [0]   flags  bit0=ScaleOK, bit1=BeltRunning, bit2=Tared, bit3=ReceivingFromPC, bit4=Overload
             // [1-2] scale_lb_x10  int16 LE   live weigh-section load after zero, tenths
             // [3-6] scale_raw     int32 LE   raw converter counts
-            // [7]   cal_rev       uint8
+            // [7]   reserved
             byte flags     = d[0];
             short scaleX10 = BitConverter.ToInt16(d, 1);
             int scaleRaw   = BitConverter.ToInt32(d, 3);
-            int calRev     = d[7];
-            Core.ApplyConveyorStatus(flags, scaleX10 / 10.0, scaleRaw, calRev);
+            Core.ApplyConveyorStatus(flags, scaleX10 / 10.0, scaleRaw);
         }
 
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
@@ -130,6 +131,15 @@ namespace BeltFlo.Communication.Can
                 // matching clear in frmMain.CheckModuleTimeout.
                 Core.LastBeltRunning = false;
             }
+        }
+
+        /// <summary>Sends the conveyor settings as their two frames (layout in ModuleSettings).</summary>
+        public void SendSettings(ConveyorConfig cfg)
+        {
+            if (_driver == null || !_driver.IsOpen) return;
+            var (a, b) = ModuleSettings.CanFrames(cfg);
+            _driver.Send(new CanFrame(ModuleSettings.CanFrameAId, a));
+            _driver.Send(new CanFrame(ModuleSettings.CanFrameBId, b));
         }
 
         public void Dispose() => Stop();

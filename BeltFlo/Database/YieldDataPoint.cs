@@ -20,7 +20,7 @@ namespace BeltFlo.Database
         public double BeltFtMin { get; set; }       // belt speed at write time
         public double ScaleLb { get; set; }         // live weigh-section load at write time
         public int ScaleRaw { get; set; }           // raw converter counts at write time
-        public int CalRev { get; set; }             // conveyor_config row the module was running
+        public int CalRev { get; set; }             // conveyor_config revision active when recorded
         public int RowsInUse { get; set; }          // 0 = full width
     }
 }
