@@ -61,6 +61,7 @@ namespace BeltFlo.Language
         internal static string lgTitleCrops       => Get("lgTitleCrops");
         internal static string lgTitleProfiles    => Get("lgTitleProfiles");
         internal static string lgTitleConveyor    => Get("lgTitleConveyor");
+        internal static string lgTitleScaleCal    => Get("lgTitleScaleCal");
         internal static string lgTitleFields      => Get("lgTitleFields");
         internal static string lgTitleImportFields => Get("lgTitleImportFields");
         internal static string lgTitleYieldCal    => Get("lgTitleYieldCal");
@@ -227,6 +228,17 @@ namespace BeltFlo.Language
         internal static string lgMeasureBelt        => Get("lgMeasureBelt");
         internal static string lgResetDistance      => Get("lgResetDistance");
         internal static string lgConveyorJobRunning => Get("lgConveyorJobRunning");
+
+        // ── Scale calibration form ───────────────────────────────────────────
+        internal static string lgCalRaw         => Get("lgCalRaw");
+        internal static string lgCalWeight      => Get("lgCalWeight");
+        internal static string lgCalReading     => Get("lgCalReading");
+        internal static string lgCalZero        => Get("lgCalZero");
+        internal static string lgCalSpan        => Get("lgCalSpan");
+        internal static string lgCalStable      => Get("lgCalStable");
+        internal static string lgCalUnstable    => Get("lgCalUnstable");
+        internal static string lgCalZeroScale   => Get("lgCalZeroScale");
+        internal static string lgCalKnownWeight => Get("lgCalKnownWeight");
 
         // ── Profiles form ────────────────────────────────────────────────────
         internal static string lgCombineId           => Get("lgCombineId");

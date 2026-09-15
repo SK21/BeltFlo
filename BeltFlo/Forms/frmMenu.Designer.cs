@@ -29,6 +29,7 @@ namespace BeltFlo.Forms
             this.btnYieldMap = new System.Windows.Forms.Button();
             this.btnLanguage = new System.Windows.Forms.Button();
             this.btnConveyor = new System.Windows.Forms.Button();
+            this.btnScaleCal = new System.Windows.Forms.Button();
             this.pnlTitle.SuspendLayout();
             this.pnlContent.SuspendLayout();
             this.SuspendLayout();
@@ -106,10 +107,11 @@ namespace BeltFlo.Forms
             this.pnlContent.Controls.Add(this.btnYieldMap);
             this.pnlContent.Controls.Add(this.btnLanguage);
             this.pnlContent.Controls.Add(this.btnConveyor);
+            this.pnlContent.Controls.Add(this.btnScaleCal);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContent.Location = new System.Drawing.Point(2, 50);
             this.pnlContent.Name = "pnlContent";
-            this.pnlContent.Size = new System.Drawing.Size(456, 300);
+            this.pnlContent.Size = new System.Drawing.Size(456, 352);
             this.pnlContent.TabIndex = 0;
             //
             // btnJobs — full-width row
@@ -215,10 +217,21 @@ namespace BeltFlo.Forms
             this.btnConveyor.Text = global::BeltFlo.Language.Lang.lgTitleConveyor;
             this.btnConveyor.Click += new System.EventHandler(this.btnConveyor_Click);
             //
+            // btnScaleCal — full-width row
+            //
+            this.btnScaleCal.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnScaleCal.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
+            this.btnScaleCal.Location = new System.Drawing.Point(8, 300);
+            this.btnScaleCal.Name = "btnScaleCal";
+            this.btnScaleCal.Size = new System.Drawing.Size(440, 44);
+            this.btnScaleCal.TabIndex = 12;
+            this.btnScaleCal.Text = global::BeltFlo.Language.Lang.lgTitleScaleCal;
+            this.btnScaleCal.Click += new System.EventHandler(this.btnScaleCal_Click);
+            //
             // frmMenu
             //
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(460, 352);
+            this.ClientSize = new System.Drawing.Size(460, 404);
             this.Controls.Add(this.pnlContent);
             this.Controls.Add(this.pnlTitle);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
@@ -251,5 +264,6 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Button btnYieldMap;
         private System.Windows.Forms.Button btnLanguage;
         private System.Windows.Forms.Button btnConveyor;
+        private System.Windows.Forms.Button btnScaleCal;
     }
 }

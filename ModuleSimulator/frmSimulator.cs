@@ -20,8 +20,10 @@ namespace ModuleSimulator
     /// While settings keep arriving (within 4 s) the packet sets flags bit 3,
     /// "receiving from PC", so the app knows the link works both ways.
     ///
-    /// Zero and span are not applied: there are no load cells, so the slider is
-    /// already a calibrated weight. They only shape the raw counts reported.
+    /// The cells read a fixed 100000 counts empty plus 2000 per pound, with a little
+    /// noise. By default the module stays calibrated, so the load slider reads true
+    /// whatever zero and span the app sent; tick "Apply app zero and span" to weigh
+    /// with them instead and test the Scale Calibration screen end to end.
     /// </summary>
     public partial class frmSimulator : Form
     {
@@ -53,6 +55,12 @@ namespace ModuleSimulator
         private double _cumLb     = 0;
         private double _cumPulses = 0;
         private double _lbPerSec  = 0;
+
+        // The simulated load cells
+        private const double RawEmpty    = 100000;
+        private const double CountsPerLb = 2000;
+        private const double RawNoise    = 40;     // peak-to-peak counts
+        private readonly Random _rng = new Random();
 
         public frmSimulator()
         {
@@ -236,10 +244,19 @@ namespace ModuleSimulator
             // Integrate. lb per inch of belt × inches that passed this tick. With a
             // dead belt sensor the belt still moves but the module hears no pulses,
             // so it integrates nothing — the failure the app's Belt warning exists for.
+            // The cells: a fixed physical response with a little converter noise.
+            int scaleRaw = (int)Math.Round(RawEmpty + loadLb * CountsPerLb + (_rng.NextDouble() - 0.5) * RawNoise);
+
+            // A real module weighs with the zero and span the app sent. Unless the
+            // box is ticked the simulator stays calibrated, so the slider reads true.
+            double sectionLb = chkApplyCal.Checked && _spanLbPerCount != 0
+                ? (scaleRaw - _zeroCounts) * _spanLbPerCount
+                : loadLb;
+
             const double dt = 0.1;
             double beltInPerSec   = beltFtMin * 12.0 / 60.0;
             double sensedInPerSec = chkBeltSensorDead.Checked ? 0 : beltInPerSec;
-            _lbPerSec   = loadLb / _sectionLenIn * sensedInPerSec;
+            _lbPerSec   = sectionLb / _sectionLenIn * sensedInPerSec;
             _cumLb     += _lbPerSec * dt;
             _cumPulses += sensedInPerSec * dt / _inchesPerPulse;
 
@@ -256,13 +273,7 @@ namespace ModuleSimulator
 
                 uint cumLbX10  = unchecked((uint)(long)(_cumLb * 10.0));
                 uint cumPulses = unchecked((uint)(long)_cumPulses);
-                short scaleX10 = (short)Math.Max(-32768, Math.Min(32767, loadLb * 10.0));
-
-                // Counts a real converter would read for this load under the settings
-                // the app sent; arbitrary counts until a usable span arrives.
-                int scaleRaw = _spanLbPerCount > 0
-                    ? (int)Math.Round(_zeroCounts + loadLb / _spanLbPerCount)
-                    : 100000 + (int)(loadLb * 2000.0);
+                short scaleX10 = (short)Math.Max(-32768, Math.Min(32767, sectionLb * 10.0));
 
                 SendConveyorPacket(flags, cumLbX10, cumPulses, scaleX10, scaleRaw);
             }
