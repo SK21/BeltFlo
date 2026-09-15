@@ -388,7 +388,7 @@ namespace BeltFlo.Classes
             try
             {
                 var points = Core.Database.YieldData.GetByJob(jobId);
-                double widthM = Core.Yield != null ? Core.Yield.HeaderWidthM : 0;
+                double widthM = Core.Yield != null ? Core.Yield.DiggingWidthM : 0;
                 if (widthM <= 0 || points.Count < 2) return;
 
                 int swaths = 0;
@@ -580,15 +580,15 @@ namespace BeltFlo.Classes
                 Core.RaiseJobStateChanged();
             }
 
-            // The GPS fix is the antenna; the crop is lifted at the share, which
-            // sits HeaderFwdOffsetM ahead of it. Record the share position so pass
-            // boundaries land where the share crossed them — AOG paints its
-            // coverage at the tool the same way.
+            // AOG sends its pivot position; the crop is lifted at the digger, which
+            // sits AheadOfPivotM from it (negative behind, as on a towed harvester).
+            // Record the digger position so pass boundaries land where it crossed
+            // them — AOG paints its coverage at the tool the same way.
             double hdgRad = gps.Heading * Math.PI / 180.0;
             double lat = gps.Latitude
-                       + yield.HeaderFwdOffsetM * Math.Cos(hdgRad) / 111320.0;
+                       + yield.AheadOfPivotM * Math.Cos(hdgRad) / 111320.0;
             double lon = gps.Longitude
-                       + yield.HeaderFwdOffsetM * Math.Sin(hdgRad)
+                       + yield.AheadOfPivotM * Math.Sin(hdgRad)
                          / Math.Max(1.0, 111320.0 * Math.Cos(gps.Latitude * Math.PI / 180.0));
 
             if (harvestActive)
@@ -616,9 +616,9 @@ namespace BeltFlo.Classes
                         // at the position, not at drain time — the grid is about where
                         // the share has been, which has nothing to do with when that
                         // strip's crop reaches the scale.
-                        newFraction = _coverage.MarkSwath(_lastLat, _lastLon, lat, lon, yield.HeaderWidthM);
+                        newFraction = _coverage.MarkSwath(_lastLat, _lastLon, lat, lon, yield.DiggingWidthM);
                         LastNewFraction = newFraction;
-                        acresInc = clsYieldCalculator.MetresToAcres(distM, yield.HeaderWidthM) * newFraction;
+                        acresInc = clsYieldCalculator.MetresToAcres(distM, yield.DiggingWidthM) * newFraction;
                     }
                     // else: implausible GPS jump (e.g. a momentary 0,0 glitch fix) —
                     // skip this tick's acreage/yield contribution instead of adding a
@@ -714,7 +714,7 @@ namespace BeltFlo.Classes
                 // near-total overlap cannot divide by nearly nothing; the tick is
                 // then excluded from the record below rather than trusted.
                 double newFrac = pt.NewFraction;
-                yield.Calculate(pt.Speed, yield.HeaderWidthM * Math.Max(newFrac, MinNewFraction));
+                yield.Calculate(pt.Speed, yield.DiggingWidthM * Math.Max(newFrac, MinNewFraction));
 
                 if (newFrac < MinNewFraction)
                 {

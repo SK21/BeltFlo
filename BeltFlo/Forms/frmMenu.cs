@@ -71,7 +71,6 @@ namespace BeltFlo.Forms
 
         private void btnJobs_Click(object sender, EventArgs e)      => FormManager.ShowForm(new frmMenuJobs());
         private void btnCrops_Click(object sender, EventArgs e)     => FormManager.ShowForm(new frmMenuCrops());
-        private void btnHeaders_Click(object sender, EventArgs e)   => FormManager.ShowForm(new frmMenuHeaders());
         private void btnProfiles_Click(object sender, EventArgs e)  => FormManager.ShowForm(new frmMenuProfiles());
         private void btnSettings_Click(object sender, EventArgs e) => FormManager.ShowForm(new frmMenuSettings());
         private void btnFields_Click(object sender, EventArgs e)   => FormManager.ShowForm(new frmMenuFields());

@@ -14,8 +14,8 @@ namespace BeltFlo.Forms
         private bool _dragging;
         private Point _dragStart;
 
-        private readonly List<(int id, string name, string startedAt, double acres, double volume, string fieldName, string cropName, int cropId, int headerId, string notes)> _jobs
-            = new List<(int, string, string, double, double, string, string, int, int, string)>();
+        private readonly List<(int id, string name, string startedAt, double acres, double volume, string fieldName, string cropName, int cropId, int profileId, int rowsHarvested, string notes)> _jobs
+            = new List<(int, string, string, double, double, string, string, int, int, int, string)>();
 
         private int _selectedJobId     = -1;
         private string _selectedName   = "";
@@ -103,7 +103,7 @@ namespace BeltFlo.Forms
                     ? $"{j.name}  |  {date}  |  {j.status}"
                     : $"{j.name}  |  {date}  |  {j.status}  |  {fname}";
                 lbJobs.Items.Add(entry);
-                _jobs.Add((j.id, j.name, date, j.acres, j.volume, fname, cname, j.cropId, j.headerId, j.notes));
+                _jobs.Add((j.id, j.name, date, j.acres, j.volume, fname, cname, j.cropId, j.profileId, j.rowsHarvested, j.notes));
             }
 
             int activeId  = Core.Collector?.ActiveJobId ?? -1;
@@ -223,17 +223,17 @@ namespace BeltFlo.Forms
             if (idx < 0 || idx >= _jobs.Count) return;
             var job = _jobs[idx];
 
-            // Resolve header description (crop name is already on the job tuple)
-            string cropName   = job.cropName;
-            string headerDesc = "";
-            foreach (var h in Core.Database.Headers.GetAll())
-                if (h.id == job.headerId)
-                {
-                    double dispW = Props.IsMetric ? h.widthM : h.widthM * 3.28084;
-                    string wu = Props.IsMetric ? "m" : "ft";
-                    headerDesc = $"{h.name}  ({dispW:F1} {wu})";
-                    break;
-                }
+            // Harvester description (crop name is already on the job tuple)
+            string cropName      = job.cropName;
+            string harvesterDesc = "";
+            var profile = Core.Database.Profiles.GetById(job.profileId);
+            if (profile != null)
+            {
+                int rows = job.rowsHarvested > 0 ? job.rowsHarvested : profile.Rows;
+                double w = profile.WidthM(job.rowsHarvested);
+                string width = Props.IsMetric ? $"{w:F2} m" : $"{w / 0.3048:F1} ft";
+                harvesterDesc = $"{profile.Name}, {rows} rows  ({width})";
+            }
 
             // Point and load counts
             int    pointCount = 0;
@@ -275,7 +275,7 @@ namespace BeltFlo.Forms
             AddRow("Date:",   job.startedAt);
             if (!string.IsNullOrEmpty(job.fieldName)) AddRow("Field:",  job.fieldName);
             if (!string.IsNullOrEmpty(cropName))      AddRow("Crop:",   cropName);
-            if (!string.IsNullOrEmpty(headerDesc))    AddRow("Header:", headerDesc);
+            if (!string.IsNullOrEmpty(harvesterDesc)) AddRow("Harvester:", harvesterDesc);
             AddLine("");
             AddLine(rule);
 

@@ -20,10 +20,10 @@ namespace BeltFlo.Classes
         public double InchesPerPulse { get; set; } = 1.0;             // belt travel per proximity pulse
         public double FlowThresholdLbPerSec { get; set; } = 0.05;     // below this the belt is running empty
 
-        // Digging width. Named for the header table it still comes from; a digger's
-        // width is rows × row spacing and lives on the harvester profile eventually.
-        public double HeaderWidthM { get; set; } = 3.6576;            // 4 rows at 36 in
-        public double HeaderFwdOffsetM { get; set; } = 0;             // metres the share sits AHEAD of the GPS antenna
+        // From the harvester profile: rows harvested × row spacing, and the digger's
+        // distance from AgOpenGPS's pivot (positive ahead, negative behind).
+        public double DiggingWidthM { get; set; } = 3.6576;           // 4 rows at 36 in
+        public double AheadOfPivotM { get; set; } = 0;
 
         // Latest values (read by the collector and the UI)
         public double CurrentLbPerSec { get; private set; }           // mass flow over the scale, lightly smoothed
@@ -118,7 +118,7 @@ namespace BeltFlo.Classes
         /// </summary>
         public double Calculate(double speedKmh)
         {
-            return Calculate(speedKmh, HeaderWidthM);
+            return Calculate(speedKmh, DiggingWidthM);
         }
 
         /// <summary>

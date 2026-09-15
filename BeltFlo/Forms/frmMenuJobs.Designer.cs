@@ -22,10 +22,11 @@ namespace BeltFlo.Forms
             this.txtJobName      = new System.Windows.Forms.TextBox();
             this.lblCropLabel    = new System.Windows.Forms.Label();
             this.cboCrop         = new System.Windows.Forms.ComboBox();
-            this.lblHeaderLabel  = new System.Windows.Forms.Label();
-            this.cboHeader       = new System.Windows.Forms.ComboBox();
             this.lblProfileLabel = new System.Windows.Forms.Label();
             this.cboProfile      = new System.Windows.Forms.ComboBox();
+            this.lblRowsLabel    = new System.Windows.Forms.Label();
+            this.lblRowsVal      = new System.Windows.Forms.Label();
+            this.lblRowsInfo     = new System.Windows.Forms.Label();
             this.lblFieldLabel   = new System.Windows.Forms.Label();
             this.cboField        = new System.Windows.Forms.ComboBox();
             this.lblNotesLabel   = new System.Windows.Forms.Label();
@@ -99,15 +100,25 @@ namespace BeltFlo.Forms
             this.cboCrop.Font          = inputFont;
             this.cboCrop.Location      = new System.Drawing.Point(146, 270); this.cboCrop.Size = new System.Drawing.Size(436, 32); this.cboCrop.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 
-            this.lblHeaderLabel.Text     = Lang.lgHeader; this.lblHeaderLabel.Font = labelFont;
-            this.lblHeaderLabel.Location = new System.Drawing.Point(8, 316); this.lblHeaderLabel.Size = new System.Drawing.Size(130, 26); this.lblHeaderLabel.AutoSize = false;
-            this.cboHeader.Font          = inputFont;
-            this.cboHeader.Location      = new System.Drawing.Point(146, 312); this.cboHeader.Size = new System.Drawing.Size(436, 32); this.cboHeader.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-
             this.lblProfileLabel.Text     = Lang.lgProfile; this.lblProfileLabel.Font = labelFont;
-            this.lblProfileLabel.Location = new System.Drawing.Point(8, 358); this.lblProfileLabel.Size = new System.Drawing.Size(130, 26); this.lblProfileLabel.AutoSize = false;
+            this.lblProfileLabel.Location = new System.Drawing.Point(8, 316); this.lblProfileLabel.Size = new System.Drawing.Size(130, 26); this.lblProfileLabel.AutoSize = false;
             this.cboProfile.Font          = inputFont;
-            this.cboProfile.Location      = new System.Drawing.Point(146, 354); this.cboProfile.Size = new System.Drawing.Size(436, 32); this.cboProfile.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboProfile.Location      = new System.Drawing.Point(146, 312); this.cboProfile.Size = new System.Drawing.Size(436, 32); this.cboProfile.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboProfile.SelectedIndexChanged += new System.EventHandler(this.cboProfile_SelectedIndexChanged);
+
+            // Rows harvested — the harvester's own rows unless the field is windrowed.
+            // A plain box that opens the numpad, not a spinner.
+            this.lblRowsLabel.Text     = Lang.lgRowsHarvested; this.lblRowsLabel.Font = labelFont;
+            this.lblRowsLabel.Location = new System.Drawing.Point(8, 358); this.lblRowsLabel.Size = new System.Drawing.Size(130, 26); this.lblRowsLabel.AutoSize = false;
+            this.lblRowsVal.Font        = inputFont;
+            this.lblRowsVal.Location    = new System.Drawing.Point(146, 354); this.lblRowsVal.Size = new System.Drawing.Size(100, 32); this.lblRowsVal.AutoSize = false;
+            this.lblRowsVal.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.lblRowsVal.TextAlign   = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblRowsVal.Cursor      = System.Windows.Forms.Cursors.Hand;
+            this.lblRowsVal.Click      += new System.EventHandler(this.lblRowsVal_Click);
+            this.lblRowsInfo.Font       = inputFont;
+            this.lblRowsInfo.Location   = new System.Drawing.Point(254, 354); this.lblRowsInfo.Size = new System.Drawing.Size(328, 32); this.lblRowsInfo.AutoSize = false;
+            this.lblRowsInfo.TextAlign  = System.Drawing.ContentAlignment.MiddleLeft;
 
             this.lblNotesLabel.Text     = Lang.lgNotes; this.lblNotesLabel.Font = labelFont;
             this.lblNotesLabel.Location = new System.Drawing.Point(8, 400); this.lblNotesLabel.Size = new System.Drawing.Size(130, 26); this.lblNotesLabel.AutoSize = false;
@@ -118,7 +129,7 @@ namespace BeltFlo.Forms
 
             // ── Bottom row: New / Start / Finish / Save / Delete / Close ──────
             // Jobs are started and finished here and nowhere else — the run
-            // screen's play, pause and stop belong to truck loads.
+            // screen's play and stop belong to truck loads, and pause stops counting.
             this.btnNew.Text      = Lang.lgNew;      this.btnNew.Font      = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
             this.btnNew.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnNew.Size      = new System.Drawing.Size(94, 44); this.btnNew.Location = new System.Drawing.Point(4, 476);
@@ -156,7 +167,8 @@ namespace BeltFlo.Forms
             this.pnlContent.Controls.AddRange(new System.Windows.Forms.Control[] {
                 lvJobs,
                 lblJobName, txtJobName, lblFieldLabel, cboField,
-                lblCropLabel, cboCrop, lblHeaderLabel, cboHeader, lblProfileLabel, cboProfile,
+                lblCropLabel, cboCrop, lblProfileLabel, cboProfile,
+                lblRowsLabel, lblRowsVal, lblRowsInfo,
                 lblNotesLabel, txtNotes,
                 btnNew, btnLoad, btnFinishJob, btnSave, btnDelete, btnJobsClose });
 
@@ -188,10 +200,11 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.TextBox  txtJobName;
         private System.Windows.Forms.Label    lblCropLabel;
         private System.Windows.Forms.ComboBox cboCrop;
-        private System.Windows.Forms.Label    lblHeaderLabel;
-        private System.Windows.Forms.ComboBox cboHeader;
         private System.Windows.Forms.Label    lblProfileLabel;
         private System.Windows.Forms.ComboBox cboProfile;
+        private System.Windows.Forms.Label    lblRowsLabel;
+        private System.Windows.Forms.Label    lblRowsVal;
+        private System.Windows.Forms.Label    lblRowsInfo;
         private System.Windows.Forms.Label    lblFieldLabel;
         private System.Windows.Forms.ComboBox cboField;
         private System.Windows.Forms.Label    lblNotesLabel;

@@ -22,7 +22,6 @@ namespace BeltFlo.Forms
             this.pnlContent = new System.Windows.Forms.Panel();
             this.btnJobs = new System.Windows.Forms.Button();
             this.btnCrops = new System.Windows.Forms.Button();
-            this.btnHeaders = new System.Windows.Forms.Button();
             this.btnProfiles = new System.Windows.Forms.Button();
             this.btnSettings = new System.Windows.Forms.Button();
             this.btnFields = new System.Windows.Forms.Button();
@@ -99,7 +98,6 @@ namespace BeltFlo.Forms
             //
             this.pnlContent.Controls.Add(this.btnJobs);
             this.pnlContent.Controls.Add(this.btnCrops);
-            this.pnlContent.Controls.Add(this.btnHeaders);
             this.pnlContent.Controls.Add(this.btnProfiles);
             this.pnlContent.Controls.Add(this.btnSettings);
             this.pnlContent.Controls.Add(this.btnFields);
@@ -160,17 +158,6 @@ namespace BeltFlo.Forms
             this.btnCrops.Text = global::BeltFlo.Language.Lang.lgTitleCrops;
             this.btnCrops.Click += new System.EventHandler(this.btnCrops_Click);
             //
-            // btnHeaders
-            //
-            this.btnHeaders.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnHeaders.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnHeaders.Location = new System.Drawing.Point(232,128);
-            this.btnHeaders.Name = "btnHeaders";
-            this.btnHeaders.Size = new System.Drawing.Size(216, 52);
-            this.btnHeaders.TabIndex = 2;
-            this.btnHeaders.Text = global::BeltFlo.Language.Lang.lgTitleHeaders;
-            this.btnHeaders.Click += new System.EventHandler(this.btnHeaders_Click);
-            //
             // btnFields
             //
             this.btnFields.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -186,7 +173,7 @@ namespace BeltFlo.Forms
             //
             this.btnProfiles.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnProfiles.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnProfiles.Location = new System.Drawing.Point(232,188);
+            this.btnProfiles.Location = new System.Drawing.Point(232,128);
             this.btnProfiles.Name = "btnProfiles";
             this.btnProfiles.Size = new System.Drawing.Size(216, 52);
             this.btnProfiles.TabIndex = 3;
@@ -199,7 +186,7 @@ namespace BeltFlo.Forms
             this.btnSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
             this.btnSettings.Location = new System.Drawing.Point(8, 248);
             this.btnSettings.Name = "btnSettings";
-            this.btnSettings.Size = new System.Drawing.Size(216, 44);
+            this.btnSettings.Size = new System.Drawing.Size(440, 44);
             this.btnSettings.TabIndex = 5;
             this.btnSettings.Text = global::BeltFlo.Language.Lang.lgTitleSettings;
             this.btnSettings.Click += new System.EventHandler(this.btnSettings_Click);
@@ -208,9 +195,9 @@ namespace BeltFlo.Forms
             //
             this.btnLanguage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnLanguage.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnLanguage.Location = new System.Drawing.Point(232,248);
+            this.btnLanguage.Location = new System.Drawing.Point(232,188);
             this.btnLanguage.Name = "btnLanguage";
-            this.btnLanguage.Size = new System.Drawing.Size(216, 44);
+            this.btnLanguage.Size = new System.Drawing.Size(216, 52);
             this.btnLanguage.TabIndex = 10;
             this.btnLanguage.Text = global::BeltFlo.Language.Lang.lgLanguage;
             this.btnLanguage.Click += new System.EventHandler(this.btnLanguage_Click);
@@ -244,7 +231,6 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Panel  pnlContent;
         private System.Windows.Forms.Button btnJobs;
         private System.Windows.Forms.Button btnCrops;
-        private System.Windows.Forms.Button btnHeaders;
         private System.Windows.Forms.Button btnProfiles;
         private System.Windows.Forms.Button btnSettings;
         private System.Windows.Forms.Button btnFields;

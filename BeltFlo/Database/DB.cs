@@ -19,7 +19,6 @@ namespace BeltFlo.Database
         public YieldDataRepo YieldData { get; private set; }
         public ProfileRepo Profiles { get; private set; }
         public CropRepo Crops { get; private set; }
-        public HeaderRepo Headers { get; private set; }
         public FieldRepo Fields { get; private set; }
         public ConveyorConfigRepo ConveyorConfigs { get; private set; }
         public LoadRepo Loads { get; private set; }
@@ -40,7 +39,6 @@ namespace BeltFlo.Database
                 YieldData = new YieldDataRepo(_connectionString);
                 Profiles = new ProfileRepo(_connectionString);
                 Crops = new CropRepo(_connectionString);
-                Headers = new HeaderRepo(_connectionString);
                 Fields = new FieldRepo(_connectionString);
                 ConveyorConfigs = new ConveyorConfigRepo(_connectionString);
                 Loads = new LoadRepo(_connectionString);
@@ -72,24 +70,23 @@ namespace BeltFlo.Database
 PRAGMA journal_mode=WAL;
 PRAGMA foreign_keys=ON;
 
+-- The harvester. Digging width is row_count × row_spacing_m; there are no headers.
+-- ahead_of_pivot_m follows AgOpenGPS: positive ahead of its pivot, negative behind.
+-- scale_location is 'Truck' (weighs straight into the truck) or 'Tank'.
 CREATE TABLE IF NOT EXISTS profiles (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    name          TEXT    NOT NULL,
-    harvester_id  TEXT    NOT NULL DEFAULT '',
-    created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    name             TEXT    NOT NULL,
+    harvester_id     TEXT    NOT NULL DEFAULT '',
+    row_count        INTEGER NOT NULL DEFAULT 4,
+    row_spacing_m    REAL    NOT NULL DEFAULT 0.9144,
+    ahead_of_pivot_m REAL    NOT NULL DEFAULT 0,
+    scale_location   TEXT    NOT NULL DEFAULT 'Truck',
+    created_at       TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS crops (
     id    INTEGER PRIMARY KEY AUTOINCREMENT,
     name  TEXT    NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS headers (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT    NOT NULL,
-    header_type TEXT    NOT NULL DEFAULT 'Digger',
-    cut_width   REAL    NOT NULL DEFAULT 3.6576,
-    fwd_offset  REAL    NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS fields (
@@ -103,7 +100,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     profile_id   INTEGER REFERENCES profiles(id),
     field_id     INTEGER REFERENCES fields(id),
     crop_id      INTEGER REFERENCES crops(id),
-    header_id    INTEGER REFERENCES headers(id),
+    rows_harvested INTEGER NOT NULL DEFAULT 0,   -- 0 = the harvester's own row count; more for windrowed crop
     name         TEXT    NOT NULL,
     started_at   TEXT    NOT NULL DEFAULT (datetime('now')),
     ended_at     TEXT,

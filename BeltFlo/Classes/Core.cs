@@ -60,9 +60,10 @@ namespace BeltFlo.Classes
         // Active session configuration
         public static int ActiveProfileId { get; set; } = -1;
         public static int ActiveCropId    { get; set; } = -1;
-        public static int ActiveHeaderId  { get; set; } = -1;
+        public static int ActiveRowsHarvested { get; set; } = 0; // the job's rows harvested; 0 = the harvester's own row count
         public static int ActiveCalRev    { get; set; } = -1;   // conveyor_config row the app expects the module to run
-        public static int ActiveRowsInUse { get; set; } = 0;    // 0 = full width; fewer when the digger lifts fewer rows
+        public static int ActiveRowsInUse { get; set; } = 0;    // rows the digging width is worked out from; recorded on every point
+        public static bool ScaleWeighsIntoTank { get; private set; } // the active harvester's scale feeds a tank, not the truck
 
         // Flags
         public static bool IsShuttingDown { get; private set; }
@@ -76,7 +77,6 @@ namespace BeltFlo.Classes
         public static event EventHandler JobStateChanged;
         public static event EventHandler FieldListChanged;
         public static event EventHandler CropListChanged;
-        public static event EventHandler HeaderListChanged;
         public static event EventHandler ProfileListChanged;
         public static event EventHandler ColorChanged;
         public static event EventHandler AppExit;
@@ -356,15 +356,21 @@ namespace BeltFlo.Classes
         public static void RaiseJobStateChanged()   => SafeEvent.Raise(JobStateChanged);
         public static void RaiseFieldListChanged()   => SafeEvent.Raise(FieldListChanged);
         public static void RaiseCropListChanged()    => SafeEvent.Raise(CropListChanged);
-        public static void RaiseHeaderListChanged()  => SafeEvent.Raise(HeaderListChanged);
         public static void RaiseProfileListChanged() => SafeEvent.Raise(ProfileListChanged);
         public static void RaiseGpsUpdated() => SafeEvent.Raise(GpsUpdated);
 
-        public static void LoadJobConfig(int profileId, int cropId, int headerId)
+        /// <summary>Digging width for a job: rows harvested (0 = the harvester's own) × row spacing.</summary>
+        public static double JobWidthM(int profileId, int rowsHarvested)
         {
-            ActiveProfileId = profileId;
-            ActiveCropId    = cropId;
-            ActiveHeaderId  = headerId;
+            var p = Database?.Profiles.GetById(profileId);
+            return (p ?? new HarvesterProfile()).WidthM(rowsHarvested);
+        }
+
+        public static void LoadJobConfig(int profileId, int cropId, int rowsHarvested)
+        {
+            ActiveProfileId     = profileId;
+            ActiveCropId        = cropId;
+            ActiveRowsHarvested = rowsHarvested;
 
             // Remembered so the next start, with no job to resume, comes up on the
             // same harvester rather than the first profile in the list.
@@ -376,12 +382,15 @@ namespace BeltFlo.Classes
 
             if (Database == null || Yield == null) return;
 
-            foreach (var h in Database.Headers.GetAll())
+            // Width and position come from the harvester: rows × row spacing, and the
+            // digger's distance from AgOpenGPS's pivot.
+            var profile = Database.Profiles.GetById(profileId);
+            if (profile != null)
             {
-                if (h.id != headerId) continue;
-                Yield.HeaderWidthM     = h.widthM;
-                Yield.HeaderFwdOffsetM = h.fwdOffsetM;
-                break;
+                ActiveRowsInUse     = rowsHarvested > 0 ? rowsHarvested : profile.Rows;
+                Yield.DiggingWidthM = profile.WidthM(rowsHarvested);
+                Yield.AheadOfPivotM = profile.AheadOfPivotM;
+                ScaleWeighsIntoTank = profile.ScaleLocation == HarvesterProfile.Tank;
             }
 
             // The conveyor configuration belongs to the machine, not the crop: the
@@ -432,7 +441,7 @@ namespace BeltFlo.Classes
                                    + (newRevision ? " (new)" : " (updated)"));
 
             if (edited.ProfileId == ActiveProfileId)
-                LoadJobConfig(ActiveProfileId, ActiveCropId, ActiveHeaderId);
+                LoadJobConfig(ActiveProfileId, ActiveCropId, ActiveRowsHarvested);
             return edited.Id;
         }
 
@@ -462,7 +471,7 @@ namespace BeltFlo.Classes
             try
             {
                 if (Database.Profiles.GetAll().Count == 0)
-                    Database.Profiles.Create("Default", "Harvester 1");
+                    Database.Profiles.Create(new HarvesterProfile { Name = "Default", HarvesterId = "Harvester 1" });
 
                 if (Database.Crops.GetAll().Count == 0)
                 {
@@ -472,33 +481,28 @@ namespace BeltFlo.Classes
                     Database.Crops.Create("Onion");
                 }
 
-                if (Database.Headers.GetAll().Count == 0)
-                    Database.Headers.Create("4 Row 36 in", "Digger", 3.6576);
-
                 // Every profile carries a conveyor configuration from the start, so a
                 // packet always has a revision to be checked against.
                 foreach (var p in Database.Profiles.GetAll())
-                    if (Database.ConveyorConfigs.GetLatest(p.id) == null)
-                        Database.ConveyorConfigs.Save(new ConveyorConfig { ProfileId = p.id });
+                    if (Database.ConveyorConfigs.GetLatest(p.Id) == null)
+                        Database.ConveyorConfigs.Save(new ConveyorConfig { ProfileId = p.Id });
 
                 // Set active to first available so yield calc has reasonable defaults
                 var profiles = Database.Profiles.GetAll();
                 var crops    = Database.Crops.GetAll();
-                var headers  = Database.Headers.GetAll();
 
                 // The last profile used, if it still exists; otherwise the first.
                 if (profiles.Count > 0)
                 {
-                    ActiveProfileId = profiles[0].id;
+                    ActiveProfileId = profiles[0].Id;
                     if (int.TryParse(Properties.Settings.Default.CurrentProfile, out int lastId)
-                        && profiles.Exists(p => p.id == lastId))
+                        && profiles.Exists(p => p.Id == lastId))
                         ActiveProfileId = lastId;
                 }
-                if (crops.Count    > 0) ActiveCropId    = crops[0].id;
-                if (headers.Count  > 0) ActiveHeaderId  = headers[0].id;
+                if (crops.Count > 0) ActiveCropId = crops[0].id;
 
-                if (ActiveCropId > 0 && ActiveHeaderId > 0)
-                    LoadJobConfig(ActiveProfileId, ActiveCropId, ActiveHeaderId);
+                if (ActiveProfileId > 0)
+                    LoadJobConfig(ActiveProfileId, ActiveCropId, 0);
             }
             catch (Exception ex)
             {
@@ -519,8 +523,7 @@ namespace BeltFlo.Classes
                     {
                         int profileId = j.profileId > 0 ? j.profileId : ActiveProfileId;
                         int cropId    = j.cropId    > 0 ? j.cropId    : ActiveCropId;
-                        int headerId  = j.headerId  > 0 ? j.headerId  : ActiveHeaderId;
-                        LoadJobConfig(profileId, cropId, headerId);
+                        LoadJobConfig(profileId, cropId, j.rowsHarvested);
                         Collector.LoadJob(j.id, j.name, j.acres, j.volume);
                         RaiseJobStateChanged();
                         resumed = true;

@@ -42,7 +42,7 @@ namespace BeltFlo.Language
         internal static string lgNone           => Get("lgNone");
         internal static string lgName           => Get("lgName");
         internal static string lgCrop           => Get("lgCrop");
-        internal static string lgHeader         => Get("lgHeader");
+        internal static string lgRowsHarvested  => Get("lgRowsHarvested");
         internal static string lgProfile        => Get("lgProfile");
         internal static string lgField          => Get("lgField");
         internal static string lgOffset         => Get("lgOffset");
@@ -59,7 +59,6 @@ namespace BeltFlo.Language
         internal static string lgTitleSettings    => Get("lgTitleSettings");
         internal static string lgTitleJobs        => Get("lgTitleJobs");
         internal static string lgTitleCrops       => Get("lgTitleCrops");
-        internal static string lgTitleHeaders     => Get("lgTitleHeaders");
         internal static string lgTitleProfiles    => Get("lgTitleProfiles");
         internal static string lgTitleFields      => Get("lgTitleFields");
         internal static string lgTitleImportFields => Get("lgTitleImportFields");
@@ -187,7 +186,6 @@ namespace BeltFlo.Language
         internal static string lgColAcres          => Get("lgColAcres");
         internal static string lgColField          => Get("lgColField");
         internal static string lgSelectCropFirst   => Get("lgSelectCropFirst");
-        internal static string lgSelectHeaderFirst => Get("lgSelectHeaderFirst");
         internal static string lgSelectJobFirst    => Get("lgSelectJobFirst");
         internal static string lgEnterJobName      => Get("lgEnterJobName");
         internal static string lgMustHaveOneJob    => Get("lgMustHaveOneJob");
@@ -209,10 +207,14 @@ namespace BeltFlo.Language
         // ── Headers form ─────────────────────────────────────────────────────
         internal static string lgType               => Get("lgType");
         internal static string lgWidth              => Get("lgWidth");
-        internal static string lgHeaderOffset       => Get("lgHeaderOffset");
-        internal static string lgEnterHeaderName    => Get("lgEnterHeaderName");
-        internal static string lgMustHaveOneHeader  => Get("lgMustHaveOneHeader");
-        internal static string lgDeleteHeaderPrompt => Get("lgDeleteHeaderPrompt");
+        internal static string lgRows               => Get("lgRows");
+        internal static string lgRowSpacing         => Get("lgRowSpacing");
+        internal static string lgAheadOfPivot       => Get("lgAheadOfPivot");
+        internal static string lgScaleWeighsInto    => Get("lgScaleWeighsInto");
+        internal static string lgTruck              => Get("lgTruck");
+        internal static string lgTank               => Get("lgTank");
+        internal static string lgDiggingWidth       => Get("lgDiggingWidth");
+        internal static string lgRowsInfo           => Get("lgRowsInfo");
 
         // ── Profiles form ────────────────────────────────────────────────────
         internal static string lgCombineId           => Get("lgCombineId");

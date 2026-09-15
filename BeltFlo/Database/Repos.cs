@@ -19,7 +19,7 @@ namespace BeltFlo.Database
         private readonly string _cs;
         public JobRepo(string connectionString) { _cs = connectionString; }
 
-        public int Create(string name, int profileId, int cropId, int headerId, int fieldId = -1)
+        public int Create(string name, int profileId, int cropId, int rowsHarvested, int fieldId = -1)
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
@@ -29,12 +29,12 @@ namespace BeltFlo.Database
             // active row alongside the job actually recording, so the DB could
             // hold two 'Active' jobs and resume the wrong one on next start.
             using var cmd = new SQLiteCommand(
-                "INSERT INTO jobs (name, profile_id, crop_id, header_id, field_id, status) " +
-                "VALUES (@n, @p, @c, @h, @f, 'New'); SELECT last_insert_rowid();", conn);
+                "INSERT INTO jobs (name, profile_id, crop_id, rows_harvested, field_id, status) " +
+                "VALUES (@n, @p, @c, @r, @f, 'New'); SELECT last_insert_rowid();", conn);
             cmd.Parameters.AddWithValue("@n", name);
             cmd.Parameters.AddWithValue("@p", profileId);
             cmd.Parameters.AddWithValue("@c", cropId);
-            cmd.Parameters.AddWithValue("@h", headerId);
+            cmd.Parameters.AddWithValue("@r", rowsHarvested);
             cmd.Parameters.AddWithValue("@f", fieldId > 0 ? (object)fieldId : DBNull.Value);
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
@@ -63,34 +63,34 @@ namespace BeltFlo.Database
 
         // `volume` is total pounds. The name survives from the grain code so the
         // forms that read the tuple did not all have to change at once.
-        public List<(int id, string name, string status, string startedAt, double acres, double volume, int profileId, int cropId, int headerId, int fieldId, string notes)> GetAll()
+        public List<(int id, string name, string status, string startedAt, double acres, double volume, int profileId, int cropId, int rowsHarvested, int fieldId, string notes)> GetAll()
         {
             var result = new List<(int, string, string, string, double, double, int, int, int, int, string)>();
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(
-                "SELECT id, name, status, started_at, total_acres, total_pounds, profile_id, crop_id, header_id, field_id, notes FROM jobs ORDER BY id DESC", conn);
+                "SELECT id, name, status, started_at, total_acres, total_pounds, profile_id, crop_id, rows_harvested, field_id, notes FROM jobs ORDER BY id DESC", conn);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
                 result.Add((reader.GetInt32(0), reader.GetString(1), reader.GetString(2),
                             reader.GetString(3), reader.GetDouble(4), reader.GetDouble(5),
                             reader.IsDBNull(6) ? -1 : reader.GetInt32(6),
                             reader.IsDBNull(7) ? -1 : reader.GetInt32(7),
-                            reader.IsDBNull(8) ? -1 : reader.GetInt32(8),
+                            reader.GetInt32(8),
                             reader.IsDBNull(9) ? -1 : reader.GetInt32(9),
                             reader.IsDBNull(10) ? "" : reader.GetString(10)));
             return result;
         }
 
-        public void Update(int jobId, string name, int cropId, int headerId, int profileId, int fieldId = -1, string notes = "")
+        public void Update(int jobId, string name, int cropId, int rowsHarvested, int profileId, int fieldId = -1, string notes = "")
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(
-                "UPDATE jobs SET name=@n, crop_id=@c, header_id=@h, profile_id=@p, field_id=@f, notes=@nt WHERE id=@id", conn);
+                "UPDATE jobs SET name=@n, crop_id=@c, rows_harvested=@r, profile_id=@p, field_id=@f, notes=@nt WHERE id=@id", conn);
             cmd.Parameters.AddWithValue("@n",  name);
             cmd.Parameters.AddWithValue("@c",  cropId);
-            cmd.Parameters.AddWithValue("@h",  headerId);
+            cmd.Parameters.AddWithValue("@r",  rowsHarvested);
             cmd.Parameters.AddWithValue("@p",  profileId);
             cmd.Parameters.AddWithValue("@f",  fieldId > 0 ? (object)fieldId : DBNull.Value);
             cmd.Parameters.AddWithValue("@nt", notes ?? "");
@@ -280,40 +280,74 @@ VALUES
         private readonly string _cs;
         public ProfileRepo(string connectionString) { _cs = connectionString; }
 
-        public int Create(string name, string harvesterId = "")
+        private const string SelectColumns =
+            "SELECT id, name, harvester_id, row_count, row_spacing_m, ahead_of_pivot_m, scale_location FROM profiles";
+
+        public int Create(HarvesterProfile p)
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(
-                "INSERT INTO profiles (name, harvester_id) VALUES (@n, @h); SELECT last_insert_rowid();", conn);
-            cmd.Parameters.AddWithValue("@n", name);
-            cmd.Parameters.AddWithValue("@h", harvesterId);
+                "INSERT INTO profiles (name, harvester_id, row_count, row_spacing_m, ahead_of_pivot_m, scale_location) " +
+                "VALUES (@n, @h, @r, @s, @o, @l); SELECT last_insert_rowid();", conn);
+            AddParameters(cmd, p);
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
 
-        public List<(int id, string name, string harvesterId)> GetAll()
+        public List<HarvesterProfile> GetAll()
         {
-            var result = new List<(int, string, string)>();
+            var result = new List<HarvesterProfile>();
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
-            using var cmd = new SQLiteCommand("SELECT id, name, harvester_id FROM profiles ORDER BY name", conn);
+            using var cmd = new SQLiteCommand(SelectColumns + " ORDER BY name", conn);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
-                result.Add((reader.GetInt32(0), reader.GetString(1), reader.GetString(2)));
+                result.Add(Map(reader));
             return result;
         }
 
-        public void Update(int id, string name, string harvesterId)
+        public HarvesterProfile GetById(int id)
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand(SelectColumns + " WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@id", id);
+            using var reader = cmd.ExecuteReader();
+            return reader.Read() ? Map(reader) : null;
+        }
+
+        public void Update(HarvesterProfile p)
         {
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand(
-                "UPDATE profiles SET name=@n, harvester_id=@h WHERE id=@id", conn);
-            cmd.Parameters.AddWithValue("@n",  name);
-            cmd.Parameters.AddWithValue("@h",  harvesterId);
-            cmd.Parameters.AddWithValue("@id", id);
+                "UPDATE profiles SET name=@n, harvester_id=@h, row_count=@r, row_spacing_m=@s, " +
+                "ahead_of_pivot_m=@o, scale_location=@l WHERE id=@id", conn);
+            AddParameters(cmd, p);
+            cmd.Parameters.AddWithValue("@id", p.Id);
             cmd.ExecuteNonQuery();
         }
+
+        private static void AddParameters(SQLiteCommand cmd, HarvesterProfile p)
+        {
+            cmd.Parameters.AddWithValue("@n", p.Name ?? "");
+            cmd.Parameters.AddWithValue("@h", p.HarvesterId ?? "");
+            cmd.Parameters.AddWithValue("@r", p.Rows);
+            cmd.Parameters.AddWithValue("@s", p.RowSpacingM);
+            cmd.Parameters.AddWithValue("@o", p.AheadOfPivotM);
+            cmd.Parameters.AddWithValue("@l", p.ScaleLocation ?? HarvesterProfile.Truck);
+        }
+
+        private static HarvesterProfile Map(SQLiteDataReader r) => new HarvesterProfile
+        {
+            Id            = r.GetInt32(0),
+            Name          = r.GetString(1),
+            HarvesterId   = r.GetString(2),
+            Rows          = r.GetInt32(3),
+            RowSpacingM   = r.GetDouble(4),
+            AheadOfPivotM = r.GetDouble(5),
+            ScaleLocation = r.GetString(6)
+        };
 
         public void Delete(int id)
         {
@@ -382,65 +416,6 @@ VALUES
             using var conn = new SQLiteConnection(_cs);
             conn.Open();
             using var cmd = new SQLiteCommand("DELETE FROM crops WHERE id=@id", conn);
-            cmd.Parameters.AddWithValue("@id", id);
-            try { cmd.ExecuteNonQuery(); }
-            catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Constraint)
-            { throw new ItemInUseException(); }
-        }
-    }
-
-    // ── HeaderRepo ────────────────────────────────────────────────────────────
-    public class HeaderRepo
-    {
-        private readonly string _cs;
-        public HeaderRepo(string connectionString) { _cs = connectionString; }
-
-        public int Create(string name, string headerType, double cutWidthM, double fwdOffsetM = 0)
-        {
-            using var conn = new SQLiteConnection(_cs);
-            conn.Open();
-            using var cmd = new SQLiteCommand(
-                "INSERT INTO headers (name, header_type, cut_width, fwd_offset) VALUES (@n, @t, @w, @o); SELECT last_insert_rowid();", conn);
-            cmd.Parameters.AddWithValue("@n", name);
-            cmd.Parameters.AddWithValue("@t", headerType);
-            cmd.Parameters.AddWithValue("@w", cutWidthM);
-            cmd.Parameters.AddWithValue("@o", fwdOffsetM);
-            return Convert.ToInt32(cmd.ExecuteScalar());
-        }
-
-        public List<(int id, string name, string type, double widthM, double fwdOffsetM)> GetAll()
-        {
-            var result = new List<(int, string, string, double, double)>();
-            using var conn = new SQLiteConnection(_cs);
-            conn.Open();
-            using var cmd = new SQLiteCommand(
-                "SELECT id, name, header_type, cut_width, fwd_offset FROM headers ORDER BY name", conn);
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-                result.Add((reader.GetInt32(0), reader.GetString(1),
-                            reader.GetString(2), reader.GetDouble(3), reader.GetDouble(4)));
-            return result;
-        }
-
-        public void Update(int id, string name, string headerType, double cutWidthM, double fwdOffsetM = 0)
-        {
-            using var conn = new SQLiteConnection(_cs);
-            conn.Open();
-            using var cmd = new SQLiteCommand(
-                "UPDATE headers SET name=@n, header_type=@t, cut_width=@w, fwd_offset=@o WHERE id=@id", conn);
-            cmd.Parameters.AddWithValue("@n",  name);
-            cmd.Parameters.AddWithValue("@t",  headerType);
-            cmd.Parameters.AddWithValue("@w",  cutWidthM);
-            cmd.Parameters.AddWithValue("@o",  fwdOffsetM);
-            cmd.Parameters.AddWithValue("@id", id);
-            cmd.ExecuteNonQuery();
-        }
-
-        public void Delete(int id)
-        {
-            using var conn = new SQLiteConnection(_cs);
-            conn.Open();
-            using var cmd = new SQLiteCommand("DELETE FROM headers WHERE id=@id", conn);
             cmd.Parameters.AddWithValue("@id", id);
             try { cmd.ExecuteNonQuery(); }
             catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Constraint)

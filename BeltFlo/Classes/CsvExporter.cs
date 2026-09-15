@@ -22,18 +22,12 @@ namespace BeltFlo.Classes
                 // picture on screen agree.
                 PassTransients.Apply(points);
 
-                // Resolve the digging width from the job record.
+                // Digging width from the job's harvester and rows harvested.
                 double widthM = 3.6576;
                 foreach (var j in Core.Database.Jobs.GetAll())
                 {
                     if (j.id != jobId) continue;
-                    if (j.headerId > 0)
-                    {
-                        foreach (var h in Core.Database.Headers.GetAll())
-                        {
-                            if (h.id == j.headerId) { widthM = h.widthM; break; }
-                        }
-                    }
+                    widthM = Core.JobWidthM(j.profileId, j.rowsHarvested);
                     break;
                 }
 

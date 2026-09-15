@@ -18,7 +18,7 @@ namespace BeltFlo.Forms
     {
         private bool   _isMini = true;
         private double _savedFullZoom = 17;
-        private double _headerWidthM  = 9.144;
+        private double _widthM        = 3.6576;
 
         // Mini bar drag
         private bool  _miniDragging;
@@ -410,16 +410,12 @@ namespace BeltFlo.Forms
             // LoadYieldData path costs one pass over the list and nothing else.
             _drawnPassCount = PassTransients.Apply(points);
 
-            // Header width can change between jobs; resolve it on a full rebuild only.
-            _headerWidthM = 9.144;
+            // Digging width can change between jobs; resolve it on a full rebuild only.
+            _widthM = 3.6576;
             foreach (var j in Core.Database.Jobs.GetAll())
             {
                 if (j.id != jobId) continue;
-                if (j.headerId > 0)
-                {
-                    foreach (var h in Core.Database.Headers.GetAll())
-                        if (h.id == j.headerId) { _headerWidthM = h.widthM; break; }
-                }
+                _widthM = Core.JobWidthM(j.profileId, j.rowsHarvested);
                 break;
             }
 
@@ -526,7 +522,7 @@ namespace BeltFlo.Forms
             if (dt <= 0 || dt > MaxBridgeSeconds) return;
 
             var corners = ComputeSegmentCorners(
-                a.Latitude, a.Longitude, b.Latitude, b.Longitude, a.Heading, b.Heading, _headerWidthM, MaxBridgeMeters);
+                a.Latitude, a.Longitude, b.Latitude, b.Longitude, a.Heading, b.Heading, _widthM, MaxBridgeMeters);
             if (corners == null) return;   // points coincide or spatial gap too large
 
             double t   = Math.Max(0, Math.Min(1, (b.YieldRate - _scaleMin) / _scaleRange));

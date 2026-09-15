@@ -12,16 +12,21 @@ namespace BeltFlo.Forms
         private bool _dragging;
         private Point _dragStart;
         private readonly List<int> _cropIds    = new List<int>();
-        private readonly List<int> _headerIds  = new List<int>();
         private readonly List<int> _profileIds = new List<int>();
         private readonly List<int> _fieldIds   = new List<int>();
 
-        private readonly List<(int jobId, string jobName, string status, string startedAt, int profileId, int cropId, int headerId, int fieldId, double acres, double volume, string fieldName, string notes)> _jobData
+        private readonly List<(int jobId, string jobName, string status, string startedAt, int profileId, int cropId, int rowsHarvested, int fieldId, double acres, double volume, string fieldName, string notes)> _jobData
             = new List<(int, string, string, string, int, int, int, int, double, double, string, string)>();
 
         private int  _sortCol = 2;   // Date by default
         private bool _sortAsc = false; // newest first
         private bool _creatingNew = false;  // true between New (prepare) and Save (commit)
+
+        // Rows the job picks up. 0 means the harvester's own row count, so a later
+        // change to the harvester carries through; a windrowed field sets more.
+        private int  _rowsHarvested = 0;
+        private bool _padOpen;
+        private const int MaxRowsHarvested = 48;
 
         private string[] _colNames;
 
@@ -50,13 +55,11 @@ namespace BeltFlo.Forms
             this.Shown += frmMenuJobs_Shown;
             Core.FieldListChanged   += Core_FieldListChanged;
             Core.CropListChanged    += Core_CropListChanged;
-            Core.HeaderListChanged  += Core_HeaderListChanged;
             Core.ProfileListChanged += Core_ProfileListChanged;
             this.FormClosed += (s, ev) =>
             {
                 Core.FieldListChanged   -= Core_FieldListChanged;
                 Core.CropListChanged    -= Core_CropListChanged;
-                Core.HeaderListChanged  -= Core_HeaderListChanged;
                 Core.ProfileListChanged -= Core_ProfileListChanged;
             };
         }
@@ -71,12 +74,6 @@ namespace BeltFlo.Forms
         {
             if (this.IsDisposed || !this.IsHandleCreated) return;
             this.BeginInvoke((Action)RefreshCropCombo);
-        }
-
-        private void Core_HeaderListChanged(object sender, EventArgs e)
-        {
-            if (this.IsDisposed || !this.IsHandleCreated) return;
-            this.BeginInvoke((Action)RefreshHeaderCombo);
         }
 
         private void Core_ProfileListChanged(object sender, EventArgs e)
@@ -106,24 +103,15 @@ namespace BeltFlo.Forms
             cboCrop.SelectedIndex = idx >= 0 ? idx : (cboCrop.Items.Count > 0 ? 0 : -1);
         }
 
-        private void RefreshHeaderCombo()
-        {
-            int cur = cboHeader.SelectedIndex >= 0 ? _headerIds[cboHeader.SelectedIndex] : -1;
-            cboHeader.Items.Clear(); _headerIds.Clear();
-            foreach (var h in Core.Database.Headers.GetAll())
-            { double w = Props.IsMetric ? h.widthM : h.widthM * 3.28084; string wu = Props.IsMetric ? "m" : "ft"; string wf = Props.IsMetric ? "F2" : "F1"; cboHeader.Items.Add($"{h.name}  ({w.ToString(wf)} {wu})"); _headerIds.Add(h.id); }
-            int idx = _headerIds.IndexOf(cur);
-            cboHeader.SelectedIndex = idx >= 0 ? idx : (cboHeader.Items.Count > 0 ? 0 : -1);
-        }
-
         private void RefreshProfileCombo()
         {
             int cur = cboProfile.SelectedIndex >= 0 ? _profileIds[cboProfile.SelectedIndex] : -1;
             cboProfile.Items.Clear(); _profileIds.Clear();
             foreach (var p in Core.Database.Profiles.GetAll())
-            { cboProfile.Items.Add(p.name); _profileIds.Add(p.id); }
+            { cboProfile.Items.Add(p.Name); _profileIds.Add(p.Id); }
             int idx = _profileIds.IndexOf(cur);
             cboProfile.SelectedIndex = idx >= 0 ? idx : (cboProfile.Items.Count > 0 ? 0 : -1);
+            UpdateRowsDisplay();   // the harvester's rows or spacing may have changed
         }
 
         private void frmMenuJobs_Shown(object sender, EventArgs e)
@@ -152,6 +140,8 @@ namespace BeltFlo.Forms
                 if (c is ListView lv)  { lv.BackColor   = ctrl; lv.ForeColor   = Color.White; }
                 if (c is TextBox tb2 && tb2 != txtJobName) { tb2.BackColor = ctrl; tb2.ForeColor = Color.White; }
             }
+            lblRowsVal.BackColor = ctrl;
+            lblRowsVal.ForeColor = Color.White;
             btnSave.BackColor   = Color.FromArgb(0, 90, 0);
             btnDelete.BackColor = Color.FromArgb(100, 0, 0);
         }
@@ -159,18 +149,14 @@ namespace BeltFlo.Forms
         private void LoadCombos()
         {
             cboCrop.Items.Clear();    _cropIds.Clear();
-            cboHeader.Items.Clear();  _headerIds.Clear();
             cboProfile.Items.Clear(); _profileIds.Clear();
             cboField.Items.Clear();   _fieldIds.Clear();
 
             foreach (var c in Core.Database.Crops.GetAll())
             { cboCrop.Items.Add(c.name); _cropIds.Add(c.id); }
 
-            foreach (var h in Core.Database.Headers.GetAll())
-            { double w = Props.IsMetric ? h.widthM : h.widthM * 3.28084; string wu = Props.IsMetric ? "m" : "ft"; string wf = Props.IsMetric ? "F2" : "F1"; cboHeader.Items.Add($"{h.name}  ({w.ToString(wf)} {wu})"); _headerIds.Add(h.id); }
-
             foreach (var p in Core.Database.Profiles.GetAll())
-            { cboProfile.Items.Add(p.name); _profileIds.Add(p.id); }
+            { cboProfile.Items.Add(p.Name); _profileIds.Add(p.Id); }
 
             cboField.Items.Add("(none)"); _fieldIds.Add(-1);
             foreach (var f in Core.Database.Fields.GetAll())
@@ -183,12 +169,12 @@ namespace BeltFlo.Forms
         {
             int ci = _cropIds.IndexOf(Core.ActiveCropId);
             cboCrop.SelectedIndex = ci >= 0 ? ci : (cboCrop.Items.Count > 0 ? 0 : -1);
-            int hi = _headerIds.IndexOf(Core.ActiveHeaderId);
-            cboHeader.SelectedIndex = hi >= 0 ? hi : (cboHeader.Items.Count > 0 ? 0 : -1);
+            _rowsHarvested = 0;   // a new job picks up the harvester's own rows
             int pi = _profileIds.IndexOf(Core.ActiveProfileId);
             cboProfile.SelectedIndex = pi >= 0 ? pi : (cboProfile.Items.Count > 0 ? 0 : -1);
             cboField.SelectedIndex = 0;  // default "(none)"
             txtJobName.Text = "Job " + DateTime.Now.ToString("yyyyMMdd-HHmm");
+            UpdateRowsDisplay();
         }
 
         private void LoadRecentJobs()
@@ -199,7 +185,7 @@ namespace BeltFlo.Forms
                 int fi = _fieldIds.IndexOf(j.fieldId);
                 string fname = fi > 0 ? (string)cboField.Items[fi] : "";
                 string date  = j.startedAt.Length >= 10 ? j.startedAt.Substring(0, 10) : j.startedAt;
-                _jobData.Add((j.id, j.name, j.status, date, j.profileId, j.cropId, j.headerId, j.fieldId, j.acres, j.volume, fname, j.notes));
+                _jobData.Add((j.id, j.name, j.status, date, j.profileId, j.cropId, j.rowsHarvested, j.fieldId, j.acres, j.volume, fname, j.notes));
             }
             SortJobs();
 
@@ -285,16 +271,59 @@ namespace BeltFlo.Forms
             int ci = _cropIds.IndexOf(job.cropId);
             if (ci >= 0) cboCrop.SelectedIndex = ci;
 
-            int hi = _headerIds.IndexOf(job.headerId);
-            if (hi >= 0) cboHeader.SelectedIndex = hi;
-
+            _rowsHarvested = job.rowsHarvested;
             int pi = _profileIds.IndexOf(job.profileId);
             if (pi >= 0) cboProfile.SelectedIndex = pi;
 
             int fi = _fieldIds.IndexOf(job.fieldId);
             cboField.SelectedIndex = fi >= 0 ? fi : 0;
 
+            UpdateRowsDisplay();
             btnSave.Enabled = true;
+        }
+
+        // ── Rows harvested ────────────────────────────────────────────────────
+
+        private void cboProfile_SelectedIndexChanged(object sender, EventArgs e) => UpdateRowsDisplay();
+
+        private Database.HarvesterProfile SelectedProfile =>
+            cboProfile.SelectedIndex >= 0 && cboProfile.SelectedIndex < _profileIds.Count
+                ? Core.Database.Profiles.GetById(_profileIds[cboProfile.SelectedIndex])
+                : null;
+
+        private void UpdateRowsDisplay()
+        {
+            var profile = SelectedProfile;
+            if (profile == null)
+            {
+                lblRowsVal.Text  = "--";
+                lblRowsInfo.Text = "";
+                return;
+            }
+
+            int rows = _rowsHarvested > 0 ? _rowsHarvested : profile.Rows;
+            double w = profile.WidthM(_rowsHarvested);
+            string width = Props.IsMetric ? $"{w:F2} m" : $"{w / 0.3048:F1} ft";
+            lblRowsVal.Text  = rows.ToString();
+            lblRowsInfo.Text = string.Format(Lang.lgRowsInfo, width, profile.Rows);
+        }
+
+        private void lblRowsVal_Click(object sender, EventArgs e)
+        {
+            var profile = SelectedProfile;
+            if (_padOpen || profile == null) return;
+            _padOpen = true;
+            try
+            {
+                int current = _rowsHarvested > 0 ? _rowsHarvested : profile.Rows;
+                using var pad = new frmNumpad(1, MaxRowsHarvested, current, 0, "Rows Harvested");
+                if (pad.ShowDialog(this) != DialogResult.OK) return;
+                int rows = (int)Math.Round(Math.Min(MaxRowsHarvested, Math.Max(1, pad.ReturnValue)));
+                // The harvester's own count is stored as 0, so it follows the harvester.
+                _rowsHarvested = rows == profile.Rows ? 0 : rows;
+                UpdateRowsDisplay();
+            }
+            finally { _padOpen = false; }
         }
 
         // ── New ───────────────────────────────────────────────────────────────
@@ -304,7 +333,7 @@ namespace BeltFlo.Forms
             // job is started until Save is pressed (see CreateAndStartNewJob).
             _creatingNew = true;
             lvJobs.SelectedItems.Clear();   // leave "edit existing job" mode
-            SetDefaultSelections();         // default name + current crop/header/profile, field (none)
+            SetDefaultSelections();         // default name + current crop/profile, harvester's rows, field (none)
             txtNotes.Text = "";
             btnSave.Enabled   = true;
             btnLoad.Enabled   = false;
@@ -329,8 +358,6 @@ namespace BeltFlo.Forms
         {
             if (cboCrop.SelectedIndex < 0 || _cropIds.Count == 0)
             { Props.ShowMessage(Lang.lgSelectCropFirst, "", 3000, true); return; }
-            if (cboHeader.SelectedIndex < 0 || _headerIds.Count == 0)
-            { Props.ShowMessage(Lang.lgSelectHeaderFirst, "", 3000, true); return; }
 
             // Guard against accidentally abandoning a job in progress. Prompt
             // whenever a job is active, including while auto-paused (e.g. a headland
@@ -344,18 +371,17 @@ namespace BeltFlo.Forms
             }
 
             int cropId    = _cropIds[cboCrop.SelectedIndex];
-            int headerId  = _headerIds[cboHeader.SelectedIndex];
             int profileId = cboProfile.SelectedIndex >= 0 ? _profileIds[cboProfile.SelectedIndex] : 1;
             int fieldId   = cboField.SelectedIndex   >= 0 ? _fieldIds[cboField.SelectedIndex]     : -1;
 
-            int jobId = Core.Database.Jobs.Create(name, profileId, cropId, headerId, fieldId);
+            int jobId = Core.Database.Jobs.Create(name, profileId, cropId, _rowsHarvested, fieldId);
             string notes = txtNotes.Text.Trim();
             if (notes.Length > 0)
-                Core.Database.Jobs.Update(jobId, name, cropId, headerId, profileId, fieldId, notes);
+                Core.Database.Jobs.Update(jobId, name, cropId, _rowsHarvested, profileId, fieldId, notes);
 
             // Start it: apply config, mark Active, then switch the collector —
             // which saves and closes the previously active job. Totals start at zero.
-            Core.LoadJobConfig(profileId, cropId, headerId);
+            Core.LoadJobConfig(profileId, cropId, _rowsHarvested);
             Core.Database.Jobs.Reopen(jobId);
             Core.Collector.LoadJob(jobId, name, 0, 0);
             Core.RaiseJobStateChanged();
@@ -405,15 +431,18 @@ namespace BeltFlo.Forms
 
             var job2      = _jobData[idx];
             int cropId    = cboCrop.SelectedIndex    >= 0 ? _cropIds[cboCrop.SelectedIndex]       : job2.cropId;
-            int headerId  = cboHeader.SelectedIndex  >= 0 ? _headerIds[cboHeader.SelectedIndex]   : job2.headerId;
             int profileId = cboProfile.SelectedIndex >= 0 ? _profileIds[cboProfile.SelectedIndex] : job2.profileId;
             int fieldId   = cboField.SelectedIndex   >= 0 ? _fieldIds[cboField.SelectedIndex]     : job2.fieldId;
 
             int savedJobId = _jobData[idx].jobId;
-            Core.Database.Jobs.Update(savedJobId, name, cropId, headerId, profileId, fieldId, txtNotes.Text.Trim());
+            Core.Database.Jobs.Update(savedJobId, name, cropId, _rowsHarvested, profileId, fieldId, txtNotes.Text.Trim());
 
             if (savedJobId == Core.Collector.ActiveJobId)
+            {
                 Core.Collector.RenameActiveJob(name);
+                // Rows harvested set after starting (a windrowed field) take effect now.
+                Core.LoadJobConfig(profileId, cropId, _rowsHarvested);
+            }
 
             LoadRecentJobs();
 
@@ -454,7 +483,7 @@ namespace BeltFlo.Forms
             btnSave.Enabled = btnLoad.Enabled = btnDelete.Enabled = false;
         }
 
-        private void StartSelectedJob((int jobId, string jobName, string status, string startedAt, int profileId, int cropId, int headerId, int fieldId, double acres, double volume, string fieldName, string notes) job)
+        private void StartSelectedJob((int jobId, string jobName, string status, string startedAt, int profileId, int cropId, int rowsHarvested, int fieldId, double acres, double volume, string fieldName, string notes) job)
         {
             int activeId = Core.Collector.ActiveJobId;
             if (activeId > 0 && activeId != job.jobId)
@@ -467,9 +496,8 @@ namespace BeltFlo.Forms
 
             int profileId = job.profileId > 0 ? job.profileId : Core.ActiveProfileId;
             int cropId    = job.cropId    > 0 ? job.cropId    : Core.ActiveCropId;
-            int headerId  = job.headerId  > 0 ? job.headerId  : Core.ActiveHeaderId;
 
-            Core.LoadJobConfig(profileId, cropId, headerId);
+            Core.LoadJobConfig(profileId, cropId, job.rowsHarvested);
             Core.Database.Jobs.Reopen(job.jobId);
             Core.Collector.LoadJob(job.jobId, job.jobName, job.acres, job.volume);
             Core.RaiseJobStateChanged();

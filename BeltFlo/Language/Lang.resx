@@ -77,7 +77,7 @@
   <data name="lgNone" xml:space="preserve"><value>(none)</value></data>
   <data name="lgName" xml:space="preserve"><value>Name:</value></data>
   <data name="lgCrop" xml:space="preserve"><value>Crop:</value></data>
-  <data name="lgHeader" xml:space="preserve"><value>Header:</value></data>
+  <data name="lgRowsHarvested" xml:space="preserve"><value>Rows:</value></data>
   <data name="lgProfile" xml:space="preserve"><value>Profile:</value></data>
   <data name="lgField" xml:space="preserve"><value>Field:</value></data>
   <data name="lgOffset" xml:space="preserve"><value>Offset:</value></data>
@@ -95,8 +95,7 @@
   <data name="lgTitleSettings" xml:space="preserve"><value>Settings</value></data>
   <data name="lgTitleJobs" xml:space="preserve"><value>Jobs</value></data>
   <data name="lgTitleCrops" xml:space="preserve"><value>Crops</value></data>
-  <data name="lgTitleHeaders" xml:space="preserve"><value>Headers</value></data>
-  <data name="lgTitleProfiles" xml:space="preserve"><value>Profiles</value></data>
+  <data name="lgTitleProfiles" xml:space="preserve"><value>Harvester Profiles</value></data>
   <data name="lgTitleFields" xml:space="preserve"><value>Fields</value></data>
   <data name="lgTitleImportFields" xml:space="preserve"><value>Import Fields</value></data>
   <data name="lgTitleYieldCal" xml:space="preserve"><value>Yield Cal</value></data>
@@ -241,7 +240,6 @@ Rewrite this job's recorded points and total using the new factor, so the map an
   <data name="lgColAcres" xml:space="preserve"><value>Acres</value></data>
   <data name="lgColField" xml:space="preserve"><value>Field</value></data>
   <data name="lgSelectCropFirst" xml:space="preserve"><value>Select a crop first.</value></data>
-  <data name="lgSelectHeaderFirst" xml:space="preserve"><value>Select a header first.</value></data>
   <data name="lgSelectJobFirst" xml:space="preserve"><value>Select a job from the list first.</value></data>
   <data name="lgEnterJobName" xml:space="preserve"><value>Enter a job name.</value></data>
   <data name="lgMustHaveOneJob" xml:space="preserve"><value>Must have at least one job.</value></data>
@@ -266,16 +264,19 @@ Rewrite this job's recorded points and total using the new factor, so the map an
        back to English (see Lang.Designer.cs). -->
   <data name="lgBushelWeight" xml:space="preserve"><value>Bushel Wt:</value></data>
 
-  <!-- ── Headers form ───────────────────────────────────────────────────── -->
   <data name="lgType" xml:space="preserve"><value>Type:</value></data>
   <data name="lgWidth" xml:space="preserve"><value>Width:</value></data>
-  <data name="lgHeaderOffset" xml:space="preserve"><value>Ahead of Pivot:</value></data>
-  <data name="lgEnterHeaderName" xml:space="preserve"><value>Enter a header name.</value></data>
-  <data name="lgMustHaveOneHeader" xml:space="preserve"><value>Must have at least one header.</value></data>
-  <data name="lgDeleteHeaderPrompt" xml:space="preserve"><value>Delete this header?</value></data>
 
-  <!-- ── Profiles form ──────────────────────────────────────────────────── -->
-  <data name="lgCombineId" xml:space="preserve"><value>Combine ID:</value></data>
+  <!-- ── Harvester profiles form ───────────────────────────────────────── -->
+  <data name="lgCombineId" xml:space="preserve"><value>Harvester ID:</value></data>
+  <data name="lgRows" xml:space="preserve"><value>Rows:</value></data>
+  <data name="lgRowSpacing" xml:space="preserve"><value>Row Spacing:</value></data>
+  <data name="lgAheadOfPivot" xml:space="preserve"><value>Ahead of Pivot:</value></data>
+  <data name="lgScaleWeighsInto" xml:space="preserve"><value>Scale Weighs Into:</value></data>
+  <data name="lgTruck" xml:space="preserve"><value>Truck</value></data>
+  <data name="lgTank" xml:space="preserve"><value>Tank</value></data>
+  <data name="lgDiggingWidth" xml:space="preserve"><value>Digging width: {0}</value></data>
+  <data name="lgRowsInfo" xml:space="preserve"><value>{0} wide  (harvester has {1} rows)</value></data>
   <data name="lgEnterProfileName" xml:space="preserve"><value>Enter a profile name.</value></data>
   <data name="lgMustHaveOneProfile" xml:space="preserve"><value>Must have at least one profile.</value></data>
   <data name="lgDeleteProfilePrompt" xml:space="preserve"><value>Delete this profile?</value></data>
