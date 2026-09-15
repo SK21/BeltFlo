@@ -60,6 +60,7 @@ namespace BeltFlo.Language
         internal static string lgTitleJobs        => Get("lgTitleJobs");
         internal static string lgTitleCrops       => Get("lgTitleCrops");
         internal static string lgTitleProfiles    => Get("lgTitleProfiles");
+        internal static string lgTitleConveyor    => Get("lgTitleConveyor");
         internal static string lgTitleFields      => Get("lgTitleFields");
         internal static string lgTitleImportFields => Get("lgTitleImportFields");
         internal static string lgTitleYieldCal    => Get("lgTitleYieldCal");
@@ -215,6 +216,17 @@ namespace BeltFlo.Language
         internal static string lgTank               => Get("lgTank");
         internal static string lgDiggingWidth       => Get("lgDiggingWidth");
         internal static string lgRowsInfo           => Get("lgRowsInfo");
+
+        // ── Conveyor setup form ──────────────────────────────────────────────
+        internal static string lgBeltPerPulse       => Get("lgBeltPerPulse");
+        internal static string lgPulsesPerRev       => Get("lgPulsesPerRev");
+        internal static string lgSectionLength      => Get("lgSectionLength");
+        internal static string lgEmptyBeltBelow     => Get("lgEmptyBeltBelow");
+        internal static string lgBeltStoppedAfter   => Get("lgBeltStoppedAfter");
+        internal static string lgDigToScaleDelay    => Get("lgDigToScaleDelay");
+        internal static string lgMeasureBelt        => Get("lgMeasureBelt");
+        internal static string lgResetDistance      => Get("lgResetDistance");
+        internal static string lgConveyorJobRunning => Get("lgConveyorJobRunning");
 
         // ── Profiles form ────────────────────────────────────────────────────
         internal static string lgCombineId           => Get("lgCombineId");

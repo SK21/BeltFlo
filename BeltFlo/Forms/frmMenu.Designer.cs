@@ -28,6 +28,7 @@ namespace BeltFlo.Forms
             this.btnReports = new System.Windows.Forms.Button();
             this.btnYieldMap = new System.Windows.Forms.Button();
             this.btnLanguage = new System.Windows.Forms.Button();
+            this.btnConveyor = new System.Windows.Forms.Button();
             this.pnlTitle.SuspendLayout();
             this.pnlContent.SuspendLayout();
             this.SuspendLayout();
@@ -104,6 +105,7 @@ namespace BeltFlo.Forms
             this.pnlContent.Controls.Add(this.btnReports);
             this.pnlContent.Controls.Add(this.btnYieldMap);
             this.pnlContent.Controls.Add(this.btnLanguage);
+            this.pnlContent.Controls.Add(this.btnConveyor);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContent.Location = new System.Drawing.Point(2, 50);
             this.pnlContent.Name = "pnlContent";
@@ -186,7 +188,7 @@ namespace BeltFlo.Forms
             this.btnSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
             this.btnSettings.Location = new System.Drawing.Point(8, 248);
             this.btnSettings.Name = "btnSettings";
-            this.btnSettings.Size = new System.Drawing.Size(440, 44);
+            this.btnSettings.Size = new System.Drawing.Size(216, 44);
             this.btnSettings.TabIndex = 5;
             this.btnSettings.Text = global::BeltFlo.Language.Lang.lgTitleSettings;
             this.btnSettings.Click += new System.EventHandler(this.btnSettings_Click);
@@ -201,6 +203,17 @@ namespace BeltFlo.Forms
             this.btnLanguage.TabIndex = 10;
             this.btnLanguage.Text = global::BeltFlo.Language.Lang.lgLanguage;
             this.btnLanguage.Click += new System.EventHandler(this.btnLanguage_Click);
+            //
+            // btnConveyor
+            //
+            this.btnConveyor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnConveyor.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
+            this.btnConveyor.Location = new System.Drawing.Point(232,248);
+            this.btnConveyor.Name = "btnConveyor";
+            this.btnConveyor.Size = new System.Drawing.Size(216, 44);
+            this.btnConveyor.TabIndex = 11;
+            this.btnConveyor.Text = global::BeltFlo.Language.Lang.lgTitleConveyor;
+            this.btnConveyor.Click += new System.EventHandler(this.btnConveyor_Click);
             //
             // frmMenu
             //
@@ -237,5 +250,6 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Button btnReports;
         private System.Windows.Forms.Button btnYieldMap;
         private System.Windows.Forms.Button btnLanguage;
+        private System.Windows.Forms.Button btnConveyor;
     }
 }

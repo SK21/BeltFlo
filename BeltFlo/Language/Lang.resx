@@ -96,6 +96,7 @@
   <data name="lgTitleJobs" xml:space="preserve"><value>Jobs</value></data>
   <data name="lgTitleCrops" xml:space="preserve"><value>Crops</value></data>
   <data name="lgTitleProfiles" xml:space="preserve"><value>Harvester Profiles</value></data>
+  <data name="lgTitleConveyor" xml:space="preserve"><value>Conveyor Setup</value></data>
   <data name="lgTitleFields" xml:space="preserve"><value>Fields</value></data>
   <data name="lgTitleImportFields" xml:space="preserve"><value>Import Fields</value></data>
   <data name="lgTitleYieldCal" xml:space="preserve"><value>Yield Cal</value></data>
@@ -277,6 +278,17 @@ Rewrite this job's recorded points and total using the new factor, so the map an
   <data name="lgTank" xml:space="preserve"><value>Tank</value></data>
   <data name="lgDiggingWidth" xml:space="preserve"><value>Digging width: {0}</value></data>
   <data name="lgRowsInfo" xml:space="preserve"><value>{0} wide  (harvester has {1} rows)</value></data>
+
+  <!-- ── Conveyor setup form ───────────────────────────────────────────── -->
+  <data name="lgBeltPerPulse" xml:space="preserve"><value>Belt per Pulse:</value></data>
+  <data name="lgPulsesPerRev" xml:space="preserve"><value>Pulses per Turn:</value></data>
+  <data name="lgSectionLength" xml:space="preserve"><value>Weigh Section:</value></data>
+  <data name="lgEmptyBeltBelow" xml:space="preserve"><value>Empty Belt Below:</value></data>
+  <data name="lgBeltStoppedAfter" xml:space="preserve"><value>Belt Stopped After:</value></data>
+  <data name="lgDigToScaleDelay" xml:space="preserve"><value>Dig to Scale Delay:</value></data>
+  <data name="lgMeasureBelt" xml:space="preserve"><value>Measure Belt</value></data>
+  <data name="lgResetDistance" xml:space="preserve"><value>Reset Distance</value></data>
+  <data name="lgConveyorJobRunning" xml:space="preserve"><value>Finish the job before changing conveyor settings.</value></data>
   <data name="lgEnterProfileName" xml:space="preserve"><value>Enter a profile name.</value></data>
   <data name="lgMustHaveOneProfile" xml:space="preserve"><value>Must have at least one profile.</value></data>
   <data name="lgDeleteProfilePrompt" xml:space="preserve"><value>Delete this profile?</value></data>
