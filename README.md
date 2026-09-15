@@ -1,38 +1,68 @@
-> **BeltFlo** is a fork of [YieldFlo](https://github.com/SK21/YieldFlo) (Development branch, September 2026) for conveyor load-cell yield monitoring: potatoes, sugar beets and other root crops.
-
 # BeltFlo
 
-BeltFlo is a combine yield and moisture monitoring system that works alongside [AgOpenGPS](https://github.com/AgOpenGPS-Official/AgOpenGPS). A Windows desktop app records yield rate, moisture, and GPS position continuously while harvesting, and produces spatial yield maps and job reports — paired with open-source hardware that mounts on the combine's clean-grain elevator.
+> **Work in progress — not ready for field use.** The PC app runs and has been tested against simulators, but key setup screens are missing, the module firmware has not been written, and the manual still describes YieldFlo. See [Status](#status).
+
+BeltFlo is a yield monitor for root-crop harvesters — potatoes, sugar beets, carrots, onions — that works alongside [AgOpenGPS](https://github.com/AgOpenGPS-Official/AgOpenGPS). It weighs the crop on a conveyor with load cells, maps yield across the field, and keeps a weight for every truck load so certified ticket weights can correct the map.
+
+It is a fork of [YieldFlo](https://github.com/SK21/YieldFlo) (Development branch, September 2026), the grain yield monitor. The GPS, CAN, field, map and job code comes from YieldFlo; the grain sensing and calibration were removed.
 
 ## How it works
 
-- **BeltFlo module** (ESP32 or STM32F1 firmware) reads an optical grain-flow sensor on the clean-grain elevator, an optional capacitance moisture sensor, and an optional RPM sensor, then streams live readings to the PC over WiFi UDP, wired Ethernet UDP, or CAN bus.
-- **AgOpenGPS** supplies GPS position and section on/off state over UDP on the same network.
-- **BeltFlo (PC app)** combines both streams in real time, calculates yield, stores every point to a local SQLite database, renders a live color-coded yield map, and generates per-job reports and CSV exports.
+- **Module** — the YF1 board with its ESP32, a Load Cell 2 Click (NAU7802) reading two load cells under a weighed section of the conveyor, and a proximity sensor on the belt drive. The module multiplies the weight on the section by belt travel and streams cumulative pounds and belt pulses to the PC over WiFi/Ethernet UDP or CAN.
+- **AgOpenGPS** supplies position, speed and section on/off state over UDP.
+- **BeltFlo (PC app)** pairs the weight with where the crop was dug (allowing for the time it takes to reach the scale), subtracts overlapping ground, stores every point in a local SQLite database, and tracks truck loads. It sends the module its calibration and geometry every 2 s; the module confirms it is hearing them, so the app can show the link is working both ways.
+
+Everything is stored in pounds and pounds per acre, and shown as cwt/ac or tons/ac, or t/ha in metric.
+
+## Status
+
+**Working in the PC app** (tested with the AgOpenGPS simulator and the module simulator):
+
+- Conveyor data from the module over UDP and CAN, with scale, zero, overload and dead-belt-sensor checks on the status bar
+- Settings sent to the module, and a two-way link check on the Module status light
+- Jobs, truck loads (▶ start, ⏹ finish), and map points tagged with their load
+- ⏸ Pause — stops all counting, for cleaning the belt or clearing a jam — with an optional auto-resume when sections come on, or an alarm if it is off
+- Weight below an empty-belt threshold is not counted
+- Overlap compensation, so a short last pass needs no row adjustment
+- Calibration revisions recorded on every point and load, so a later span change can rescale earlier data
+
+**Not built yet:**
+
+- Harvester profile with rows, row spacing and scale location (replacing YieldFlo's headers), and rows harvested per job for windrowed crop
+- Conveyor Setup screen (belt travel per pulse, weighed section length, delay, thresholds)
+- Scale Calibration screen (zero, known weight)
+- Loads screen — certified ticket weights and load or whole-job correction
+- "No load open" alarm, truck-full alarm, main screen redesign
+- **Module firmware.** `Modules/` still holds the YieldFlo grain firmware.
+- **Documentation.** The user manual and the Diagnostic Log Guide still describe YieldFlo.
+- Translations for the new BeltFlo text (the other seven languages fall back to English)
 
 ## Repository layout
 
 | Folder | Contents |
 |---|---|
-| [`BeltFlo/`](BeltFlo) | Main Windows Forms application (.NET) — the PC-side app |
-| [`BeltFloApp/`](BeltFloApp) | Deployed/runnable build output (exe + resources) |
-| [`Modules/ESP32/BeltFlo_ESP32`](Modules/ESP32/BeltFlo_ESP32) | Module firmware for ESP32 — WiFi/Ethernet/CAN, web-portal configuration, OTA updates |
-| [`Modules/STM32F1/BeltFlo_STM32F1`](Modules/STM32F1/BeltFlo_STM32F1) | CAN-only module firmware for STM32F103 ("Blue Pill") — compile-time settings, no wireless |
-| [`PCBs/YF1`](PCBs/YF1) | KiCad design for the main module board (sensor conditioning, CAN transceiver, etc.) |
-| [`PCBs/Moisture1`](PCBs/Moisture1) | KiCad design for the moisture daughter board (ADS1115 + OEM capacitance sensor interface) |
-| [`Tools/SensorSim`](Tools/SensorSim) | Arduino-based signal generator for bench-testing module firmware without a combine |
-| [`ModuleSimulator/`](ModuleSimulator) | Windows app that emulates a module over the network, for testing the PC app without hardware |
+| [`BeltFlo/`](BeltFlo) | The Windows Forms PC app (.NET Framework 4.8) |
+| [`BeltFloApp/`](BeltFloApp) | Runnable build of the app (exe and resources) |
+| [`ModuleSimulator/`](ModuleSimulator) | Conveyor module simulator — load and belt-speed sliders, fault switches, receives the app's settings |
+| [`ModuleSimulatorApp/`](ModuleSimulatorApp) | Runnable build of the simulator |
+| [`Modules/`](Modules) | Module firmware — **still YieldFlo's grain firmware** (ESP32 and STM32F1), kept until the conveyor firmware is written |
+| [`PCBs/YF1`](PCBs/YF1) | KiCad design for the YF1 module board, shared with YieldFlo |
+| [`PCBs/Moisture1`](PCBs/Moisture1) | YieldFlo's moisture daughter board — not used by BeltFlo |
+| [`Tools/SensorSim`](Tools/SensorSim) | YieldFlo's grain-sensor signal generator |
+| `Optical Sensor Guide/` | YieldFlo grain sensor guide — not used by BeltFlo |
 
-Each `Modules/` folder has its own README with build instructions, pinouts, and protocol details — see the links above.
+The module packet layouts are documented in the code: `BeltFlo/Communication/UDPcomm.cs` (module → PC, PGN 40010) and `BeltFlo/Communication/ModuleSettings.cs` (PC → module, PGN 40011).
 
-## Getting started
+## Trying it
 
-1. Extract a [release](../../releases) (or build `BeltFlo.sln`) and run `BeltFlo.exe` — no installer needed. Requires Windows 10/11 and .NET Framework 4.8.
-2. Flash a module (ESP32 or STM32F1 — see the module READMEs) and wire it to the elevator/moisture sensors.
-3. Run AgOpenGPS on the same PC or network.
-4. In BeltFlo: set units, profile, crop, and header, then start a job.
+For development and testing only.
 
-Full instructions are in the in-app user manual (`Help` button, or [`BeltFlo/Help/BeltFlo User Manual.md`](BeltFlo/Help/BeltFlo%20User%20Manual.md)).
+1. Build `BeltFlo.sln` (Visual Studio, .NET Framework 4.8), or run `BeltFloApp/BeltFlo.exe`.
+2. Run `ModuleSimulatorApp/ModuleSimulator.exe`. The module link uses UDP ports 30300 (module → PC) and 30400 (PC → module).
+3. Run AgOpenGPS in simulator mode with a field open.
+4. In BeltFlo, create a job on the Jobs screen, tick **Harvesting** in the simulator, turn sections on in AgOpenGPS, and press ▶ to open a load.
+
+Diagnostic CSVs and logs are written to `Documents\BeltFlo`.
 
 ### Rebuilding the manual
 
@@ -45,20 +75,7 @@ Full instructions are in the in-app user manual (`Help` button, or [`BeltFlo/Hel
   "file:///F:/path/to/BeltFlo/Help/BeltFlo User Manual.html"
 ```
 
-`--no-pdf-header-footer` is what keeps the browser's own URL and page numbers off the pages. The HTML carries its own print CSS for page breaks, so nothing else needs setting. Chrome works identically — the PDF is produced by Chromium's Skia backend either way.
-
 The build copies `Help/**` into `BeltFloApp/Help/`; that copy is output, not a second source to edit.
-
-## Features
-
-- Live main-screen gauges: yield rate, moisture, sensor status, area/total/average, work rate
-- Color-coded live yield map (GMap.NET) with heading-up rotation and coverage tracking
-- Profiles, crops, headers, and fields — reusable per-combine/per-crop configuration
-- Two-point yield and moisture calibration workflows
-- Job history with reports and CSV export (RateController-compatible)
-- Imperial and metric units throughout
-- Multi-language UI (English, German, French, Dutch, Polish, Hungarian, Lithuanian, Russian)
-- CAN or WiFi/Ethernet module communication, selectable per install
 
 ## License
 
