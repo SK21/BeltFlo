@@ -464,6 +464,27 @@ namespace BeltFlo.Classes
             Core.RaiseJobStateChanged();
         }
 
+        /// <summary>
+        /// Continues a finished load of the running job — a truck pulled aside and
+        /// brought back to be topped up. Only a load still waiting for its ticket,
+        /// and only while no other load is open. Returns false when not allowed.
+        /// </summary>
+        public bool ReopenLoad(int loadId)
+        {
+            if (ActiveJobId <= 0 || ActiveLoadId > 0 || Core.Database == null) return false;
+            var load = Core.Database.Loads.GetById(loadId);
+            if (load == null || load.JobId != ActiveJobId || load.Status != LoadRecord.StatusWaiting) return false;
+
+            Core.Database.Loads.Reopen(loadId);
+            ActiveLoadId  = loadId;
+            CurrentLoadLb = load.MonitorLb;
+            ActiveLoadNumber = Core.Database.Loads.GetAll(ActiveJobId).FindAll(l => l.Id <= loadId).Count;
+            Props.WriteActivityLog("Load " + ActiveLoadNumber + " reopened at " + CurrentLoadLb.ToString("0") + " lb (id " + loadId + ")");
+            MarkTotalsSaved();
+            Core.RaiseJobStateChanged();
+            return true;
+        }
+
         // ── Mass ──────────────────────────────────────────────────────────────
 
         /// <summary>

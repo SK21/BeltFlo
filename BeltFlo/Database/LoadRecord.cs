@@ -10,8 +10,8 @@ namespace BeltFlo.Database
     {
         public const string StatusActive    = "Active";
         public const string StatusWaiting   = "Waiting";     // closed, no certified weight yet
+        public const string StatusWeighed   = "Weighed";     // certified weight saved, points left as measured
         public const string StatusCorrected = "Corrected";   // certified weight applied to its points
-        public const string StatusComplete  = "Complete";    // certified weight saved, no correction
 
         public int Id { get; set; }
         public int JobId { get; set; }

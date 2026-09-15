@@ -616,6 +616,28 @@ WHERE id=@id", conn);
             cmd.ExecuteNonQuery();
         }
 
+        /// <summary>A truck brought back to be topped up: the load takes weight again.</summary>
+        public void Reopen(int id)
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand(
+                "UPDATE loads SET closed_at=NULL, status=@s WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@s",  LoadRecord.StatusActive);
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void SetFlag(int id, string flag)
+        {
+            using var conn = new SQLiteConnection(_cs);
+            conn.Open();
+            using var cmd = new SQLiteCommand("UPDATE loads SET flag=@f WHERE id=@id", conn);
+            cmd.Parameters.AddWithValue("@f",  flag ?? "");
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
         public void Rename(int id, string truck)
         {
             using var conn = new SQLiteConnection(_cs);

@@ -296,5 +296,35 @@ namespace BeltFlo.Language
         internal static string lgAutoResumePause   => Get("lgAutoResumePause");
         internal static string lgScreenNotBuilt    => Get("lgScreenNotBuilt");
         internal static string lgBeltSensorSuspect => Get("lgBeltSensorSuspect");
+
+        // ── Loads screen ─────────────────────────────────────────────────────
+        internal static string lgColJob            => Get("lgColJob");
+        internal static string lgColMonitor        => Get("lgColMonitor");
+        internal static string lgColTicket         => Get("lgColTicket");
+        internal static string lgColDiff           => Get("lgColDiff");
+        internal static string lgFlag              => Get("lgFlag");
+        internal static string lgFlagNone          => Get("lgFlagNone");
+        internal static string lgFlagWet           => Get("lgFlagWet");
+        internal static string lgFlagSpoiled       => Get("lgFlagSpoiled");
+        internal static string lgFlagTrash         => Get("lgFlagTrash");
+        internal static string lgFlagStones        => Get("lgFlagStones");
+        internal static string lgMonitorWeight     => Get("lgMonitorWeight");
+        internal static string lgTicketWeight      => Get("lgTicketWeight");
+        internal static string lgDifference        => Get("lgDifference");
+        internal static string lgFactor            => Get("lgFactor");
+        internal static string lgSaveWeightOnly    => Get("lgSaveWeightOnly");
+        internal static string lgCorrectLoad       => Get("lgCorrectLoad");
+        internal static string lgUpdateCalibration => Get("lgUpdateCalibration");
+        internal static string lgCorrectJob        => Get("lgCorrectJob");
+        internal static string lgRename            => Get("lgRename");
+        internal static string lgReopen            => Get("lgReopen");
+        internal static string lgLoadActive        => Get("lgLoadActive");
+        internal static string lgLoadWaiting       => Get("lgLoadWaiting");
+        internal static string lgLoadWeighed       => Get("lgLoadWeighed");
+        internal static string lgLoadCorrected     => Get("lgLoadCorrected");
+        internal static string lgNoLoads           => Get("lgNoLoads");
+        internal static string lgDeleteLoadPrompt  => Get("lgDeleteLoadPrompt");
+        internal static string lgUpdateCalPrompt   => Get("lgUpdateCalPrompt");
+        internal static string lgCorrectJobPrompt  => Get("lgCorrectJobPrompt");
     }
 }

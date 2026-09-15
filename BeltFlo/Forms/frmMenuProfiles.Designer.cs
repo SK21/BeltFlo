@@ -177,7 +177,7 @@ namespace BeltFlo.Forms
             this.StartPosition   = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Font            = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
             this.Name            = "frmMenuProfiles";
-            this.Text            = "Harvester Profiles";
+            this.Text            = "Profiles";
             this.Controls.Add(this.pnlContent);
             this.Controls.Add(this.pnlTitle);
             this.Load += new System.EventHandler(this.frmMenuProfiles_Load);

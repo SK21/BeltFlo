@@ -95,7 +95,7 @@
   <data name="lgTitleSettings" xml:space="preserve"><value>Settings</value></data>
   <data name="lgTitleJobs" xml:space="preserve"><value>Jobs</value></data>
   <data name="lgTitleCrops" xml:space="preserve"><value>Crops</value></data>
-  <data name="lgTitleProfiles" xml:space="preserve"><value>Harvester Profiles</value></data>
+  <data name="lgTitleProfiles" xml:space="preserve"><value>Profiles</value></data>
   <data name="lgTitleConveyor" xml:space="preserve"><value>Conveyor Setup</value></data>
   <data name="lgTitleScaleCal" xml:space="preserve"><value>Scale Calibration</value></data>
   <data name="lgTitleFields" xml:space="preserve"><value>Fields</value></data>
@@ -355,5 +355,35 @@ Rewrite this job's recorded points and total using the new factor, so the map an
   <data name="lgAutoResumePause" xml:space="preserve"><value>Resume from Pause when Sections On</value></data>
   <data name="lgScreenNotBuilt" xml:space="preserve"><value>{0} screen is not built yet</value></data>
   <data name="lgBeltSensorSuspect" xml:space="preserve"><value>No belt pulses - weight not recorded</value></data>
+
+  <!-- ── Loads screen ──────────────────────────────────────────────────── -->
+  <data name="lgColJob" xml:space="preserve"><value>Job</value></data>
+  <data name="lgColMonitor" xml:space="preserve"><value>Monitor</value></data>
+  <data name="lgColTicket" xml:space="preserve"><value>Ticket</value></data>
+  <data name="lgColDiff" xml:space="preserve"><value>Diff %</value></data>
+  <data name="lgFlag" xml:space="preserve"><value>Flag</value></data>
+  <data name="lgFlagNone" xml:space="preserve"><value>None</value></data>
+  <data name="lgFlagWet" xml:space="preserve"><value>Wet</value></data>
+  <data name="lgFlagSpoiled" xml:space="preserve"><value>Spoiled</value></data>
+  <data name="lgFlagTrash" xml:space="preserve"><value>Trash</value></data>
+  <data name="lgFlagStones" xml:space="preserve"><value>Stones</value></data>
+  <data name="lgMonitorWeight" xml:space="preserve"><value>Monitor</value></data>
+  <data name="lgTicketWeight" xml:space="preserve"><value>Ticket</value></data>
+  <data name="lgDifference" xml:space="preserve"><value>Difference</value></data>
+  <data name="lgFactor" xml:space="preserve"><value>Factor</value></data>
+  <data name="lgSaveWeightOnly" xml:space="preserve"><value>Save Weight Only</value></data>
+  <data name="lgCorrectLoad" xml:space="preserve"><value>Correct This Load</value></data>
+  <data name="lgUpdateCalibration" xml:space="preserve"><value>Update Calibration</value></data>
+  <data name="lgCorrectJob" xml:space="preserve"><value>Correct Job</value></data>
+  <data name="lgRename" xml:space="preserve"><value>Rename</value></data>
+  <data name="lgReopen" xml:space="preserve"><value>Reopen</value></data>
+  <data name="lgLoadActive" xml:space="preserve"><value>Filling</value></data>
+  <data name="lgLoadWaiting" xml:space="preserve"><value>Waiting</value></data>
+  <data name="lgLoadWeighed" xml:space="preserve"><value>Weighed</value></data>
+  <data name="lgLoadCorrected" xml:space="preserve"><value>Corrected</value></data>
+  <data name="lgNoLoads" xml:space="preserve"><value>No loads yet</value></data>
+  <data name="lgDeleteLoadPrompt" xml:space="preserve"><value>Delete load {0} of {1}? Its map points stay in the job.</value></data>
+  <data name="lgUpdateCalPrompt" xml:space="preserve"><value>Change the scale span from {0} to {1} ({2})? This load is corrected too, and the module weighs with the new span from now on.</value></data>
+  <data name="lgCorrectJobPrompt" xml:space="preserve"><value>Correct {0} by {1}? Every map point and the job total are rescaled to match the tickets.</value></data>
 
 </root>

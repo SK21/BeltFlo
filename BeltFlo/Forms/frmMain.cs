@@ -418,8 +418,8 @@ namespace BeltFlo.Forms
             SetLoadButtons();
         }
 
-        // ⏹ — the truck has left. Confirmed, because nothing yet can reopen a
-        // finished load from the cab.
+        // ⏹ — the truck has left. Confirmed, so a stray tap doesn't split a load;
+        // the Loads screen can reopen it if the truck comes back.
         private void btnStop_Click(object sender, EventArgs e)
         {
             using var dlg = new frmMsgBox(Lang.lgFinishLoadPrompt);
@@ -442,12 +442,8 @@ namespace BeltFlo.Forms
         }
 
         // The LOAD tile title is a shortcut to the loads list, as on
-        // RateController's run screen. The screen doesn't exist yet, so it says so
-        // until it is built.
-        private void lblMoistureTitle_Click(object sender, EventArgs e)
-        {
-            Props.ShowMessage(string.Format(Lang.lgScreenNotBuilt, Lang.lgTitleLoads), "", 3000);
-        }
+        // RateController's run screen.
+        private void lblMoistureTitle_Click(object sender, EventArgs e) => FormManager.ShowForm(new frmMenuLoads());
 
         // Full-strength colours for each load button when it is available.
         // Okabe-Ito: same hues used for the status-bar labels, so "good/active",
