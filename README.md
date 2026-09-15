@@ -1,6 +1,6 @@
 # BeltFlo
 
-> **Work in progress — not ready for field use.** The PC app runs and has been tested against simulators, but key setup screens are missing, the module firmware has not been written, and the manual still describes YieldFlo. See [Status](#status).
+> **Work in progress — not ready for field use.** The PC app runs and has been tested against simulators, but key setup screens are missing, the module firmware has not been converted from YieldFlo, and the manual still describes YieldFlo. See [Status](#status).
 
 BeltFlo is a yield monitor for root-crop harvesters — potatoes, sugar beets, carrots, onions — that works alongside [AgOpenGPS](https://github.com/AgOpenGPS-Official/AgOpenGPS). It weighs the crop on a conveyor with load cells, maps yield across the field, and keeps a weight for every truck load so certified ticket weights can correct the map.
 
@@ -33,8 +33,8 @@ Everything is stored in pounds and pounds per acre, and shown as cwt/ac or tons/
 - Scale Calibration screen (zero, known weight)
 - Loads screen — certified ticket weights and load or whole-job correction
 - "No load open" alarm, truck-full alarm, main screen redesign
-- **Module firmware.** `Modules/` still holds the YieldFlo grain firmware.
-- **Documentation.** The user manual and the Diagnostic Log Guide still describe YieldFlo.
+- **Module firmware.** `Modules/ESP32` still holds the YieldFlo grain firmware, to be converted.
+- **Documentation.** The user manual still describes YieldFlo, and there is no diagnostic log guide yet.
 - Translations for the new BeltFlo text (the other seven languages fall back to English)
 
 ## Repository layout
@@ -45,11 +45,8 @@ Everything is stored in pounds and pounds per acre, and shown as cwt/ac or tons/
 | [`BeltFloApp/`](BeltFloApp) | Runnable build of the app (exe and resources) |
 | [`ModuleSimulator/`](ModuleSimulator) | Conveyor module simulator — load and belt-speed sliders, fault switches, receives the app's settings |
 | [`ModuleSimulatorApp/`](ModuleSimulatorApp) | Runnable build of the simulator |
-| [`Modules/`](Modules) | Module firmware — **still YieldFlo's grain firmware** (ESP32 and STM32F1), kept until the conveyor firmware is written |
+| [`Modules/ESP32`](Modules/ESP32) | Module firmware for the YF1 board's ESP32 — **still YieldFlo's grain firmware**, kept as the starting point for the conveyor firmware (WiFi, CAN, web portal, OTA) |
 | [`PCBs/YF1`](PCBs/YF1) | KiCad design for the YF1 module board, shared with YieldFlo |
-| [`PCBs/Moisture1`](PCBs/Moisture1) | YieldFlo's moisture daughter board — not used by BeltFlo |
-| [`Tools/SensorSim`](Tools/SensorSim) | YieldFlo's grain-sensor signal generator |
-| `Optical Sensor Guide/` | YieldFlo grain sensor guide — not used by BeltFlo |
 
 The module packet layouts are documented in the code: `BeltFlo/Communication/UDPcomm.cs` (module → PC, PGN 40010) and `BeltFlo/Communication/ModuleSettings.cs` (PC → module, PGN 40011).
 

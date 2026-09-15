@@ -34,16 +34,17 @@ PCAN (alternative adapter)
 
 Checking whether the module is sending (any adapter)
 ----------------------------------------------------
-   The module sends unsolicited; the PC only listens. But CAN frames
-   need at least one ACTIVE receiver on the bus — if no program has the
-   adapter open, the module's frames are not acknowledged and (on the
-   STM32 module, which sends single-shot) simply vanish. "No messages
-   on the bus" therefore usually means the PC side never opened, not
-   that the module is silent.
+   The module sends its data unprompted; the PC sends the conveyor
+   settings back every 2 s. CAN frames need at least one ACTIVE receiver
+   on the bus — if no program has the adapter open, the module's frames
+   are not acknowledged. "No messages on the bus" therefore usually
+   means the PC side never opened, not that the module is silent.
 
    To test the module independent of BeltFlo: open PCAN-View (PEAK's
    free tool) at 250 kbit/s in normal mode (NOT listen-only). A working
-   module shows ID 18FF00F8h at 5 Hz and 18FF01F8h at 1 Hz.
+   module shows IDs 18FF02F8h (counters) and 18FF03F8h (status), both
+   at 5 Hz. With BeltFlo running, the PC's settings appear as 18FF04F9h
+   and 18FF05F9h every 2 s.
 
 3. In BeltFlo:  Menu > Settings > Module communication
    - select CAN
@@ -57,13 +58,3 @@ If CAN still fails to start, send the newest file from:
 
 The exact reason (DLL missing, wrong bitness, no adapter found, etc.)
 is written there.
-
-STM32F1 module checklist (module side)
---------------------------------------
-- The sketch must be compiled with USB support set to "None"
-  (Arduino IDE > Tools > USB support). USB and CAN share memory on
-  the F103 — with USB enabled, CAN silently does not work.
-- Debug output is on USART1 (PA9/PA10) at 38400 baud; at power-up it
-  should print "CAN started at 250kbps."
-- CAN wiring: PB9 = TX, PB8 = RX to the transceiver; bus needs 120 ohm
-  termination at both ends.

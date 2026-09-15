@@ -7,8 +7,7 @@ wired Ethernet UDP (W5500) or CAN bus** — selectable at runtime in the
 web portal.
 
 Settings are stored in EEPROM and edited through the module's web portal;
-nothing needs to be recompiled to reconfigure. (For the CAN-only STM32 port
-with compile-time settings, see `Modules/STM32F1`.)
+nothing needs to be recompiled to reconfigure.
 
 ## Web portal
 
