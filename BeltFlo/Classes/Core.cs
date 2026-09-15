@@ -202,6 +202,7 @@ namespace BeltFlo.Classes
             // cleaning the belt or running it empty — so nothing is credited to the
             // job, the load or the map.
             if (dLb > 0 && Yield.IsFlowing) Collector?.OnPoundsDelta(dLb);
+            Collector?.CheckNoLoad(Yield?.IsFlowing ?? false);
 
             // After the pulse time above is current, so weight and pulses are judged
             // from the same packet.

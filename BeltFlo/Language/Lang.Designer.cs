@@ -291,6 +291,7 @@ namespace BeltFlo.Language
         internal static string lgResumed           => Get("lgResumed");
         internal static string lgResumedSectionsOn => Get("lgResumedSectionsOn");
         internal static string lgPausedSectionsOn  => Get("lgPausedSectionsOn");
+        internal static string lgNoLoadOpen        => Get("lgNoLoadOpen");
         internal static string lgJobStatusPaused   => Get("lgJobStatusPaused");
         internal static string lgAutoResumePause   => Get("lgAutoResumePause");
         internal static string lgScreenNotBuilt    => Get("lgScreenNotBuilt");

@@ -184,24 +184,32 @@ namespace BeltFlo.Forms
             UpdateGauges();
             UpdateStatusBar();
             CheckModuleTimeout();
-            SoundPausedAlarm();
+            SoundAlarms();
         }
 
-        // Sections came on while paused and auto-resume is off: crop is probably
-        // going over the scale uncounted. Sound and show it every other second
-        // until ▶ is pressed or sections go off again.
-        private void SoundPausedAlarm()
+        // Alarms that repeat until the operator acts: sound and show every other
+        // second.
+        //   Paused with sections coming on (auto-resume off): crop is probably going
+        //   over the scale uncounted — until ▶ or sections go off. SectionsActive
+        //   goes stale 4 s after AOG stops sending, so closing AOG silences it too.
+        //   No load open while crop crosses a scale that weighs into the truck —
+        //   until ▶ opens a load, the flow stops, or ⏸. Silent without a module.
+        private void SoundAlarms()
         {
             var col = Core.Collector;
-            // SectionsActive goes stale 4 s after AOG stops sending, so closing AOG
-            // silences it too.
-            if (col == null || !col.IsPaused || !col.PausedSectionsAlarm || !Core.GPS.SectionsActive)
+            string message = null;
+            if (col != null && col.IsPaused && col.PausedSectionsAlarm && Core.GPS.SectionsActive)
+                message = Lang.lgPausedSectionsOn;
+            else if (col != null && col.NoLoadAlarm && Core.ModuleConnected)
+                message = Lang.lgNoLoadOpen;
+
+            if (message == null)
             {
                 _alarmTick = 0;
                 return;
             }
             if (_alarmTick++ % 2 == 0)
-                Props.ShowMessage(Lang.lgPausedSectionsOn, "", 3000, true);
+                Props.ShowMessage(message, "", 3000, true);
         }
 
         private void Core_JobStateChanged(object sender, EventArgs e)

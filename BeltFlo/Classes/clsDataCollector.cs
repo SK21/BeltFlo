@@ -81,6 +81,15 @@ namespace BeltFlo.Classes
         public bool PausedSectionsAlarm { get; private set; }
         private bool _sectionsOnWhilePaused;
 
+        // Crop crossing the scale with no truck load open, on a harvester whose scale
+        // weighs straight into the truck: that crop is going into a truck no load
+        // will claim. Not raised when the scale weighs into a tank — there the tank
+        // fills between trucks as a matter of course. Weight still counts to the job
+        // and the map while it sounds.
+        public bool NoLoadAlarm { get; private set; }
+        private DateTime _noLoadFlowSince = DateTime.MaxValue;
+        private const double NoLoadAlarmSec = 5.0;   // so a clod or a clean-out tail doesn't set it off
+
         // Positions still waiting for their crop to reach the scale. Exposed for
         // the diagnostic log: it hits 0 exactly when the app stops attributing
         // flow to a finished pass.
@@ -477,6 +486,31 @@ namespace BeltFlo.Classes
         }
 
         // ── Position ──────────────────────────────────────────────────────────
+
+        /// <summary>Called for every counter packet with whether crop is flowing over the scale.</summary>
+        public void CheckNoLoad(bool flowing)
+        {
+            bool noLoadFlow = ActiveJobId > 0 && !IsPaused && ActiveLoadId <= 0
+                              && flowing && !Core.ScaleWeighsIntoTank;
+            if (!noLoadFlow)
+            {
+                _noLoadFlowSince = DateTime.MaxValue;
+                if (NoLoadAlarm)
+                {
+                    NoLoadAlarm = false;
+                    Core.RaiseJobStateChanged();
+                }
+                return;
+            }
+
+            if (_noLoadFlowSince == DateTime.MaxValue) _noLoadFlowSince = DateTime.UtcNow;
+            if (!NoLoadAlarm && (DateTime.UtcNow - _noLoadFlowSince).TotalSeconds >= NoLoadAlarmSec)
+            {
+                NoLoadAlarm = true;
+                Props.WriteActivityLog("No load open while crop is crossing the scale");
+                Core.RaiseJobStateChanged();
+            }
+        }
 
         // Sections switching on while paused: resume if the setting allows it,
         // otherwise raise the run screen's alarm. Only the off-to-on change counts,
