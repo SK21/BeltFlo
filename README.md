@@ -63,16 +63,27 @@ Diagnostic CSVs and logs are written to `Documents\BeltFlo`.
 
 ### Rebuilding the manual
 
-`BeltFlo/Help/` holds the manual as `.md`, `.html` and `.pdf`. All three ship, so all three have to be kept in step — the `.md` and `.html` are edited by hand, and the `.pdf` is printed from the `.html` by headless Edge:
+`BeltFlo/Help/` holds the manual as `.md`, `.html` and `.pdf`. All three ship, so all three have to be kept in step — the `.md` and `.html` are edited by hand, and the `.pdf` is printed from the `.html` by headless Edge. The menu's Help button opens the first of the three it finds, in the order `.pdf`, `.html`, `.md`, so a stale PDF hides a corrected HTML.
 
-```
-"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" ^
-  --headless=new --disable-gpu --no-pdf-header-footer ^
-  --print-to-pdf="BeltFlo User Manual.pdf" ^
-  "file:///F:/path/to/BeltFlo/Help/BeltFlo User Manual.html"
+Print it from PowerShell:
+
+```powershell
+$tmp = Join-Path $env:TEMP "edge-pdf-profile"
+$out = Join-Path $env:TEMP "beltflo-manual.pdf"
+Start-Process "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" -Wait -NoNewWindow -ArgumentList `
+  '--headless=new','--disable-gpu','--no-pdf-header-footer',"--user-data-dir=$tmp","--print-to-pdf=$out",`
+  'file:///F:/Documents/GitHub/BeltFlo/BeltFlo/Help/BeltFlo%20User%20Manual.html'
+Copy-Item $out "BeltFlo\Help\BeltFlo User Manual.pdf" -Force
 ```
 
-The build copies `Help/**` into `BeltFloApp/Help/`; that copy is output, not a second source to edit.
+Three things that look like failures but are not, and one that is:
+
+- **`--user-data-dir` is not optional.** Without it, a browser already running takes the command over and the new process exits straight away having written nothing — no error, no output file.
+- **Print to a path with no spaces, then copy.** PowerShell re-splits `--print-to-pdf="BeltFlo User Manual.pdf"` into separate arguments, and Edge reads the loose words as extra pages to open: `Multiple targets are not supported in headless mode`, exit 13. Percent-encode the spaces in the `file:///` URL for the same reason.
+- **The `fallback_task_provider` error on stderr is harmless** — a Chromium warning that appears on a successful print. Judge it by the exit code and the "bytes written to file" line.
+- Check the result before committing it: the sections should still start on fresh pages and no URL or date should appear in the margins.
+
+The build copies `Help/**` into `BeltFloApp/Help/`; that copy is output, not a second source to edit. Rebuild after replacing the PDF so the shipped copy matches.
 
 ## License
 

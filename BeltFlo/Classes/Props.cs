@@ -78,6 +78,9 @@ namespace BeltFlo.Classes
         /// <summary>A weight typed in the display load unit, back to pounds.</summary>
         public static double LoadToLb(double display)       => IsMetric ? display * LB_PER_KG : display;
 
+        /// <summary>A belt speed typed in the display unit, back to ft/min.</summary>
+        public static double BeltSpeedToFtMin(double display) => IsMetric ? display / M_PER_FT : display;
+
         public static string ApplicationFolder { get { return cApplicationFolder; } }
         public static string DataFolder { get { return cDataFolder; } }
         public static string LogsFolder { get { return cLogsFolder; } }

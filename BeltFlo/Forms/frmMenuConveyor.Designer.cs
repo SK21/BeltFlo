@@ -34,6 +34,12 @@ namespace BeltFlo.Forms
             this.lblDelay        = new System.Windows.Forms.Label();
             this.lblDelayVal     = new System.Windows.Forms.Label();
             this.lblDelayUnit    = new System.Windows.Forms.Label();
+            this.lblBarFlow      = new System.Windows.Forms.Label();
+            this.lblBarFlowVal   = new System.Windows.Forms.Label();
+            this.lblBarFlowUnit  = new System.Windows.Forms.Label();
+            this.lblBarBelt      = new System.Windows.Forms.Label();
+            this.lblBarBeltVal   = new System.Windows.Forms.Label();
+            this.lblBarBeltUnit  = new System.Windows.Forms.Label();
             this.lblLivePulses   = new System.Windows.Forms.Label();
             this.lblLiveRate     = new System.Windows.Forms.Label();
             this.lblLiveBelt     = new System.Windows.Forms.Label();
@@ -75,6 +81,8 @@ namespace BeltFlo.Forms
             SetRow(this.lblMinFlow, Lang.lgEmptyBeltBelow,   this.lblMinFlowVal, this.lblMinFlowUnit, 128, lf, vf);
             SetRow(this.lblStop,    Lang.lgBeltStoppedAfter, this.lblStopVal,    this.lblStopUnit,    168, lf, vf);
             SetRow(this.lblDelay,   Lang.lgDigToScaleDelay,  this.lblDelayVal,   this.lblDelayUnit,   208, lf, vf);
+            SetRow(this.lblBarFlow, Lang.lgBarFullFlow,      this.lblBarFlowVal, this.lblBarFlowUnit, 248, lf, vf);
+            SetRow(this.lblBarBelt, Lang.lgBarFullBelt,      this.lblBarBeltVal, this.lblBarBeltUnit, 288, lf, vf);
             this.lblStopUnit.Text  = "s";
             this.lblDelayUnit.Text = "s";
 
@@ -84,34 +92,36 @@ namespace BeltFlo.Forms
             this.lblMinFlowVal.Click += new System.EventHandler(this.lblMinFlowVal_Click);
             this.lblStopVal.Click    += new System.EventHandler(this.lblStopVal_Click);
             this.lblDelayVal.Click   += new System.EventHandler(this.lblDelayVal_Click);
+            this.lblBarFlowVal.Click += new System.EventHandler(this.lblBarFlowVal_Click);
+            this.lblBarBeltVal.Click += new System.EventHandler(this.lblBarBeltVal_Click);
 
             // Live readout from the module
-            SetLive(this.lblLivePulses,   8,   254, sf);
-            SetLive(this.lblLiveRate,     284, 254, sf);
-            SetLive(this.lblLiveBelt,     8,   280, sf);
-            SetLive(this.lblLiveDistance, 284, 280, sf);
-            SetLive(this.lblLiveState,    8,   306, sf);
+            SetLive(this.lblLivePulses,   8,   334, sf);
+            SetLive(this.lblLiveRate,     284, 334, sf);
+            SetLive(this.lblLiveBelt,     8,   360, sf);
+            SetLive(this.lblLiveDistance, 284, 360, sf);
+            SetLive(this.lblLiveState,    8,   386, sf);
 
             // Measure Belt / Reset Distance
             this.btnMeasure.Text      = Lang.lgMeasureBelt; this.btnMeasure.Font = bf; this.btnMeasure.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnMeasure.Location  = new System.Drawing.Point(8, 338); this.btnMeasure.Size = new System.Drawing.Size(200, 44);
+            this.btnMeasure.Location  = new System.Drawing.Point(8, 418); this.btnMeasure.Size = new System.Drawing.Size(200, 44);
             this.btnMeasure.Click    += new System.EventHandler(this.btnMeasure_Click);
 
             this.btnResetDist.Text      = Lang.lgResetDistance; this.btnResetDist.Font = bf; this.btnResetDist.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnResetDist.Location  = new System.Drawing.Point(216, 338); this.btnResetDist.Size = new System.Drawing.Size(200, 44);
+            this.btnResetDist.Location  = new System.Drawing.Point(216, 418); this.btnResetDist.Size = new System.Drawing.Size(200, 44);
             this.btnResetDist.Click    += new System.EventHandler(this.btnResetDist_Click);
 
             this.lblMeasure.Font      = sf;
-            this.lblMeasure.Location  = new System.Drawing.Point(8, 388); this.lblMeasure.AutoSize = false; this.lblMeasure.Size = new System.Drawing.Size(548, 34);
+            this.lblMeasure.Location  = new System.Drawing.Point(8, 468); this.lblMeasure.AutoSize = false; this.lblMeasure.Size = new System.Drawing.Size(548, 34);
             this.lblMeasure.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
             // Save / Close
             this.btnSave.Text      = Lang.lgSave; this.btnSave.Font = bf; this.btnSave.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnSave.Location  = new System.Drawing.Point(8, 428); this.btnSave.Size = new System.Drawing.Size(130, 44);
+            this.btnSave.Location  = new System.Drawing.Point(8, 508); this.btnSave.Size = new System.Drawing.Size(130, 44);
             this.btnSave.Click    += new System.EventHandler(this.btnSave_Click);
 
             this.btnClose.Text      = Lang.lgClose; this.btnClose.Font = bf; this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnClose.Location  = new System.Drawing.Point(422, 428); this.btnClose.Size = new System.Drawing.Size(130, 44);
+            this.btnClose.Location  = new System.Drawing.Point(422, 508); this.btnClose.Size = new System.Drawing.Size(130, 44);
             this.btnClose.Click    += new System.EventHandler(this.btnClose_Click);
 
             this.pnlContent.Controls.AddRange(new System.Windows.Forms.Control[] {
@@ -121,14 +131,16 @@ namespace BeltFlo.Forms
                 lblMinFlow, lblMinFlowVal, lblMinFlowUnit,
                 lblStop, lblStopVal, lblStopUnit,
                 lblDelay, lblDelayVal, lblDelayUnit,
+                lblBarFlow, lblBarFlowVal, lblBarFlowUnit,
+                lblBarBelt, lblBarBeltVal, lblBarBeltUnit,
                 lblLivePulses, lblLiveRate, lblLiveBelt, lblLiveDistance, lblLiveState,
                 btnMeasure, btnResetDist, lblMeasure,
                 btnSave, btnClose });
 
             // ── Form ──────────────────────────────────────────────────────────
-            this.ClientSize      = new System.Drawing.Size(564, 532);
-            this.MinimumSize     = new System.Drawing.Size(564, 532);
-            this.MaximumSize     = new System.Drawing.Size(564, 532);
+            this.ClientSize      = new System.Drawing.Size(564, 612);
+            this.MinimumSize     = new System.Drawing.Size(564, 612);
+            this.MaximumSize     = new System.Drawing.Size(564, 612);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Padding         = new System.Windows.Forms.Padding(2);
             this.BackColor       = System.Drawing.Color.White;
@@ -195,6 +207,12 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Label  lblDelay;
         private System.Windows.Forms.Label  lblDelayVal;
         private System.Windows.Forms.Label  lblDelayUnit;
+        private System.Windows.Forms.Label  lblBarFlow;
+        private System.Windows.Forms.Label  lblBarFlowVal;
+        private System.Windows.Forms.Label  lblBarFlowUnit;
+        private System.Windows.Forms.Label  lblBarBelt;
+        private System.Windows.Forms.Label  lblBarBeltVal;
+        private System.Windows.Forms.Label  lblBarBeltUnit;
         private System.Windows.Forms.Label  lblLivePulses;
         private System.Windows.Forms.Label  lblLiveRate;
         private System.Windows.Forms.Label  lblLiveBelt;

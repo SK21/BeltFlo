@@ -44,7 +44,7 @@ li { margin: 2px 0; }
 <li><a href="#2-main-screen">Main Screen</a></li>
 <li><a href="#3-jobs">Jobs</a></li>
 <li><a href="#4-crops">Crops</a></li>
-<li><a href="#5-headers">Headers</a></li>
+<li><a href="#5-conveyor-setup">Conveyor Setup</a></li>
 <li><a href="#6-profiles">Profiles</a></li>
 <li><a href="#7-fields">Fields</a></li>
 <li><a href="#8-yield-calibration">Yield Calibration</a></li>
@@ -260,36 +260,75 @@ li { margin: 2px 0; }
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
 
-<h2 id="5-headers">5. Headers</h2>
+<h2 id="5-conveyor-setup">5. Conveyor Setup</h2>
 
-<p><strong>Menu: Menu &rarr; Headers</strong></p>
+<p><strong>Menu: Menu &rarr; Conveyor Setup</strong></p>
 
-<p>Headers define the cutting width of the front attachment. Width is used to calculate the area harvested per data point and to draw swath polygons on the yield map.</p>
+<p>Conveyor Setup holds everything BeltFlo needs to turn a weight on the belt into pounds harvested: how far the belt moves per pulse, how long the weighed section is, and when the belt counts as empty or stopped. The settings belong to the <strong>active harvester profile</strong>, so changing profile changes them all. They cannot be saved while a job is running.</p>
 
-<h3>Header settings</h3>
+<h3>Conveyor settings</h3>
 
 <table>
 <tr><th>Field</th><th>Description</th></tr>
-<tr><td><strong>Name</strong></td><td>Header name (e.g. 30ft Draper, 8-row Corn Head)</td></tr>
-<tr><td><strong>Type</strong></td><td>Header type category</td></tr>
-<tr><td><strong>Width</strong></td><td>Cutting width in feet or metres, following your <strong>Units</strong> setting</td></tr>
-<tr><td><strong>Ahead of Pivot</strong></td><td>Distance the header sits ahead of the position AOG broadcasts. Enter AOG's <strong>pivot-to-header</strong> distance (from the AOG implement setup). This shifts the recorded coverage to the header, so pass boundaries on the yield map land where the header actually crossed them.</td></tr>
+<tr><td><strong>Belt per Pulse</strong></td><td>How far the belt travels for one pulse from the belt sensor, in inches or centimetres. Set it with <strong>Measure Belt</strong> rather than by hand.</td></tr>
+<tr><td><strong>Pulses per Belt Turn</strong></td><td>Pulses counted in one full turn of the belt. Filled in by <strong>Measure Belt</strong>. Used to average the zero over exactly one belt turn on the Scale Calibration screen.</td></tr>
+<tr><td><strong>Weigh Section Length</strong></td><td>Length of the belt the load cells carry, in inches or centimetres. Weight &times; belt travel over this length is what BeltFlo integrates into pounds.</td></tr>
+<tr><td><strong>Empty Belt Below</strong></td><td>The empty-belt threshold. Flow below it is treated as an empty belt and is not counted. See below.</td></tr>
+<tr><td><strong>Belt Stopped After</strong></td><td>How long without a pulse before the belt counts as stopped.</td></tr>
+<tr><td><strong>Dig to Scale Delay</strong></td><td>Seconds crop takes to travel from the digger to the scale. Map points are matched back to the position the machine held that many seconds earlier.</td></tr>
+<tr><td><strong>Flow Bar Full At</strong></td><td>The flow the run screen's Flow bar reads as full.</td></tr>
+<tr><td><strong>Belt Bar Full At</strong></td><td>The belt speed the run screen's Belt bar reads as full.</td></tr>
 </table>
 
-<h3>Adding a header</h3>
+<h3>Empty Belt Below &mdash; setting the empty-belt threshold</h3>
+
+<p>A conveyor is never truly empty. Dirt, small stones, trash and crop residue ride the belt between tubers, and the load cells weigh all of it. Without a threshold BeltFlo would keep adding that rubbish to the job, the open load and the yield map all day, including during the long stretches when the harvester is running but not digging.</p>
+
+<p><strong>Empty Belt Below</strong> is the cut-off. While flow across the scale stays below it, nothing is counted &mdash; not the job total, not the truck load, and no map points. As soon as flow rises above it, counting resumes.</p>
+
+<p><strong>The default is 3 lb/min (0.05 lb/s), and it is almost certainly too low for a real machine.</strong> It was chosen before any readings from a real belt existed. Set it from your own machine, once, the first time the harvester runs:</p>
 
 <ol>
-<li>Press <strong>New</strong> and enter a header name</li>
-<li>Enter the cutting width</li>
-<li>Enter the pivot-to-header distance from your AOG implement setup</li>
-<li>Press <strong>Save</strong></li>
+<li>Start the harvester and run the conveyor at normal speed with <strong>nothing being dug</strong> &mdash; the belt turning empty, as it does on the headland or while waiting for a truck.</li>
+<li>Open <strong>Menu &rarr; Conveyor Setup</strong> and watch the live readouts at the bottom of the screen for a minute. Let the belt carry whatever dirt and trash it normally carries.</li>
+<li>Note the highest flow you see on the run screen's Flow bar over that minute &mdash; that is your empty-belt noise.</li>
+<li>Tap <strong>Empty Belt Below</strong> and enter a little above that figure, roughly 1.5 times the highest reading. A margin matters more than precision: too low and dirt counts as crop; too high and the thin flow at the start and end of a pass is thrown away.</li>
+<li>Press <strong>Save</strong>.</li>
 </ol>
 
-<p>At least one header must exist at all times. Changes to a header take effect when a job is started or loaded.</p>
+<p>Check it against a truck ticket after the first few loads. If BeltFlo consistently reads heavier than the certified weight and the calibration is good, the threshold is too low and dirt is being counted.</p>
 
-<p>Select a header and press <strong>Delete</strong> to remove it &mdash; you will be asked to confirm. A header used by a saved job cannot be deleted.</p>
+<p>The threshold is stored per profile and can be changed whenever a job is not running. Changing it does <strong>not</strong> start a new calibration revision, because it does not alter pounds already recorded.</p>
 
-<p><strong>Note — coverage painted slightly before AOG's:</strong> AOG turns its section bits on <em>early</em> by its turn-on look-ahead (anticipating valve opening time) but paints its own coverage only where product actually applies. YieldFlo records from the section bits, so each pass start on the yield map can begin a metre or two before AOG's painted coverage. Pass <em>ends</em> match exactly. This is normal and harmless for harvest &mdash; there is no valve delay on a header &mdash; and can be removed in testing by setting AOG's section look-ahead to zero.</p>
+<h3>Live readout</h3>
+
+<p>The bottom of the screen shows what the module is reporting right now: pulses since the last reset, pulse rate, belt speed, distance travelled and whether the belt is running. Without a module connected it reads &ldquo;No module&rdquo;. <strong>Reset Distance</strong> zeroes the distance counter.</p>
+
+<h3>Measure Belt</h3>
+
+<p>Belt per pulse is measured, not calculated:</p>
+
+<ol>
+<li>Mark the belt with chalk or tape where it is easy to see.</li>
+<li>Press <strong>Measure Belt</strong>.</li>
+<li>Run the belt exactly one full turn, until the mark comes back round.</li>
+<li>Press <strong>Stop</strong>.</li>
+<li>Enter the belt's total length in feet or metres.</li>
+</ol>
+
+<p>BeltFlo divides the length by the pulses counted and fills in both <strong>Belt per Pulse</strong> and <strong>Pulses per Belt Turn</strong>. Press <strong>Save</strong> to keep them.</p>
+
+<h3>Bar full scale</h3>
+
+<p>The two bars on the run screen read as a fraction of <strong>Flow Bar Full At</strong> and <strong>Belt Bar Full At</strong>. Set them from what your machine actually reaches when digging well, not from what it could reach in theory &mdash; a bar that never leaves the first third tells the operator as little as one that is always pegged. The live readouts on this screen and the run screen's own numbers are the figures to use. These are display settings only: they change nothing that is recorded.</p>
+
+<p>Because of that, <strong>these two can be changed while a job is running</strong> &mdash; which is when you will want to, having watched a bar sit pegged or barely move for half a field. Change them and press Save; harvesting carries on untouched.</p>
+
+<h3>Saving</h3>
+
+<p>Everything that decides what a recorded pound means is locked while a job is running, so a job cannot change conveyors halfway through. Those rows are greyed, tapping one says so, and <strong>Measure Belt</strong> is unavailable. The two bar full-scale rows stay live.</p>
+
+<p>Belt per pulse and weigh section length start a new calibration revision when they change, because they alter what a recorded pound means; the zero, the delay, the threshold, the belt-stopped timeout and the bar scales update the current revision in place. Saving bar scales mid-job therefore never starts a revision. Settings the module needs go to it immediately on Save.</p>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>

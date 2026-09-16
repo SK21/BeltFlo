@@ -127,6 +127,8 @@ CREATE TABLE IF NOT EXISTS conveyor_config (
     flow_threshold_lb_s REAL    NOT NULL DEFAULT 0.05,
     belt_stop_timeout_s REAL    NOT NULL DEFAULT 2,
     delay_sec           INTEGER NOT NULL DEFAULT 10,
+    bar_max_flow_lb_min REAL    NOT NULL DEFAULT 3000,
+    bar_max_belt_ft_min REAL    NOT NULL DEFAULT 400,
     created_at          TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 

@@ -27,13 +27,12 @@ namespace BeltFlo.Forms
             this.lblYieldUnit = new System.Windows.Forms.Label();
             this.lblYield = new System.Windows.Forms.Label();
             this.lblYieldTitle = new System.Windows.Forms.Label();
-            this.pnlMoisture = new System.Windows.Forms.Panel();
-            this.lblMoistureUnit = new System.Windows.Forms.Label();
-            this.lblMoisture = new System.Windows.Forms.Label();
-            this.lblMoistureTitle = new BeltFlo.Classes.RoundedButton();
+            this.pnlLoad = new System.Windows.Forms.Panel();
+            this.lblLoadUnit = new System.Windows.Forms.Label();
+            this.lblLoad = new System.Windows.Forms.Label();
+            this.lblLoadTitle = new BeltFlo.Classes.RoundedButton();
             this.pnlTotals = new System.Windows.Forms.Panel();
             this.lblTotRate = new System.Windows.Forms.Label();
-            this.lblWorkRate = new System.Windows.Forms.Label();
             this.lblTotTotal = new System.Windows.Forms.Label();
             this.lblTotArea = new System.Windows.Forms.Label();
             this.pnlSensors = new System.Windows.Forms.Panel();
@@ -54,7 +53,7 @@ namespace BeltFlo.Forms
             this.pnlToolbar.SuspendLayout();
             this.pnlGauges.SuspendLayout();
             this.pnlYield.SuspendLayout();
-            this.pnlMoisture.SuspendLayout();
+            this.pnlLoad.SuspendLayout();
             this.pnlTotals.SuspendLayout();
             this.pnlSensors.SuspendLayout();
             this.pnlSensor1.SuspendLayout();
@@ -163,7 +162,7 @@ namespace BeltFlo.Forms
             // pnlGauges
             // 
             this.pnlGauges.Controls.Add(this.pnlYield);
-            this.pnlGauges.Controls.Add(this.pnlMoisture);
+            this.pnlGauges.Controls.Add(this.pnlLoad);
             this.pnlGauges.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlGauges.Location = new System.Drawing.Point(2, 70);
             this.pnlGauges.Name = "pnlGauges";
@@ -212,54 +211,53 @@ namespace BeltFlo.Forms
             this.lblYieldTitle.Text = "YIELD";
             this.lblYieldTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // pnlMoisture
+            // pnlLoad
             // 
-            this.pnlMoisture.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlMoisture.Controls.Add(this.lblMoistureUnit);
-            this.pnlMoisture.Controls.Add(this.lblMoisture);
-            this.pnlMoisture.Controls.Add(this.lblMoistureTitle);
-            this.pnlMoisture.Location = new System.Drawing.Point(220, 2);
-            this.pnlMoisture.Name = "pnlMoisture";
-            this.pnlMoisture.Size = new System.Drawing.Size(176, 128);
-            this.pnlMoisture.TabIndex = 1;
+            this.pnlLoad.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlLoad.Controls.Add(this.lblLoadUnit);
+            this.pnlLoad.Controls.Add(this.lblLoad);
+            this.pnlLoad.Controls.Add(this.lblLoadTitle);
+            this.pnlLoad.Location = new System.Drawing.Point(220, 2);
+            this.pnlLoad.Name = "pnlLoad";
+            this.pnlLoad.Size = new System.Drawing.Size(176, 128);
+            this.pnlLoad.TabIndex = 1;
             // 
-            // lblMoistureUnit
+            // lblLoadUnit
             // 
-            this.lblMoistureUnit.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.lblMoistureUnit.ForeColor = System.Drawing.Color.White;
-            this.lblMoistureUnit.Location = new System.Drawing.Point(0, 100);
-            this.lblMoistureUnit.Name = "lblMoistureUnit";
-            this.lblMoistureUnit.Size = new System.Drawing.Size(174, 28);
-            this.lblMoistureUnit.TabIndex = 0;
-            this.lblMoistureUnit.Text = "%";
-            this.lblMoistureUnit.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblLoadUnit.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
+            this.lblLoadUnit.ForeColor = System.Drawing.Color.White;
+            this.lblLoadUnit.Location = new System.Drawing.Point(0, 100);
+            this.lblLoadUnit.Name = "lblLoadUnit";
+            this.lblLoadUnit.Size = new System.Drawing.Size(174, 28);
+            this.lblLoadUnit.TabIndex = 0;
+            this.lblLoadUnit.Text = "%";
+            this.lblLoadUnit.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // lblMoisture
+            // lblLoad
             // 
-            this.lblMoisture.Font = new System.Drawing.Font("Microsoft Sans Serif", 32F, System.Drawing.FontStyle.Bold);
-            this.lblMoisture.Location = new System.Drawing.Point(0, 36);
-            this.lblMoisture.Name = "lblMoisture";
-            this.lblMoisture.Size = new System.Drawing.Size(174, 64);
-            this.lblMoisture.TabIndex = 1;
-            this.lblMoisture.Text = "--.-";
-            this.lblMoisture.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblLoad.Font = new System.Drawing.Font("Microsoft Sans Serif", 32F, System.Drawing.FontStyle.Bold);
+            this.lblLoad.Location = new System.Drawing.Point(0, 36);
+            this.lblLoad.Name = "lblLoad";
+            this.lblLoad.Size = new System.Drawing.Size(174, 64);
+            this.lblLoad.TabIndex = 1;
+            this.lblLoad.Text = "--.-";
+            this.lblLoad.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             //
-            // lblMoistureTitle — a shortcut button to the loads list
+            // lblLoadTitle — a shortcut button to the loads list
             //
-            this.lblMoistureTitle.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
-            this.lblMoistureTitle.Location = new System.Drawing.Point(3, 2);
-            this.lblMoistureTitle.Name = "lblMoistureTitle";
-            this.lblMoistureTitle.Size = new System.Drawing.Size(168, 32);
-            this.lblMoistureTitle.TabIndex = 2;
-            this.lblMoistureTitle.TabStop = false;
-            this.lblMoistureTitle.Text = "LOAD";
-            this.lblMoistureTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.lblMoistureTitle.Click += new System.EventHandler(this.lblMoistureTitle_Click);
+            this.lblLoadTitle.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
+            this.lblLoadTitle.Location = new System.Drawing.Point(3, 2);
+            this.lblLoadTitle.Name = "lblLoadTitle";
+            this.lblLoadTitle.Size = new System.Drawing.Size(168, 32);
+            this.lblLoadTitle.TabIndex = 2;
+            this.lblLoadTitle.TabStop = false;
+            this.lblLoadTitle.Text = "LOAD";
+            this.lblLoadTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblLoadTitle.Click += new System.EventHandler(this.lblLoadTitle_Click);
             // 
             // pnlTotals
             // 
             this.pnlTotals.Controls.Add(this.lblTotRate);
-            this.pnlTotals.Controls.Add(this.lblWorkRate);
             this.pnlTotals.Controls.Add(this.lblTotTotal);
             this.pnlTotals.Controls.Add(this.lblTotArea);
             this.pnlTotals.Dock = System.Windows.Forms.DockStyle.Top;
@@ -272,24 +270,15 @@ namespace BeltFlo.Forms
             // 
             this.lblTotRate.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
             this.lblTotRate.ForeColor = System.Drawing.Color.Silver;
+            // Spans both rows of the right-hand column, so it sits level with the gap
+            // between the total and the area rather than with the total alone.
             this.lblTotRate.Location = new System.Drawing.Point(0, 0);
             this.lblTotRate.Name = "lblTotRate";
-            this.lblTotRate.Size = new System.Drawing.Size(199, 32);
+            this.lblTotRate.Size = new System.Drawing.Size(199, 64);
             this.lblTotRate.TabIndex = 0;
-            this.lblTotRate.Text = "0.0 bu/ac";
+            this.lblTotRate.Text = "0.0 cwt/ac";
             this.lblTotRate.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lblWorkRate
-            // 
-            this.lblWorkRate.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
-            this.lblWorkRate.ForeColor = System.Drawing.Color.Silver;
-            this.lblWorkRate.Location = new System.Drawing.Point(0, 32);
-            this.lblWorkRate.Name = "lblWorkRate";
-            this.lblWorkRate.Size = new System.Drawing.Size(199, 32);
-            this.lblWorkRate.TabIndex = 1;
-            this.lblWorkRate.Text = "0.0 bu/hr";
-            this.lblWorkRate.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
+            //
             // lblTotTotal
             // 
             this.lblTotTotal.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
@@ -298,7 +287,7 @@ namespace BeltFlo.Forms
             this.lblTotTotal.Name = "lblTotTotal";
             this.lblTotTotal.Size = new System.Drawing.Size(199, 32);
             this.lblTotTotal.TabIndex = 2;
-            this.lblTotTotal.Text = "0 bu";
+            this.lblTotTotal.Text = "0 cwt";
             this.lblTotTotal.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblTotArea
@@ -334,7 +323,7 @@ namespace BeltFlo.Forms
             this.lblSensor1Title.Name = "lblSensor1Title";
             this.lblSensor1Title.Size = new System.Drawing.Size(78, 20);
             this.lblSensor1Title.TabIndex = 1;
-            this.lblSensor1Title.Text = "Elevator";
+            this.lblSensor1Title.Text = "Flow";
             // 
             // pnlSensor1
             // 
@@ -343,7 +332,7 @@ namespace BeltFlo.Forms
             this.pnlSensor1.Controls.Add(this.pnlSensor1Fill);
             this.pnlSensor1.Location = new System.Drawing.Point(86, 6);
             this.pnlSensor1.Name = "pnlSensor1";
-            this.pnlSensor1.Size = new System.Drawing.Size(245, 20);
+            this.pnlSensor1.Size = new System.Drawing.Size(190, 20);
             this.pnlSensor1.TabIndex = 2;
             // 
             // pnlSensor1Fill
@@ -358,11 +347,11 @@ namespace BeltFlo.Forms
             // 
             this.lblSensor1Value.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Bold);
             this.lblSensor1Value.ForeColor = System.Drawing.Color.White;
-            this.lblSensor1Value.Location = new System.Drawing.Point(336, 6);
+            this.lblSensor1Value.Location = new System.Drawing.Point(281, 6);
             this.lblSensor1Value.Name = "lblSensor1Value";
-            this.lblSensor1Value.Size = new System.Drawing.Size(58, 20);
+            this.lblSensor1Value.Size = new System.Drawing.Size(113, 20);
             this.lblSensor1Value.TabIndex = 3;
-            this.lblSensor1Value.Text = "0%";
+            this.lblSensor1Value.Text = "0 lb/min";
             this.lblSensor1Value.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblSensor2Title
@@ -373,7 +362,7 @@ namespace BeltFlo.Forms
             this.lblSensor2Title.Name = "lblSensor2Title";
             this.lblSensor2Title.Size = new System.Drawing.Size(78, 20);
             this.lblSensor2Title.TabIndex = 4;
-            this.lblSensor2Title.Text = "Moisture";
+            this.lblSensor2Title.Text = "Belt";
             // 
             // pnlSensor2
             // 
@@ -382,7 +371,7 @@ namespace BeltFlo.Forms
             this.pnlSensor2.Controls.Add(this.pnlSensor2Fill);
             this.pnlSensor2.Location = new System.Drawing.Point(86, 30);
             this.pnlSensor2.Name = "pnlSensor2";
-            this.pnlSensor2.Size = new System.Drawing.Size(245, 20);
+            this.pnlSensor2.Size = new System.Drawing.Size(190, 20);
             this.pnlSensor2.TabIndex = 5;
             // 
             // pnlSensor2Fill
@@ -397,11 +386,11 @@ namespace BeltFlo.Forms
             // 
             this.lblSensor2Value.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Bold);
             this.lblSensor2Value.ForeColor = System.Drawing.Color.White;
-            this.lblSensor2Value.Location = new System.Drawing.Point(336, 30);
+            this.lblSensor2Value.Location = new System.Drawing.Point(281, 30);
             this.lblSensor2Value.Name = "lblSensor2Value";
-            this.lblSensor2Value.Size = new System.Drawing.Size(58, 20);
+            this.lblSensor2Value.Size = new System.Drawing.Size(113, 20);
             this.lblSensor2Value.TabIndex = 6;
-            this.lblSensor2Value.Text = "0%";
+            this.lblSensor2Value.Text = "0 ft/min";
             this.lblSensor2Value.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlStatus
@@ -493,7 +482,7 @@ namespace BeltFlo.Forms
             this.pnlToolbar.ResumeLayout(false);
             this.pnlGauges.ResumeLayout(false);
             this.pnlYield.ResumeLayout(false);
-            this.pnlMoisture.ResumeLayout(false);
+            this.pnlLoad.ResumeLayout(false);
             this.pnlTotals.ResumeLayout(false);
             this.pnlSensors.ResumeLayout(false);
             this.pnlSensors.PerformLayout();
@@ -520,16 +509,15 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Label lblYield;
         private System.Windows.Forms.Label lblYieldUnit;
 
-        private System.Windows.Forms.Panel pnlMoisture;
-        private BeltFlo.Classes.RoundedButton lblMoistureTitle;
-        private System.Windows.Forms.Label lblMoisture;
-        private System.Windows.Forms.Label lblMoistureUnit;
+        private System.Windows.Forms.Panel pnlLoad;
+        private BeltFlo.Classes.RoundedButton lblLoadTitle;
+        private System.Windows.Forms.Label lblLoad;
+        private System.Windows.Forms.Label lblLoadUnit;
 
         private System.Windows.Forms.Panel pnlTotals;
         private System.Windows.Forms.Label lblTotArea;
         private System.Windows.Forms.Label lblTotTotal;
         private System.Windows.Forms.Label lblTotRate;
-        private System.Windows.Forms.Label lblWorkRate;
 
         private System.Windows.Forms.Panel pnlSensors;
         private System.Windows.Forms.Label lblSensor1Title;

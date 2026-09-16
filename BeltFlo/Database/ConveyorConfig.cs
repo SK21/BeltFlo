@@ -21,6 +21,12 @@ namespace BeltFlo.Database
         public double FlowThresholdLbS { get; set; } = 0.05;
         public double BeltStopTimeoutS { get; set; } = 2.0;
         public int DelaySec { get; set; } = 10;         // digging-to-scale delay
+
+        // Run-screen bar full scale. Display only, so changing it never starts a
+        // new calibration revision: a bar that never fills, or always pegs, tells
+        // the operator nothing, and belts differ from machine to machine.
+        public double BarMaxFlowLbMin { get; set; } = 3000;
+        public double BarMaxBeltFtMin { get; set; } = 400;
         public DateTime CreatedAt { get; set; }
     }
 }

@@ -223,9 +223,12 @@ namespace BeltFlo.Language
         internal static string lgEmptyBeltBelow     => Get("lgEmptyBeltBelow");
         internal static string lgBeltStoppedAfter   => Get("lgBeltStoppedAfter");
         internal static string lgDigToScaleDelay    => Get("lgDigToScaleDelay");
+        internal static string lgBarFullFlow        => Get("lgBarFullFlow");
+        internal static string lgBarFullBelt        => Get("lgBarFullBelt");
         internal static string lgMeasureBelt        => Get("lgMeasureBelt");
         internal static string lgResetDistance      => Get("lgResetDistance");
         internal static string lgConveyorJobRunning => Get("lgConveyorJobRunning");
+        internal static string lgBarScalesOnly      => Get("lgBarScalesOnly");
 
         // ── Scale calibration form ───────────────────────────────────────────
         internal static string lgCalRaw         => Get("lgCalRaw");

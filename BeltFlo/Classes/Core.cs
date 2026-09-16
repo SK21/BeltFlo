@@ -50,11 +50,19 @@ namespace BeltFlo.Classes
         private static DateTime _lastSettingsSent = DateTime.MinValue;
         private const double SettingsResendSec = 2.0;
 
+        /// <summary>The active profile's conveyor settings, or null before one loads.</summary>
+        public static ConveyorConfig ActiveConveyor => _activeConveyor;
+
         /// <summary>Per-session diagnostic CSV, one row per module packet. Always running.</summary>
         public static clsDiagLogger DiagLog { get; private set; }
 
         public static bool   ModuleConnected  { get; set; }
         public static DateTime LastModuleReceive { get; set; }
+
+        // The status packet is the only one carrying the flags. Over UDP it arrives
+        // with the counters in one packet, but on CAN they are separate frames, so
+        // the scale's verdict needs its own freshness check.
+        public static DateTime LastStatusReceive { get; set; }
         public static bool   LastDataWriteOk  { get; set; } = true;
 
         // Active session configuration
@@ -228,6 +236,7 @@ namespace BeltFlo.Classes
             LastScaleRaw        = scaleRaw;
             ModuleConnected   = true;
             LastModuleReceive = DateTime.UtcNow;
+            LastStatusReceive = LastModuleReceive;
 
             if (reconnected)
             {
@@ -326,6 +335,33 @@ namespace BeltFlo.Classes
             {
                 Props.WriteActivityLog("Belt sensor OK again");
             }
+        }
+
+        /// <summary>
+        /// Forgets everything the module reported about itself. Its flags describe its
+        /// own converter, cells and zero, so they mean nothing once it stops talking:
+        /// kept, they would let the first packet after a gap show the last known state
+        /// as though it were current, and a module that sends counters but no status —
+        /// as CAN can, the two being separate frames — would look healthy for ever on
+        /// readings taken before it went quiet.
+        /// </summary>
+        public static void ClearModuleReportedState()
+        {
+            LastFlags           = 0;
+            LastScaleOk         = false;
+            LastBeltRunning     = false;
+            LastTared           = false;
+            LastReceivingFromPc = false;
+            LastOverload        = false;
+            LastScaleLb         = 0;
+            LastScaleRaw        = 0;
+            LastStatusReceive   = DateTime.MinValue;
+
+            // The belt check compares weights across a 3 s window. Readings from
+            // before the gap say nothing about the belt now, so start it again.
+            _scaleWindow.Clear();
+            _lastPulseChangeUtc = DateTime.MinValue;
+            BeltSensorSuspect   = false;
         }
 
         public static void RequestUserExit()

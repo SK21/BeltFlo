@@ -285,9 +285,12 @@ Rewrite this job's recorded points and total using the new factor, so the map an
   <data name="lgEmptyBeltBelow" xml:space="preserve"><value>Empty Belt Below:</value></data>
   <data name="lgBeltStoppedAfter" xml:space="preserve"><value>Belt Stopped After:</value></data>
   <data name="lgDigToScaleDelay" xml:space="preserve"><value>Dig to Scale Delay:</value></data>
+  <data name="lgBarFullFlow" xml:space="preserve"><value>Flow Bar Full At:</value></data>
+  <data name="lgBarFullBelt" xml:space="preserve"><value>Belt Bar Full At:</value></data>
   <data name="lgMeasureBelt" xml:space="preserve"><value>Measure Belt</value></data>
   <data name="lgResetDistance" xml:space="preserve"><value>Reset Distance</value></data>
-  <data name="lgConveyorJobRunning" xml:space="preserve"><value>Finish the job before changing conveyor settings.</value></data>
+  <data name="lgConveyorJobRunning" xml:space="preserve"><value>Finish the job before changing this setting.</value></data>
+  <data name="lgBarScalesOnly" xml:space="preserve"><value>Job running - only the bar full scale settings can be changed.</value></data>
 
   <!-- ── Scale calibration form ────────────────────────────────────────── -->
   <data name="lgCalRaw" xml:space="preserve"><value>Raw Reading:</value></data>

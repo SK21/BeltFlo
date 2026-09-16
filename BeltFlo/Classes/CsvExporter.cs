@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using BeltFlo.Database;
@@ -34,6 +35,13 @@ namespace BeltFlo.Classes
                 // lb/ac → kg/ha
                 const double KgHaPerLbAc = 0.453592 / 0.404686;
 
+                // Every number is written invariant, as the diagnostic log does. The
+                // app runs in the culture of the chosen language, and seven of the
+                // eight write decimals with a comma — which inside a comma-separated
+                // file would split one value into two columns and leave the export
+                // unreadable to anything, RateController included.
+                var ci = CultureInfo.InvariantCulture;
+
                 var sb = new StringBuilder();
                 // Columns 0-5 match RC's YieldOverlayCreator expected format (parsed by position).
                 // Extra columns follow for BeltFlo-specific data.
@@ -44,13 +52,20 @@ namespace BeltFlo.Classes
                     double yieldKgHa = p.YieldRate * KgHaPerLbAc;
                     double haAcc     = p.AcresAccumulated * 0.404686;
 
-                    sb.AppendLine(
-                        $"{p.Timestamp:yyyy-MM-dd HH:mm:ss}," +
-                        $"{p.Latitude:F7},{p.Longitude:F7}," +
-                        $"{widthM:F3},{yieldKgHa:F1},{p.Elevation:F1}," +
-                        $"{p.Speed:F2},{p.Heading:F1}," +
-                        $"{haAcc:F4}," +
-                        $"{p.PoundsInc:F2},{p.LoadId},{p.BeltFtMin:F1},{p.CalRev}");
+                    sb.AppendLine(string.Join(",",
+                        p.Timestamp.ToString("yyyy-MM-dd HH:mm:ss", ci),
+                        p.Latitude.ToString("F7", ci),
+                        p.Longitude.ToString("F7", ci),
+                        widthM.ToString("F3", ci),
+                        yieldKgHa.ToString("F1", ci),
+                        p.Elevation.ToString("F1", ci),
+                        p.Speed.ToString("F2", ci),
+                        p.Heading.ToString("F1", ci),
+                        haAcc.ToString("F4", ci),
+                        p.PoundsInc.ToString("F2", ci),
+                        p.LoadId.ToString(ci),
+                        p.BeltFtMin.ToString("F1", ci),
+                        p.CalRev.ToString(ci)));
                 }
 
                 File.WriteAllText(path, sb.ToString());

@@ -29,6 +29,8 @@ namespace BeltFlo.Forms
         private double _minFlowLbS;
         private double _beltStopS;
         private int    _delaySec;
+        private double _barMaxFlowLbMin;
+        private double _barMaxBeltFtMin;
 
         // Live readout
         private readonly System.Windows.Forms.Timer _liveTimer = new System.Windows.Forms.Timer { Interval = 500 };
@@ -72,11 +74,14 @@ namespace BeltFlo.Forms
             _minFlowLbS     = _cfg.FlowThresholdLbS;
             _beltStopS      = _cfg.BeltStopTimeoutS;
             _delaySec       = _cfg.DelaySec;
+            _barMaxFlowLbMin = _cfg.BarMaxFlowLbMin;
+            _barMaxBeltFtMin = _cfg.BarMaxBeltFtMin;
 
             _distanceStartPulses = _lastPulses = Core.LastCumPulses;
             _lastPulsesUtc = DateTime.UtcNow;
 
             ShowValues();
+            ApplyJobLock();
             UpdateLive();
             _liveTimer.Tick += (s, ev) => UpdateLive();
             _liveTimer.Start();
@@ -96,7 +101,8 @@ namespace BeltFlo.Forms
                 c.ForeColor = fore;
                 if (c is Button b) { b.BackColor = ctrl; b.ForeColor = Color.White; }
             }
-            foreach (var box in new[] { lblPulseVal, lblPprVal, lblSectionVal, lblMinFlowVal, lblStopVal, lblDelayVal })
+            foreach (var box in new[] { lblPulseVal, lblPprVal, lblSectionVal, lblMinFlowVal, lblStopVal, lblDelayVal,
+                                        lblBarFlowVal, lblBarBeltVal })
             {
                 box.BackColor = ctrl;
                 box.ForeColor = fore;
@@ -126,10 +132,16 @@ namespace BeltFlo.Forms
             lblMinFlowUnit.Text = Props.FlowUnit;
             lblStopVal.Text     = _beltStopS.ToString("F1");
             lblDelayVal.Text    = _delaySec.ToString();
+            lblBarFlowVal.Text  = Props.DisplayFlow(_barMaxFlowLbMin).ToString("F0");
+            lblBarFlowUnit.Text = Props.FlowUnit;
+            lblBarBeltVal.Text  = Props.DisplayBeltSpeed(_barMaxBeltFtMin).ToString("F0");
+            lblBarBeltUnit.Text = Props.BeltSpeedUnit;
         }
 
         private void UpdateLive()
         {
+            ApplyJobLock();
+
             if (!Core.ModuleConnected)
             {
                 lblLivePulses.Text     = "Pulses: --";
@@ -164,6 +176,42 @@ namespace BeltFlo.Forms
 
         // ── Editing ───────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// True while a job is recording. Everything that decides what a recorded pound
+        /// means is locked then, so a job cannot change conveyors halfway through. The
+        /// two bar full-scale settings are exempt: they only scale a bar on the run
+        /// screen, and the moment an operator wants them is mid-job, when the bar is
+        /// pegged or barely moving.
+        /// </summary>
+        private static bool JobRunning => Core.Collector != null && Core.Collector.ActiveJobId > 0;
+
+        private bool RefuseDuringJob()
+        {
+            if (!JobRunning) return false;
+            Props.ShowMessage(Lang.lgConveyorJobRunning, "", 3000, true);
+            return true;
+        }
+
+        // Shows at a glance which rows are closed, so the refusal message is never the
+        // first the operator hears of it. Checked on the live timer, because a job can
+        // start or finish while this screen is open.
+        private bool? _lockShown;
+
+        private void ApplyJobLock()
+        {
+            bool locked = JobRunning;
+            if (_lockShown == locked) return;
+            _lockShown = locked;
+
+            var fore = Properties.Settings.Default.MainForeColour;
+            foreach (var box in new[] { lblPulseVal, lblPprVal, lblSectionVal,
+                                        lblMinFlowVal, lblStopVal, lblDelayVal })
+                box.ForeColor = locked ? Color.Gray : fore;
+
+            btnMeasure.Enabled = !locked;
+            lblMeasure.Text    = locked ? Lang.lgBarScalesOnly : "";
+        }
+
         private bool AskNumber(double min, double max, double current, int decimals, string title, out double value)
         {
             value = current;
@@ -181,6 +229,7 @@ namespace BeltFlo.Forms
 
         private void lblPulseVal_Click(object sender, EventArgs e)
         {
+            if (RefuseDuringJob()) return;
             double min = Props.IsMetric ? 0.03 : 0.01;
             double max = Props.IsMetric ? 127  : 50;
             if (AskNumber(min, max, Math.Round(InToDisplay(_inchesPerPulse), 3), 3, $"Belt per Pulse ({LengthUnit})", out double v))
@@ -192,6 +241,7 @@ namespace BeltFlo.Forms
 
         private void lblPprVal_Click(object sender, EventArgs e)
         {
+            if (RefuseDuringJob()) return;
             if (AskNumber(0, 100000, _pulsesPerRev, 0, "Pulses per Belt Turn", out double v))
             {
                 _pulsesPerRev = (int)Math.Round(v);
@@ -201,6 +251,7 @@ namespace BeltFlo.Forms
 
         private void lblSectionVal_Click(object sender, EventArgs e)
         {
+            if (RefuseDuringJob()) return;
             double min = Props.IsMetric ? 15  : 6;
             double max = Props.IsMetric ? 610 : 240;
             if (AskNumber(min, max, Math.Round(InToDisplay(_sectionLenIn), 1), 1, $"Weigh Section Length ({LengthUnit})", out double v))
@@ -212,6 +263,7 @@ namespace BeltFlo.Forms
 
         private void lblMinFlowVal_Click(object sender, EventArgs e)
         {
+            if (RefuseDuringJob()) return;
             if (AskNumber(0, 600, Math.Round(Props.DisplayFlow(_minFlowLbS * 60.0), 1), 1, $"Empty Belt Below ({Props.FlowUnit})", out double v))
             {
                 _minFlowLbS = Props.LoadToLb(v) / 60.0;   // kg→lb in metric; lb/min → lb/s
@@ -221,6 +273,7 @@ namespace BeltFlo.Forms
 
         private void lblStopVal_Click(object sender, EventArgs e)
         {
+            if (RefuseDuringJob()) return;
             if (AskNumber(0.5, 25.5, _beltStopS, 1, "Belt Stopped After (s)", out double v))
             {
                 _beltStopS = v;
@@ -230,9 +283,39 @@ namespace BeltFlo.Forms
 
         private void lblDelayVal_Click(object sender, EventArgs e)
         {
+            if (RefuseDuringJob()) return;
             if (AskNumber(0, 60, _delaySec, 0, "Dig to Scale Delay (s)", out double v))
             {
                 _delaySec = (int)Math.Round(v);
+                ShowValues();
+            }
+        }
+
+        // The run-screen bars read as a fraction of these, so they want the most a
+        // machine actually reaches, not the most it could: a bar that never leaves
+        // the first third is as useless as one that pegs. Set them from the live
+        // flow and belt readings above, taken while the harvester is digging well.
+
+        private void lblBarFlowVal_Click(object sender, EventArgs e)
+        {
+            double min = Props.IsMetric ? 50   : 100;
+            double max = Props.IsMetric ? 9000 : 20000;
+            double current = Math.Round(Props.DisplayFlow(_barMaxFlowLbMin));
+            if (AskNumber(min, max, current, 0, $"Bar Full Scale - Flow ({Props.FlowUnit})", out double v))
+            {
+                _barMaxFlowLbMin = Props.LoadToLb(v);   // kg/min → lb/min in metric
+                ShowValues();
+            }
+        }
+
+        private void lblBarBeltVal_Click(object sender, EventArgs e)
+        {
+            double min = Props.IsMetric ? 3  : 10;
+            double max = Props.IsMetric ? 610 : 2000;
+            double current = Math.Round(Props.DisplayBeltSpeed(_barMaxBeltFtMin));
+            if (AskNumber(min, max, current, 0, $"Bar Full Scale - Belt ({Props.BeltSpeedUnit})", out double v))
+            {
+                _barMaxBeltFtMin = Props.BeltSpeedToFtMin(v);
                 ShowValues();
             }
         }
@@ -245,6 +328,7 @@ namespace BeltFlo.Forms
         {
             if (!_measuring)
             {
+                if (RefuseDuringJob()) return;
                 if (!Core.ModuleConnected)
                 {
                     lblMeasure.Text = "No module connected — the pulses come from the module.";
@@ -290,11 +374,12 @@ namespace BeltFlo.Forms
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            if (Core.Collector.ActiveJobId > 0)
-            {
-                Props.ShowMessage(Lang.lgConveyorJobRunning, "", 3000, true);
-                return;
-            }
+            // With a job running the locked settings cannot have been edited — their
+            // rows refuse the numpad — so they are written back from the stored
+            // revision, and only the two bar scales carry a change. Saving those
+            // mid-job cannot start a new revision either: the revision turns on span,
+            // section length and belt per pulse, none of which moved.
+            bool locked = JobRunning;
 
             var edited = new ConveyorConfig
             {
@@ -302,12 +387,14 @@ namespace BeltFlo.Forms
                 ZeroCounts       = _cfg.ZeroCounts,
                 SpanLbPerCount   = _cfg.SpanLbPerCount,
                 ZeroSetAt        = _cfg.ZeroSetAt,
-                PulsesPerRev     = _pulsesPerRev,
-                InchesPerPulse   = _inchesPerPulse,
-                SectionLenIn     = _sectionLenIn,
-                FlowThresholdLbS = _minFlowLbS,
-                BeltStopTimeoutS = _beltStopS,
-                DelaySec         = _delaySec
+                PulsesPerRev     = locked ? _cfg.PulsesPerRev     : _pulsesPerRev,
+                InchesPerPulse   = locked ? _cfg.InchesPerPulse   : _inchesPerPulse,
+                SectionLenIn     = locked ? _cfg.SectionLenIn     : _sectionLenIn,
+                FlowThresholdLbS = locked ? _cfg.FlowThresholdLbS : _minFlowLbS,
+                BeltStopTimeoutS = locked ? _cfg.BeltStopTimeoutS : _beltStopS,
+                DelaySec         = locked ? _cfg.DelaySec         : _delaySec,
+                BarMaxFlowLbMin  = _barMaxFlowLbMin,
+                BarMaxBeltFtMin  = _barMaxBeltFtMin
             };
             Core.SaveConveyorConfig(edited);
             _cfg = Core.Database.ConveyorConfigs.GetLatest(Core.ActiveProfileId) ?? edited;

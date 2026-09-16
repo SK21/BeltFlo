@@ -24,10 +24,36 @@ namespace BeltFlo.Forms
         private bool _dragging;
         private System.Drawing.Point _dragStart;
 
-        // Bar scales. Flow beyond ~90 t/h is past any digger; belt speed beyond
-        // 400 ft/min likewise.
-        private const double MaxFlowLbPerMin = 3000.0;
-        private const double MaxBeltFtPerMin = 400.0;
+        // The load tile at its designed 32 pt fits six characters in 174 px, which
+        // covers any truck ("47,500"). A seventh — a load left open far past a truck,
+        // or a tank machine's running total — would be clipped at both ends by the
+        // centred label, and a half-shown weight is worse than a smaller one.
+        private static readonly Font LoadFontBig   = new Font("Microsoft Sans Serif", 32F, FontStyle.Bold);
+        private static readonly Font LoadFontSmall = new Font("Microsoft Sans Serif", 26F, FontStyle.Bold);
+
+        // Bar full scale. Per profile, set on the Conveyor Setup screen from what
+        // the machine actually reaches; these are the fallbacks before a profile
+        // has loaded.
+        private const double DefaultMaxFlowLbPerMin = 3000.0;
+        private const double DefaultMaxBeltFtPerMin = 400.0;
+
+        private static double MaxFlowLbPerMin
+        {
+            get
+            {
+                double v = Core.ActiveConveyor?.BarMaxFlowLbMin ?? 0;
+                return v > 0 ? v : DefaultMaxFlowLbPerMin;
+            }
+        }
+
+        private static double MaxBeltFtPerMin
+        {
+            get
+            {
+                double v = Core.ActiveConveyor?.BarMaxBeltFtMin ?? 0;
+                return v > 0 ? v : DefaultMaxBeltFtPerMin;
+            }
+        }
 
         public frmMain()
         {
@@ -40,7 +66,7 @@ namespace BeltFlo.Forms
         {
             ApplyTheme();
 
-            lblMoistureTitle.Text = Lang.lgLoad.ToUpperInvariant();
+            lblLoadTitle.Text = Lang.lgLoad.ToUpperInvariant();
             lblSensor1Title.Text  = Lang.lgFlow;
             lblSensor2Title.Text  = Lang.lgBelt;
 
@@ -113,16 +139,15 @@ namespace BeltFlo.Forms
 
             lblYield.BackColor = dispBack;
             lblYield.ForeColor = dispFore;
-            lblMoisture.BackColor = dispBack;
-            lblMoisture.ForeColor = dispFore;
+            lblLoad.BackColor = dispBack;
+            lblLoad.ForeColor = dispFore;
 
             lblYieldTitle.ForeColor = fore;
-            lblMoistureTitle.ForeColor = fore;
+            lblLoadTitle.ForeColor = fore;
             lblTotArea.ForeColor = fore;
             lblTotTotal.ForeColor = fore;
             lblTotRate.ForeColor = fore;
-            lblWorkRate.ForeColor = fore;
-            lblMoistureUnit.ForeColor = System.Drawing.Color.White;
+            lblLoadUnit.ForeColor = System.Drawing.Color.White;
 
             // Dark tracks: a green track read as a full bar when the value was zero.
             pnlSensor1.BackColor = Color.FromArgb(50, 50, 50);
@@ -206,10 +231,30 @@ namespace BeltFlo.Forms
             if (message == null)
             {
                 _alarmTick = 0;
+                // The operator has dealt with it, so take the message down now. Left
+                // to expire on its own it would sit there for the rest of its ten
+                // seconds, reading as an alarm that is still sounding. Judged from
+                // the label rather than a flag, because ShowMessage posts the text
+                // asynchronously: a repeat already in flight when the alarm stopped
+                // would otherwise arrive after the clear and linger unnoticed.
+                ClearAlarmMessage();
                 return;
             }
             if (_alarmTick++ % 2 == 0)
                 Props.ShowMessage(message, "", 3000, true);
+        }
+
+        /// <summary>Takes a repeating alarm's message down at once, rather than at its timeout.</summary>
+        private void ClearAlarmMessage()
+        {
+            if (!lblStatusMsg.Visible) return;
+            if (lblStatusMsg.Text != Lang.lgPausedSectionsOn &&
+                lblStatusMsg.Text != Lang.lgNoLoadOpen) return;
+
+            _msgCountdown = 0;
+            _msgTimer?.Stop();
+            lblStatusMsg.Visible = false;
+            lblStatusMsg.Text = "";
         }
 
         private void Core_JobStateChanged(object sender, EventArgs e)
@@ -235,8 +280,12 @@ namespace BeltFlo.Forms
             var col = Core.Collector;
             var yieldCalc = Core.Yield;
 
+            // Numbers here use N rather than F, so thousands are grouped: a load is
+            // read at a glance across the cab, and 47500 is easy to take for 4750.
+            // N follows the running culture, so the separator is whatever the
+            // operator's language uses.
             double yield = Props.DisplayRate(yieldCalc?.SmoothedYield ?? 0);
-            lblYield.Text = yield.ToString("F1");
+            lblYield.Text = yield.ToString("N1");
             lblYieldUnit.Text = Props.RateUnit;
 
             // Second tile — the open load, the number the operator watches to know
@@ -246,36 +295,41 @@ namespace BeltFlo.Forms
             bool hasLoad = col != null && col.ActiveLoadId > 0;
             bool paused  = col != null && col.IsPaused;
             string loadWord = Lang.lgLoad.ToUpperInvariant();
-            lblMoistureTitle.Text = hasLoad ? loadWord + " " + col.ActiveLoadNumber : loadWord;
-            lblMoisture.Text = hasLoad ? Props.DisplayLoad(col.CurrentLoadLb).ToString("F0") : "--";
-            lblMoisture.ForeColor = paused ? OkabeIto.Orange : Properties.Settings.Default.DisplayForeColour;
-            lblMoistureUnit.Text = paused ? Lang.lgPause.ToUpperInvariant() : Props.LoadUnit;
-            lblMoistureUnit.ForeColor = paused ? OkabeIto.Orange : Color.White;
+            lblLoadTitle.Text = hasLoad ? loadWord + " " + col.ActiveLoadNumber : loadWord;
+            lblLoad.Text = hasLoad ? Props.DisplayLoad(col.CurrentLoadLb).ToString("N0") : "--";
+
+            var loadFont = lblLoad.Text.Length > 6 ? LoadFontSmall : LoadFontBig;
+            if (!ReferenceEquals(lblLoad.Font, loadFont)) lblLoad.Font = loadFont;
+
+            lblLoad.ForeColor = paused ? OkabeIto.Orange : Properties.Settings.Default.DisplayForeColour;
+            lblLoadUnit.Text = paused ? Lang.lgPause.ToUpperInvariant() : Props.LoadUnit;
+            lblLoadUnit.ForeColor = paused ? OkabeIto.Orange : Color.White;
 
             // Bar 1 — flow over the scale
             double flowLbMin = (yieldCalc?.CurrentLbPerSec ?? 0) * 60.0;
             double flow = Math.Min(1.0, Math.Max(0, flowLbMin / MaxFlowLbPerMin));
             pnlSensor1Fill.Width = (int)(pnlSensor1.Width * flow);
-            lblSensor1Value.Text = Props.DisplayFlow(flowLbMin).ToString("F0");
+            lblSensor1Value.Text = $"{Props.DisplayFlow(flowLbMin):N0} {Props.FlowUnit}";
 
             // Bar 2 — belt speed
             double beltFtMin = yieldCalc?.BeltFtPerMin ?? 0;
             double belt = Math.Min(1.0, Math.Max(0, beltFtMin / MaxBeltFtPerMin));
             pnlSensor2Fill.Width = (int)(pnlSensor2.Width * belt);
-            lblSensor2Value.Text = Props.DisplayBeltSpeed(beltFtMin).ToString("F0");
+            lblSensor2Value.Text = $"{Props.DisplayBeltSpeed(beltFtMin):N0} {Props.BeltSpeedUnit}";
             pnlSensor2Fill.BackColor = Core.LastBeltRunning
                 ? Color.FromArgb(50, 150, 220)
                 : Color.FromArgb(80, 80, 80);
 
+            // The fourth cell, under the average yield, is deliberately empty. It used
+            // to repeat the flow already on the Flow bar below it, and area per hour
+            // — the obvious replacement — is on the AgOpenGPS screen beside this one.
             double area = Props.DisplayArea(col?.TotalAcres ?? 0);
             double total = Props.DisplayMass(col?.TotalPounds ?? 0);
             double avg = Props.DisplayRate(col?.AverageYield ?? 0);
-            double workRate = Props.DisplayFlow((yieldCalc?.SmoothedWorkRate ?? 0) / 60.0);
 
-            lblTotArea.Text = $"{area:F1} {Props.AreaUnit}";
-            lblTotTotal.Text = $"{total:F1} {Props.MassUnit}";
-            lblTotRate.Text = $"{avg:F1} {Props.RateUnit}";
-            lblWorkRate.Text = $"{workRate:F0} {Props.FlowUnit}";
+            lblTotArea.Text = $"{area:N1} {Props.AreaUnit}";
+            lblTotTotal.Text = $"{total:N1} {Props.MassUnit}";
+            lblTotRate.Text = $"{avg:N1} {Props.RateUnit}";
         }
 
         // Okabe-Ito colorblind-safe palette: bluish-green / vermillion instead of
@@ -312,33 +366,42 @@ namespace BeltFlo.Forms
             // converter that has stopped answering, or cells at their limit, are
             // hardware faults whether or not the machine is moving, and worth
             // catching in the yard.
-            if (!modOk)
+            //
+            // The verdict needs a recent status packet, not merely a live link: the
+            // flags ride the status packet alone, and on CAN that is a separate frame
+            // from the counters, so counters by themselves could otherwise hold the
+            // label at its last reading. Without one there is nothing to report and
+            // the label goes altogether, rather than sitting there greyed — the
+            // Module label beside it already says why.
+            bool scaleKnown = modOk
+                && (DateTime.UtcNow - Core.LastStatusReceive).TotalSeconds < 5;
+
+            lblStatusScale.Visible = scaleKnown;
+
+            if (scaleKnown)
             {
-                // Nothing to say without packets — the Module label is already red.
-                lblStatusScale.Text = Lang.lgStatusScale;
-                lblStatusScale.ForeColor = Color.Silver;
-            }
-            else if (!Core.LastScaleOk || Core.LastOverload)
-            {
-                lblStatusScale.Text = Lang.lgStatusScale;
-                lblStatusScale.ForeColor = StatusBad;
-            }
-            else if (Core.BeltSensorSuspect)
-            {
-                // Weight moving over the section with no belt pulses: the module
-                // multiplies weight by belt travel, so it is recording nothing.
-                lblStatusScale.Text = Lang.lgBelt;
-                lblStatusScale.ForeColor = OkabeIto.Orange;
-            }
-            else if (!Core.LastTared)
-            {
-                lblStatusScale.Text = Lang.lgStatusZero;
-                lblStatusScale.ForeColor = OkabeIto.Orange;
-            }
-            else
-            {
-                lblStatusScale.Text = Lang.lgStatusScale;
-                lblStatusScale.ForeColor = StatusOk;
+                if (!Core.LastScaleOk || Core.LastOverload)
+                {
+                    lblStatusScale.Text = Lang.lgStatusScale;
+                    lblStatusScale.ForeColor = StatusBad;
+                }
+                else if (Core.BeltSensorSuspect)
+                {
+                    // Weight moving over the section with no belt pulses: the module
+                    // multiplies weight by belt travel, so it is recording nothing.
+                    lblStatusScale.Text = Lang.lgBelt;
+                    lblStatusScale.ForeColor = OkabeIto.Orange;
+                }
+                else if (!Core.LastTared)
+                {
+                    lblStatusScale.Text = Lang.lgStatusZero;
+                    lblStatusScale.ForeColor = OkabeIto.Orange;
+                }
+                else
+                {
+                    lblStatusScale.Text = Lang.lgStatusScale;
+                    lblStatusScale.ForeColor = StatusOk;
+                }
             }
 
             if (Core.Collector.ActiveJobId > 0)
@@ -375,7 +438,7 @@ namespace BeltFlo.Forms
             {
                 Core.ModuleConnected = false;
                 // Module-reported state does not outlive the module.
-                Core.LastBeltRunning = false;
+                Core.ClearModuleReportedState();
             }
         }
 
@@ -404,6 +467,9 @@ namespace BeltFlo.Forms
             else if (col.ActiveLoadId <= 0)
             {
                 col.StartLoad();
+                // Opening a load is the answer to "No load open" — clear it on the tap
+                // rather than waiting for the next counter packet and display tick.
+                ClearAlarmMessage();
             }
             SetLoadButtons();
         }
@@ -443,7 +509,7 @@ namespace BeltFlo.Forms
 
         // The LOAD tile title is a shortcut to the loads list, as on
         // RateController's run screen.
-        private void lblMoistureTitle_Click(object sender, EventArgs e) => FormManager.ShowForm(new frmMenuLoads());
+        private void lblLoadTitle_Click(object sender, EventArgs e) => FormManager.ShowForm(new frmMenuLoads());
 
         // Full-strength colours for each load button when it is available.
         // Okabe-Ito: same hues used for the status-bar labels, so "good/active",

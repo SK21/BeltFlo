@@ -488,8 +488,9 @@ VALUES
             using var cmd = new SQLiteCommand(@"
 INSERT INTO conveyor_config
     (profile_id, zero_counts, span_lb_per_count, zero_set_at, pulses_per_rev,
-     inches_per_pulse, section_len_in, flow_threshold_lb_s, belt_stop_timeout_s, delay_sec)
-VALUES (@p, @z, @s, @za, @ppr, @ipp, @sl, @ft, @bst, @d);
+     inches_per_pulse, section_len_in, flow_threshold_lb_s, belt_stop_timeout_s, delay_sec,
+     bar_max_flow_lb_min, bar_max_belt_ft_min)
+VALUES (@p, @z, @s, @za, @ppr, @ipp, @sl, @ft, @bst, @d, @bmf, @bmb);
 SELECT last_insert_rowid();", conn);
             cmd.Parameters.AddWithValue("@p",   c.ProfileId);
             cmd.Parameters.AddWithValue("@z",   c.ZeroCounts);
@@ -501,6 +502,8 @@ SELECT last_insert_rowid();", conn);
             cmd.Parameters.AddWithValue("@ft",  c.FlowThresholdLbS);
             cmd.Parameters.AddWithValue("@bst", c.BeltStopTimeoutS);
             cmd.Parameters.AddWithValue("@d",   c.DelaySec);
+            cmd.Parameters.AddWithValue("@bmf", c.BarMaxFlowLbMin);
+            cmd.Parameters.AddWithValue("@bmb", c.BarMaxBeltFtMin);
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
 
@@ -516,7 +519,8 @@ SELECT last_insert_rowid();", conn);
             using var cmd = new SQLiteCommand(@"
 UPDATE conveyor_config SET
     zero_counts=@z, zero_set_at=@za, pulses_per_rev=@ppr,
-    flow_threshold_lb_s=@ft, belt_stop_timeout_s=@bst, delay_sec=@d
+    flow_threshold_lb_s=@ft, belt_stop_timeout_s=@bst, delay_sec=@d,
+    bar_max_flow_lb_min=@bmf, bar_max_belt_ft_min=@bmb
 WHERE id=@id", conn);
             cmd.Parameters.AddWithValue("@id",  c.Id);
             cmd.Parameters.AddWithValue("@z",   c.ZeroCounts);
@@ -525,6 +529,8 @@ WHERE id=@id", conn);
             cmd.Parameters.AddWithValue("@ft",  c.FlowThresholdLbS);
             cmd.Parameters.AddWithValue("@bst", c.BeltStopTimeoutS);
             cmd.Parameters.AddWithValue("@d",   c.DelaySec);
+            cmd.Parameters.AddWithValue("@bmf", c.BarMaxFlowLbMin);
+            cmd.Parameters.AddWithValue("@bmb", c.BarMaxBeltFtMin);
             cmd.ExecuteNonQuery();
         }
 
@@ -552,7 +558,8 @@ WHERE id=@id", conn);
 
         private const string SelectColumns =
             "SELECT id, profile_id, zero_counts, span_lb_per_count, zero_set_at, pulses_per_rev, " +
-            "inches_per_pulse, section_len_in, flow_threshold_lb_s, belt_stop_timeout_s, delay_sec, created_at";
+            "inches_per_pulse, section_len_in, flow_threshold_lb_s, belt_stop_timeout_s, delay_sec, " +
+            "bar_max_flow_lb_min, bar_max_belt_ft_min, created_at";
 
         private static ConveyorConfig Map(SQLiteDataReader r)
         {
@@ -569,7 +576,9 @@ WHERE id=@id", conn);
                 FlowThresholdLbS = r.GetDouble(8),
                 BeltStopTimeoutS = r.GetDouble(9),
                 DelaySec         = r.GetInt32(10),
-                CreatedAt        = DateTime.TryParse(r.GetString(11), out var dt) ? dt : DateTime.MinValue
+                BarMaxFlowLbMin  = r.GetDouble(11),
+                BarMaxBeltFtMin  = r.GetDouble(12),
+                CreatedAt        = DateTime.TryParse(r.GetString(13), out var dt) ? dt : DateTime.MinValue
             };
         }
     }
