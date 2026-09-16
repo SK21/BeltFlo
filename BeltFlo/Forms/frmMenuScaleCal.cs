@@ -278,7 +278,7 @@ namespace BeltFlo.Forms
             }
             if (Core.Collector.ActiveJobId > 0)
             {
-                Props.ShowMessage(Lang.lgConveyorJobRunning, "", 3000, true);
+                Props.ShowMessage(Lang.lgConveyorJobRunning, 3000, true);
                 return;
             }
 

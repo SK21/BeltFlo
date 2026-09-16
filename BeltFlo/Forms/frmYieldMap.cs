@@ -725,7 +725,7 @@ namespace BeltFlo.Forms
             // Per-load correction against a certified weight rescales a load's points
             // and lives on the Loads screen; there is no crop calibration to re-derive
             // from here any more.
-            Props.ShowMessage(Lang.lgRecalcLater, "", 3000);
+            Props.ShowMessage(Lang.lgRecalcLater, 3000);
         }
 
         // ── Legend paint ──────────────────────────────────────────────────────

@@ -26,7 +26,7 @@ namespace BeltFlo.Forms
             this.lblReportAvgYield = new System.Windows.Forms.Label();
             this.lblReportNotesTitle = new System.Windows.Forms.Label();
             this.lblReportNotes = new System.Windows.Forms.Label();
-            this.lblReportAvgMoist = new System.Windows.Forms.Label();
+            this.lblReportLoads = new System.Windows.Forms.Label();
             this.lblReportPoints = new System.Windows.Forms.Label();
             this.btnExportCsv = new System.Windows.Forms.Button();
             this.btnPrint = new System.Windows.Forms.Button();
@@ -67,7 +67,7 @@ namespace BeltFlo.Forms
             this.pnlContent.Controls.Add(this.lblReportArea);
             this.pnlContent.Controls.Add(this.lblReportTotal);
             this.pnlContent.Controls.Add(this.lblReportAvgYield);
-            this.pnlContent.Controls.Add(this.lblReportAvgMoist);
+            this.pnlContent.Controls.Add(this.lblReportLoads);
             this.pnlContent.Controls.Add(this.lblReportPoints);
             this.pnlContent.Controls.Add(this.btnExportCsv);
             this.pnlContent.Controls.Add(this.btnPrint);
@@ -141,14 +141,14 @@ namespace BeltFlo.Forms
             this.lblReportAvgYield.TabIndex = 5;
             this.lblReportAvgYield.Text = "Avg Yield: --";
             //
-            // lblReportAvgMoist
+            // lblReportLoads
             //
-            this.lblReportAvgMoist.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
-            this.lblReportAvgMoist.Location = new System.Drawing.Point(8, 334);
-            this.lblReportAvgMoist.Name = "lblReportAvgMoist";
-            this.lblReportAvgMoist.Size = new System.Drawing.Size(544, 28);
-            this.lblReportAvgMoist.TabIndex = 6;
-            this.lblReportAvgMoist.Text = "Avg Moisture: --";
+            this.lblReportLoads.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
+            this.lblReportLoads.Location = new System.Drawing.Point(8, 334);
+            this.lblReportLoads.Name = "lblReportLoads";
+            this.lblReportLoads.Size = new System.Drawing.Size(544, 28);
+            this.lblReportLoads.TabIndex = 6;
+            this.lblReportLoads.Text = "Loads: --";
             //
             // lblReportPoints
             //
@@ -242,7 +242,7 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Label   lblReportAvgYield;
         private System.Windows.Forms.Label   lblReportNotesTitle;
         private System.Windows.Forms.Label   lblReportNotes;
-        private System.Windows.Forms.Label   lblReportAvgMoist;
+        private System.Windows.Forms.Label   lblReportLoads;
         private System.Windows.Forms.Label   lblReportPoints;
         private System.Windows.Forms.Button  btnExportCsv;
         private System.Windows.Forms.Button  btnPrint;

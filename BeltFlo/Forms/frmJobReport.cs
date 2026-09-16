@@ -156,7 +156,7 @@ namespace BeltFlo.Forms
             }
             catch { }
 
-            lblReportAvgMoist.Text = $"{Lang.lgLoads} {loadCount}";
+            lblReportLoads.Text = $"{Lang.lgLoads} {loadCount}";
             lblReportPoints.Text   = $"{Lang.lgDataPoints} {pointCount}";
         }
 
@@ -174,7 +174,7 @@ namespace BeltFlo.Forms
             lblReportArea.Text     = $"{Lang.lgAreaColon} --";
             lblReportTotal.Text    = $"{Lang.lgTotalColon} --";
             lblReportAvgYield.Text = $"{Lang.lgAvgYield} --";
-            lblReportAvgMoist.Text = $"{Lang.lgLoads} --";
+            lblReportLoads.Text = $"{Lang.lgLoads} --";
             lblReportPoints.Text   = $"{Lang.lgDataPoints} --";
         }
 
@@ -182,7 +182,7 @@ namespace BeltFlo.Forms
         {
             if (_selectedJobId < 0)
             {
-                Props.ShowMessage(Lang.lgSelectJobFirst, "", 3000, true);
+                Props.ShowMessage(Lang.lgSelectJobFirst, 3000, true);
                 return;
             }
 
@@ -207,7 +207,7 @@ namespace BeltFlo.Forms
                 if (path != null)
                     Props.ShowMessage(string.Format(Lang.lgExported, path));
                 else
-                    Props.ShowMessage(Lang.lgExportFailed, "", 3000, true);
+                    Props.ShowMessage(Lang.lgExportFailed, 3000, true);
             }
         }
 
@@ -215,7 +215,7 @@ namespace BeltFlo.Forms
         {
             if (_selectedJobId < 0)
             {
-                Props.ShowMessage(Lang.lgSelectJobFirst, "", 3000, true);
+                Props.ShowMessage(Lang.lgSelectJobFirst, 3000, true);
                 return;
             }
 

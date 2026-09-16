@@ -221,7 +221,7 @@ namespace BeltFlo.Forms
         private void btnSave_Click(object sender, EventArgs e)
         {
             string name = txtProfileName.Text.Trim();
-            if (string.IsNullOrEmpty(name)) { Props.ShowMessage(Lang.lgEnterProfileName, "", 2000, true); return; }
+            if (string.IsNullOrEmpty(name)) { Props.ShowMessage(Lang.lgEnterProfileName, 2000, true); return; }
 
             var p = new HarvesterProfile
             {
@@ -264,12 +264,12 @@ namespace BeltFlo.Forms
         private void btnDelete_Click(object sender, EventArgs e)
         {
             if (_editingId < 0) return;
-            if (_profiles.Count <= 1) { Props.ShowMessage(Lang.lgMustHaveOneProfile, "", 2000, true); return; }
+            if (_profiles.Count <= 1) { Props.ShowMessage(Lang.lgMustHaveOneProfile, 2000, true); return; }
             using var dlg = new frmMsgBox(Lang.lgDeleteProfilePrompt);
             dlg.ShowDialog(this);
             if (!dlg.Result) return;
             try { Core.Database.Profiles.Delete(_editingId); }
-            catch (ItemInUseException) { Props.ShowMessage(Lang.lgItemInUseByJob, "", 3000, true); return; }
+            catch (ItemInUseException) { Props.ShowMessage(Lang.lgItemInUseByJob, 3000, true); return; }
             Core.RaiseProfileListChanged();
             LoadList();
             ClearEdit();

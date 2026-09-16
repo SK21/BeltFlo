@@ -357,7 +357,7 @@ namespace BeltFlo.Forms
         private void CreateAndStartNewJob(string name)
         {
             if (cboCrop.SelectedIndex < 0 || _cropIds.Count == 0)
-            { Props.ShowMessage(Lang.lgSelectCropFirst, "", 3000, true); return; }
+            { Props.ShowMessage(Lang.lgSelectCropFirst, 3000, true); return; }
 
             // Guard against accidentally abandoning a job in progress. Prompt
             // whenever a job is active, including while auto-paused (e.g. a headland
@@ -401,7 +401,7 @@ namespace BeltFlo.Forms
         private void btnLoad_Click(object sender, EventArgs e)
         {
             if (lvJobs.SelectedIndices.Count == 0)
-            { Props.ShowMessage(Lang.lgSelectJobFirst, "", 3000, true); return; }
+            { Props.ShowMessage(Lang.lgSelectJobFirst, 3000, true); return; }
 
             int idx = lvJobs.SelectedIndices[0];
             if (idx < 0 || idx >= _jobData.Count) return;
@@ -414,7 +414,7 @@ namespace BeltFlo.Forms
         {
             string name = txtJobName.Text.Trim();
             if (string.IsNullOrEmpty(name))
-            { Props.ShowMessage(Lang.lgEnterJobName, "", 2000, true); return; }
+            { Props.ShowMessage(Lang.lgEnterJobName, 2000, true); return; }
 
             // Draft from New: create and start the job.
             if (_creatingNew)
@@ -458,9 +458,9 @@ namespace BeltFlo.Forms
         private void btnDelete_Click(object sender, EventArgs e)
         {
             if (lvJobs.SelectedIndices.Count == 0)
-            { Props.ShowMessage(Lang.lgSelectJobFirst, "", 3000, true); return; }
+            { Props.ShowMessage(Lang.lgSelectJobFirst, 3000, true); return; }
 
-            if (_jobData.Count <= 1) { Props.ShowMessage(Lang.lgMustHaveOneJob, "", 2000, true); return; }
+            if (_jobData.Count <= 1) { Props.ShowMessage(Lang.lgMustHaveOneJob, 2000, true); return; }
 
             int idx = lvJobs.SelectedIndices[0];
             if (idx < 0 || idx >= _jobData.Count) return;
@@ -469,7 +469,7 @@ namespace BeltFlo.Forms
 
             if (job.jobId == Core.Collector.ActiveJobId)
             {
-                Props.ShowMessage(string.Format(Lang.lgCannotDeleteActiveJob, job.jobName), "", 3000, true);
+                Props.ShowMessage(string.Format(Lang.lgCannotDeleteActiveJob, job.jobName), 3000, true);
                 return;
             }
 

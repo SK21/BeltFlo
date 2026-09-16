@@ -556,7 +556,7 @@ namespace BeltFlo.Classes
             if (Properties.Settings.Default.AutoResumePause)
             {
                 ResumeJob();
-                Props.ShowMessage(Lang.lgResumedSectionsOn, "", 3000);
+                Props.ShowMessage(Lang.lgResumedSectionsOn, 3000);
             }
             else
             {
@@ -615,7 +615,7 @@ namespace BeltFlo.Classes
                     // dropping out between passes stops nothing, and an alert the
                     // operator learns to dismiss is worse than no alert.
                     if (wasRecording)
-                        Props.ShowMessage(Lang.lgScaleFault, "", 4000, true);
+                        Props.ShowMessage(Lang.lgScaleFault, 4000, true);
 
                     EndPassOnFault(gps);
                     if (!IsAutoPaused) AutoPause();
@@ -631,7 +631,7 @@ namespace BeltFlo.Classes
                 // Only claim recording resumed when it does — auto-resume still
                 // waits for sections, so with the digger up nothing restarts yet.
                 if (harvestActive)
-                    Props.ShowMessage(Lang.lgScaleRestored, "", 3000);
+                    Props.ShowMessage(Lang.lgScaleRestored, 3000);
                 Core.RaiseJobStateChanged();
             }
 

@@ -241,7 +241,7 @@ namespace BeltFlo.Forms
                 return;
             }
             if (_alarmTick++ % 2 == 0)
-                Props.ShowMessage(message, "", 3000, true);
+                Props.ShowMessage(message, 3000, true);
         }
 
         /// <summary>Takes a repeating alarm's message down at once, rather than at its timeout.</summary>
@@ -296,13 +296,13 @@ namespace BeltFlo.Forms
             bool paused  = col != null && col.IsPaused;
             string loadWord = Lang.lgLoad.ToUpperInvariant();
             lblLoadTitle.Text = hasLoad ? loadWord + " " + col.ActiveLoadNumber : loadWord;
-            lblLoad.Text = hasLoad ? Props.DisplayLoad(col.CurrentLoadLb).ToString("N0") : "--";
+            lblLoad.Text = hasLoad ? Props.TicketText(col.CurrentLoadLb) : "--";
 
             var loadFont = lblLoad.Text.Length > 6 ? LoadFontSmall : LoadFontBig;
             if (!ReferenceEquals(lblLoad.Font, loadFont)) lblLoad.Font = loadFont;
 
             lblLoad.ForeColor = paused ? OkabeIto.Orange : Properties.Settings.Default.DisplayForeColour;
-            lblLoadUnit.Text = paused ? Lang.lgPause.ToUpperInvariant() : Props.LoadUnit;
+            lblLoadUnit.Text = paused ? Lang.lgPause.ToUpperInvariant() : Props.TicketUnit;
             lblLoadUnit.ForeColor = paused ? OkabeIto.Orange : Color.White;
 
             // Bar 1 — flow over the scale
@@ -455,14 +455,14 @@ namespace BeltFlo.Forms
             var col = Core.Collector;
             if (col.ActiveJobId <= 0)
             {
-                Props.ShowMessage(Lang.lgNoActiveJob, "", 3000, true);
+                Props.ShowMessage(Lang.lgNoActiveJob, 3000, true);
                 return;
             }
 
             if (col.IsPaused)
             {
                 col.ResumeJob();
-                Props.ShowMessage(Lang.lgResumed, "", 2000);
+                Props.ShowMessage(Lang.lgResumed, 2000);
             }
             else if (col.ActiveLoadId <= 0)
             {
@@ -480,7 +480,7 @@ namespace BeltFlo.Forms
         private void btnPause_Click(object sender, EventArgs e)
         {
             Core.Collector.PauseJob();
-            Props.ShowMessage(Lang.lgPaused, "", 3000);
+            Props.ShowMessage(Lang.lgPaused, 3000);
             SetLoadButtons();
         }
 
@@ -566,14 +566,16 @@ namespace BeltFlo.Forms
 
         // ── Status message ────────────────────────────────────────────────────
 
-        public void ShowStatusMessage(string message, bool isError)
+        public void ShowStatusMessage(string message, bool isError, int durationMs = 3000)
         {
             lblStatusMsg.BackColor = pnlStatus.BackColor;
             lblStatusMsg.Text = message;
             lblStatusMsg.ForeColor = isError ? Color.Red : Color.Yellow;
             lblStatusMsg.Visible = true;
             lblStatusMsg.BringToFront();
-            _msgCountdown = 10;
+            // The timer ticks once a second, so the duration rounds up to whole
+            // seconds, and never to none.
+            _msgCountdown = Math.Max(1, (int)Math.Ceiling(durationMs / 1000.0));
             _msgTimer.Start();
         }
 

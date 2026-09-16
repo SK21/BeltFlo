@@ -188,7 +188,7 @@ namespace BeltFlo.Forms
         private bool RefuseDuringJob()
         {
             if (!JobRunning) return false;
-            Props.ShowMessage(Lang.lgConveyorJobRunning, "", 3000, true);
+            Props.ShowMessage(Lang.lgConveyorJobRunning, 3000, true);
             return true;
         }
 
@@ -266,7 +266,7 @@ namespace BeltFlo.Forms
             if (RefuseDuringJob()) return;
             if (AskNumber(0, 600, Math.Round(Props.DisplayFlow(_minFlowLbS * 60.0), 1), 1, $"Empty Belt Below ({Props.FlowUnit})", out double v))
             {
-                _minFlowLbS = Props.LoadToLb(v) / 60.0;   // kg→lb in metric; lb/min → lb/s
+                _minFlowLbS = Props.FlowToLbMin(v) / 60.0;   // kg→lb in metric; lb/min → lb/s
                 ShowValues();
             }
         }
@@ -303,7 +303,7 @@ namespace BeltFlo.Forms
             double current = Math.Round(Props.DisplayFlow(_barMaxFlowLbMin));
             if (AskNumber(min, max, current, 0, $"Bar Full Scale - Flow ({Props.FlowUnit})", out double v))
             {
-                _barMaxFlowLbMin = Props.LoadToLb(v);   // kg/min → lb/min in metric
+                _barMaxFlowLbMin = Props.FlowToLbMin(v);   // kg/min → lb/min in metric
                 ShowValues();
             }
         }

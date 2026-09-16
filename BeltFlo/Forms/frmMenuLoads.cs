@@ -141,7 +141,7 @@ namespace BeltFlo.Forms
         {
             int idx = _loads.FindIndex(l => l.Id == Core.Collector.ActiveLoadId);
             if (idx < 0) return;
-            lvLoads.Items[idx].SubItems[3].Text = Props.DisplayLoad(Core.Collector.CurrentLoadLb).ToString("F0");
+            lvLoads.Items[idx].SubItems[3].Text = Props.TicketText(Core.Collector.CurrentLoadLb);
             if (SelectedLoad?.Id == _loads[idx].Id) ShowNumbers(_loads[idx]);
         }
 
@@ -182,8 +182,8 @@ namespace BeltFlo.Forms
                 var item = new ListViewItem(_loadNumbers[l.Id].ToString());
                 item.SubItems.Add(JobName(l.JobId));
                 item.SubItems.Add(l.Truck);
-                item.SubItems.Add(Props.DisplayLoad(MonitorLb(l)).ToString("F0"));
-                item.SubItems.Add(l.CertifiedLb.HasValue ? Props.DisplayLoad(l.CertifiedLb.Value).ToString("F0") : "");
+                item.SubItems.Add(Props.TicketText(MonitorLb(l)));
+                item.SubItems.Add(l.CertifiedLb.HasValue ? Props.TicketText(l.CertifiedLb.Value) : "");
                 item.SubItems.Add(l.CertifiedLb.HasValue && l.MonitorLb > 0
                     ? ((l.CertifiedLb.Value / l.MonitorLb - 1) * 100).ToString("+0.0;-0.0;0.0") : "");
                 item.SubItems.Add(StatusText(l));
@@ -336,14 +336,14 @@ namespace BeltFlo.Forms
             }
 
             double mon = MonitorLb(l);
-            string unit = Props.LoadUnit;
-            lblMonitorVal.Text = $"{Props.DisplayLoad(mon):F0} {unit}";
-            lblTicketVal.Text  = _ticketLb.HasValue ? $"{Props.DisplayLoad(_ticketLb.Value):F0} {unit}" : "--";
+            string unit = Props.TicketUnit;
+            lblMonitorVal.Text = $"{Props.TicketText(mon)} {unit}";
+            lblTicketVal.Text  = _ticketLb.HasValue ? $"{Props.TicketText(_ticketLb.Value)} {unit}" : "--";
 
             if (_ticketLb.HasValue && mon > 0)
             {
                 double diff = _ticketLb.Value - mon;
-                lblDiffVal.Text   = $"{Props.DisplayLoad(diff):+0;-0;0} {unit}  {diff / mon * 100:+0.0;-0.0;0.0}%";
+                lblDiffVal.Text   = $"{Props.TicketSigned(diff)} {unit}  {diff / mon * 100:+0.0;-0.0;0.0}%";
                 lblFactorVal.Text = (_ticketLb.Value / mon).ToString("F4");
             }
             else
@@ -369,10 +369,15 @@ namespace BeltFlo.Forms
             _padOpen = true;
             try
             {
-                double current = Math.Round(Props.DisplayLoad(_ticketLb ?? l.MonitorLb));
-                using var pad = new frmNumpad(1, 1000000, current, 0, $"{Lang.lgTicketWeight} ({Props.LoadUnit})");
+                // Range and decimals follow the ticket unit: whole pounds or kilograms,
+                // or hundredths of a ton, which is 20 lb — finer than any weighbridge.
+                int    dec = Props.TicketDecimals;
+                double min = dec > 0 ? 0.01 : 1;
+                double max = Props.DisplayTicket(1000000);
+                double current = Math.Round(Props.DisplayTicket(_ticketLb ?? l.MonitorLb), dec);
+                using var pad = new frmNumpad(min, max, current, dec, $"{Lang.lgTicketWeight} ({Props.TicketUnit})");
                 if (pad.ShowDialog(this) != DialogResult.OK) return;
-                _ticketLb = Props.LoadToLb(Math.Max(1, pad.ReturnValue));
+                _ticketLb = Props.TicketToLb(Math.Max(min, pad.ReturnValue));
                 ShowNumbers(l);
                 lblStatus.Text = IsTankJob(l.JobId)
                     ? "Press Save Weight Only to keep this ticket."
@@ -542,7 +547,7 @@ namespace BeltFlo.Forms
             Props.WriteActivityLog($"Job {name} corrected by {factor:F4} (tickets {ticketsLb:F0} lb, job {jobLb:F0} lb, {rows} points)");
 
             LoadList(false);
-            lblStatus.Text = $"{name} corrected by {factor:F4}: {Props.DisplayLoad(jobLb):F0} → {Props.DisplayLoad(total):F0} {Props.LoadUnit}.";
+            lblStatus.Text = $"{name} corrected by {factor:F4}: {Props.TicketText(jobLb)} → {Props.TicketText(total)} {Props.TicketUnit}.";
         }
 
         // ── Flag / Rename / Reopen / Delete ───────────────────────────────────
@@ -576,7 +581,7 @@ namespace BeltFlo.Forms
                 return;
             }
             // JobStateChanged has already rebuilt the list.
-            lblStatus.Text = $"Load {n} reopened: its weight carries on from {Props.DisplayLoad(l.MonitorLb):F0} {Props.LoadUnit}.";
+            lblStatus.Text = $"Load {n} reopened: its weight carries on from {Props.TicketText(l.MonitorLb)} {Props.TicketUnit}.";
         }
 
         private void btnDelete_Click(object sender, EventArgs e)

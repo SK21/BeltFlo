@@ -100,7 +100,7 @@ namespace BeltFlo.Forms
         private void btnSave_Click(object sender, EventArgs e)
         {
             string name = txtCropName.Text.Trim();
-            if (string.IsNullOrEmpty(name)) { Props.ShowMessage(Lang.lgEnterCropName, "", 2000, true); return; }
+            if (string.IsNullOrEmpty(name)) { Props.ShowMessage(Lang.lgEnterCropName, 2000, true); return; }
 
             int savedId;
             if (_editingId < 0)
@@ -121,12 +121,12 @@ namespace BeltFlo.Forms
         private void btnDelete_Click(object sender, EventArgs e)
         {
             if (_editingId < 0) return;
-            if (_crops.Count <= 1) { Props.ShowMessage(Lang.lgMustHaveOneCrop, "", 2000, true); return; }
+            if (_crops.Count <= 1) { Props.ShowMessage(Lang.lgMustHaveOneCrop, 2000, true); return; }
             using var dlg = new frmMsgBox(Lang.lgDeleteCropPrompt);
             dlg.ShowDialog(this);
             if (!dlg.Result) return;
             try { Core.Database.Crops.Delete(_editingId); }
-            catch (Database.ItemInUseException) { Props.ShowMessage(Lang.lgItemInUseByJob, "", 3000, true); return; }
+            catch (Database.ItemInUseException) { Props.ShowMessage(Lang.lgItemInUseByJob, 3000, true); return; }
             Core.RaiseCropListChanged();
             LoadList();
             ClearEdit();

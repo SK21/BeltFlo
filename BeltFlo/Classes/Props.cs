@@ -60,7 +60,7 @@ namespace BeltFlo.Classes
         public static string AreaUnit  => IsMetric ? "ha"   : "ac";
         public static string MassUnit  => IsMetric ? "t"    : (YieldInTons ? "tons"    : "cwt");
         public static string RateUnit  => IsMetric ? "t/ha" : (YieldInTons ? "tons/ac" : "cwt/ac");
-        public static string LoadUnit  => IsMetric ? "kg"   : "lb";        // truck loads, in ticket units
+        public static string LoadUnit  => IsMetric ? "kg"   : "lb";        // what the scale itself weighs in
         public static string FlowUnit  => IsMetric ? "kg/min" : "lb/min";
         public static string SpeedUnit => IsMetric ? "km/h" : "mph";
         public static string BeltSpeedUnit => IsMetric ? "m/min" : "ft/min";
@@ -80,6 +80,42 @@ namespace BeltFlo.Classes
 
         /// <summary>A belt speed typed in the display unit, back to ft/min.</summary>
         public static double BeltSpeedToFtMin(double display) => IsMetric ? display / M_PER_FT : display;
+
+        /// <summary>A flow typed in the display unit, back to lb/min.</summary>
+        public static double FlowToLbMin(double display) => IsMetric ? display * LB_PER_KG : display;
+
+        // ── Ticket weights ────────────────────────────────────────────────────
+        // A truck load is read against a certified weigh ticket, so it follows the
+        // unit those tickets are written in: pounds for potatoes, short tons for
+        // sugar beet, kilograms in metric. That is the imperial yield unit's choice,
+        // which is why this tracks YieldInTons while LoadUnit above does not — the
+        // scale's own readings (the live section load, a known test weight, pounds
+        // per count) stay in lb or kg, where a 20 lb test weight reading "0.01 tons"
+        // would be useless.
+
+        public static string TicketUnit => IsMetric ? "kg" : (YieldInTons ? "tons" : "lb");
+
+        /// <summary>Decimals a ticket weight needs: tons want two, whole lb or kg none.</summary>
+        public static int TicketDecimals => (!IsMetric && YieldInTons) ? 2 : 0;
+
+        private static double LbPerTicketUnit =>
+            IsMetric ? LB_PER_KG : (YieldInTons ? LB_PER_TON : 1.0);
+
+        public static double DisplayTicket(double lb)  => lb / LbPerTicketUnit;
+
+        /// <summary>A weight typed in the ticket unit, back to pounds.</summary>
+        public static double TicketToLb(double display) => display * LbPerTicketUnit;
+
+        /// <summary>A ticket weight ready to show: grouped thousands, the right decimals.</summary>
+        public static string TicketText(double lb) =>
+            DisplayTicket(lb).ToString("N" + TicketDecimals);
+
+        /// <summary>As TicketText, but always signed — for a difference against a ticket.</summary>
+        public static string TicketSigned(double lb)
+        {
+            string n = TicketDecimals > 0 ? "#,##0.00" : "#,##0";
+            return DisplayTicket(lb).ToString($"+{n};-{n};0");
+        }
 
         public static string ApplicationFolder { get { return cApplicationFolder; } }
         public static string DataFolder { get { return cDataFolder; } }
@@ -166,7 +202,13 @@ namespace BeltFlo.Classes
             catch { }
         }
 
-        public static void ShowMessage(string message, string title = "Info", int durationMs = 3000, bool isError = false, bool topMost = false)
+        /// <summary>
+        /// Shows a message across the run screen's status bar for durationMs, with a
+        /// warning sound when isError. Carried a title and a topMost flag until the
+        /// status bar replaced the message box; neither reached the screen, and every
+        /// caller passed an empty title, so they are gone rather than left lying.
+        /// </summary>
+        public static void ShowMessage(string message, int durationMs = 3000, bool isError = false)
         {
             try
             {
@@ -177,7 +219,7 @@ namespace BeltFlo.Classes
 
                 Core.MainForm.BeginInvoke((Action)(() =>
                 {
-                    Core.MainForm.ShowStatusMessage(message, isError);
+                    Core.MainForm.ShowStatusMessage(message, isError, durationMs);
                 }));
             }
             catch { }

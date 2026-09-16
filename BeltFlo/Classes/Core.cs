@@ -127,11 +127,11 @@ namespace BeltFlo.Classes
 
                 UDPmodule.Start();
                 if (!UDPmodule.IsRunning)
-                    Props.ShowMessage("Module UDP failed to start.", "", 3000, true);
+                    Props.ShowMessage("Module UDP failed to start.", 3000, true);
 
                 UDPaog.Start();
                 if (!UDPaog.IsRunning)
-                    Props.ShowMessage("AOG UDP failed to start.", "", 3000, true);
+                    Props.ShowMessage("AOG UDP failed to start.", 3000, true);
 
                 // CAN (only if configured)
                 if (Props.CanEnabled)
@@ -259,7 +259,7 @@ namespace BeltFlo.Classes
                 else
                 {
                     Props.WriteErrorLog("Module receiving: False - settings are not reaching the module");
-                    Props.ShowMessage(Language.Lang.lgModuleNotReceiving, "", 5000, true);
+                    Props.ShowMessage(Language.Lang.lgModuleNotReceiving, 5000, true);
                 }
             }
 
@@ -329,7 +329,7 @@ namespace BeltFlo.Classes
             {
                 Props.WriteErrorLog("Belt sensor suspect: weight moving on the section with no pulses for "
                                     + BeltCheckSec.ToString("0") + " s (scale " + LastScaleLb.ToString("0.0") + " lb)");
-                Props.ShowMessage(Language.Lang.lgBeltSensorSuspect, "", 5000, true);
+                Props.ShowMessage(Language.Lang.lgBeltSensorSuspect, 5000, true);
             }
             else
             {
@@ -585,7 +585,7 @@ namespace BeltFlo.Classes
                 bool ok = CanModule.Start(Props.CurrentCanDriver, Props.CanPort);
                 Props.CanEnabled = ok;
                 if (!ok)
-                    Props.ShowMessage("CAN failed to start. Check driver and COM port.", "", 5000, true);
+                    Props.ShowMessage("CAN failed to start. Check driver and COM port.", 5000, true);
                 return ok ? 1 : 2;
             }
             else

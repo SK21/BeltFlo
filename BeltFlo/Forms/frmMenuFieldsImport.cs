@@ -86,7 +86,7 @@ namespace BeltFlo.Forms
             }
 
             bool any = _folderNames.Count > 0;
-            if (!any) Props.ShowMessage(Lang.lgNoFieldsFound, "", 3000, true);
+            if (!any) Props.ShowMessage(Lang.lgNoFieldsFound, 3000, true);
             btnImport.Enabled    = any;
             btnSelectAll.Enabled = any;
         }
@@ -120,7 +120,7 @@ namespace BeltFlo.Forms
             if (count > 0)
             {
                 Core.RaiseFieldListChanged();
-                Props.ShowMessage(string.Format(Lang.lgFieldsImported, count), "", 2000, false);
+                Props.ShowMessage(string.Format(Lang.lgFieldsImported, count), 2000, false);
             }
             LoadFolders();
         }

@@ -83,7 +83,7 @@ namespace BeltFlo.Forms
         {
             string name = txtName.Text.Trim();
             if (string.IsNullOrEmpty(name))
-            { Props.ShowMessage(Lang.lgEnterFieldName, "", 2000, true); return; }
+            { Props.ShowMessage(Lang.lgEnterFieldName, 2000, true); return; }
 
             if (_editingId < 0)
                 Core.Database.Fields.Create(name);
@@ -101,7 +101,7 @@ namespace BeltFlo.Forms
             dlg.ShowDialog(this);
             if (!dlg.Result) return;
             try { Core.Database.Fields.Delete(_editingId); }
-            catch (Database.ItemInUseException) { Props.ShowMessage(Lang.lgItemInUseByJob, "", 3000, true); return; }
+            catch (Database.ItemInUseException) { Props.ShowMessage(Lang.lgItemInUseByJob, 3000, true); return; }
             Core.RaiseFieldListChanged();
             LoadList();
         }
