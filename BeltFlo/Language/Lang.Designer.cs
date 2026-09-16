@@ -103,8 +103,6 @@ namespace BeltFlo.Language
 
         // ── Settings form ────────────────────────────────────────────────────
         internal static string lgUnits         => Get("lgUnits");
-        internal static string lgImperial      => Get("lgImperial");
-        internal static string lgMetric        => Get("lgMetric");
         internal static string lgTheme         => Get("lgTheme");
         internal static string lgDark          => Get("lgDark");
         internal static string lgLight         => Get("lgLight");

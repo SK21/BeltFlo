@@ -14,6 +14,7 @@ namespace BeltFlo.Forms
         private string _originalCommType;
         private string _originalCanDriver;
         private string _originalCanPort;
+        private int _unitChoice;   // 0 = cwt/ac, 1 = tons/ac, 2 = metric t/ha
 
         private static readonly Color ActiveColour = Color.FromArgb(0, 80, 160);
         private static readonly Color InactiveColour = Color.FromArgb(60, 60, 60);
@@ -82,8 +83,11 @@ namespace BeltFlo.Forms
 
         private void LoadCurrentSettings()
         {
-            // Units
-            SetToggle(btnImperial, btnMetric, Properties.Settings.Default.Units == "Imperial");
+            // Units. Metric yield is always t/ha, so three buttons cover every
+            // combination the app can be in: the two imperial ticket units, and
+            // metric. Picking one sets both Units and YieldUnit.
+            SetUnitChoice(Properties.Settings.Default.Units == "Metric" ? 2
+                        : Props.YieldInTons ? 1 : 0);
 
             // Network mode
             bool isEthernet = Properties.Settings.Default.ModuleCommType != "CAN";
@@ -154,8 +158,18 @@ namespace BeltFlo.Forms
             inactive.BackColor = firstActive ? InactiveColour : ActiveColour;
         }
 
-        private void btnImperial_Click(object sender, EventArgs e) => SetToggle(btnImperial, btnMetric, true);
-        private void btnMetric_Click(object sender, EventArgs e) => SetToggle(btnImperial, btnMetric, false);
+        private void SetUnitChoice(int choice)
+        {
+            _unitChoice = choice;
+            btnUnitCwt.BackColor    = choice == 0 ? ActiveColour : InactiveColour;
+            btnUnitTons.BackColor   = choice == 1 ? ActiveColour : InactiveColour;
+            btnUnitMetric.BackColor = choice == 2 ? ActiveColour : InactiveColour;
+        }
+
+        private void btnUnitCwt_Click(object sender, EventArgs e) => SetUnitChoice(0);
+        private void btnUnitTons_Click(object sender, EventArgs e) => SetUnitChoice(1);
+        private void btnUnitMetric_Click(object sender, EventArgs e) => SetUnitChoice(2);
+
         private void btnResumeOn_Click(object sender, EventArgs e) => SetToggle(btnResumeOn, btnResumeOff, true);
         private void btnResumeOff_Click(object sender, EventArgs e) => SetToggle(btnResumeOn, btnResumeOff, false);
         private void btnAutoResumeOn_Click(object sender, EventArgs e) => SetToggle(btnAutoResumeOn, btnAutoResumeOff, true);
@@ -175,9 +189,11 @@ namespace BeltFlo.Forms
 
         private void btnSaveSettings_Click(object sender, EventArgs e)
         {
-            // Units
-            bool isImperial = btnImperial.BackColor == ActiveColour;
-            Properties.Settings.Default.Units = isImperial ? "Imperial" : "Metric";
+            // Units. Metric is always t/ha, so the imperial yield unit is left
+            // as it was — switching to metric and back keeps the earlier choice.
+            Properties.Settings.Default.Units = _unitChoice == 2 ? "Metric" : "Imperial";
+            if (_unitChoice != 2)
+                Properties.Settings.Default.YieldUnit = _unitChoice == 1 ? "tons/ac" : "cwt/ac";
 
             // Network / comm type
             bool isEthernet = btnEthernet.BackColor == ActiveColour;

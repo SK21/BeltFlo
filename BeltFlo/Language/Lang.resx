@@ -146,8 +146,6 @@
        system on the one unit it mattered for. These two values are left
        untranslated in every language file; bu/ac and t/ha read the same
        everywhere. The stored setting string is still "Imperial". -->
-  <data name="lgImperial" xml:space="preserve"><value>bu/ac</value></data>
-  <data name="lgMetric" xml:space="preserve"><value>t/ha</value></data>
   <data name="lgTheme" xml:space="preserve"><value>Theme</value></data>
   <data name="lgDark" xml:space="preserve"><value>Dark</value></data>
   <data name="lgLight" xml:space="preserve"><value>Light</value></data>

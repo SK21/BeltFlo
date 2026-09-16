@@ -189,7 +189,7 @@ namespace BeltFlo.Forms
             this.lblYieldUnit.Name = "lblYieldUnit";
             this.lblYieldUnit.Size = new System.Drawing.Size(214, 28);
             this.lblYieldUnit.TabIndex = 0;
-            this.lblYieldUnit.Text = "bu/ac";
+            this.lblYieldUnit.Text = "cwt/ac";
             this.lblYieldUnit.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblYield

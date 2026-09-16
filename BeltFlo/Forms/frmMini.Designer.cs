@@ -62,7 +62,7 @@ namespace BeltFlo.Forms
             this.lblUnit.Name = "lblUnit";
             this.lblUnit.Size = new System.Drawing.Size(130, 26);
             this.lblUnit.TabIndex = 3;
-            this.lblUnit.Text = "bu/ac";
+            this.lblUnit.Text = "cwt/ac";
             this.lblUnit.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // frmMini

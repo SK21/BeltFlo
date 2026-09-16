@@ -159,8 +159,8 @@ namespace BeltFlo.Forms
             lblZeroInfo.Text = _newZero.HasValue ? "new — not saved"
                              : _cfg.ZeroSetAt.HasValue ? "set " + _cfg.ZeroSetAt.Value.ToLocalTime().ToString("MMM d HH:mm")
                              : "never set";
-            lblSpanVal.Text  = Span.ToString("G5");
-            lblSpanInfo.Text = _newSpan.HasValue ? "new — not saved" : "lb per count";
+            lblSpanVal.Text  = Props.DisplayLoad(Span).ToString("G5");
+            lblSpanInfo.Text = _newSpan.HasValue ? "new — not saved" : $"{Props.LoadUnit} per count";
         }
 
         // ── Zero Scale ────────────────────────────────────────────────────────
@@ -229,7 +229,7 @@ namespace BeltFlo.Forms
                 return;
             }
             _newSpan = _knownLb / counts;
-            EndRun($"{Props.DisplayLoad(_knownLb):F1} {Props.LoadUnit} over {counts:F0} counts: new span {_newSpan:G5} lb per count. Press Save to keep it.");
+            EndRun($"{Props.DisplayLoad(_knownLb):F1} {Props.LoadUnit} over {counts:F0} counts: new span {Props.DisplayLoad(_newSpan.Value):G5} {Props.LoadUnit} per count. Press Save to keep it.");
         }
 
         // ── Shared ────────────────────────────────────────────────────────────

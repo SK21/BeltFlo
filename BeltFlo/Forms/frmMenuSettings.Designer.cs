@@ -22,8 +22,9 @@ namespace BeltFlo.Forms
             this.pnlContent = new System.Windows.Forms.Panel();
             this.lblWifiInfo = new System.Windows.Forms.Label();
             this.lblUnits = new System.Windows.Forms.Label();
-            this.btnImperial = new System.Windows.Forms.Button();
-            this.btnMetric = new System.Windows.Forms.Button();
+            this.btnUnitCwt = new System.Windows.Forms.Button();
+            this.btnUnitTons = new System.Windows.Forms.Button();
+            this.btnUnitMetric = new System.Windows.Forms.Button();
             this.lblNetwork = new System.Windows.Forms.Label();
             this.btnEthernet = new System.Windows.Forms.Button();
             this.btnCAN = new System.Windows.Forms.Button();
@@ -73,8 +74,9 @@ namespace BeltFlo.Forms
             this.pnlContent.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
             this.pnlContent.Controls.Add(this.lblWifiInfo);
             this.pnlContent.Controls.Add(this.lblUnits);
-            this.pnlContent.Controls.Add(this.btnImperial);
-            this.pnlContent.Controls.Add(this.btnMetric);
+            this.pnlContent.Controls.Add(this.btnUnitCwt);
+            this.pnlContent.Controls.Add(this.btnUnitTons);
+            this.pnlContent.Controls.Add(this.btnUnitMetric);
             this.pnlContent.Controls.Add(this.lblNetwork);
             this.pnlContent.Controls.Add(this.btnEthernet);
             this.pnlContent.Controls.Add(this.btnCAN);
@@ -119,37 +121,52 @@ namespace BeltFlo.Forms
             this.lblUnits.Name = "lblUnits";
             this.lblUnits.Size = new System.Drawing.Size(300, 26);
             this.lblUnits.TabIndex = 0;
-            this.lblUnits.Text = "Units";
+            this.lblUnits.Text = global::BeltFlo.Language.Lang.lgUnits;
             // 
-            // btnImperial
+            // btnUnitCwt
             // 
-            this.btnImperial.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
-            this.btnImperial.FlatAppearance.BorderSize = 0;
-            this.btnImperial.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnImperial.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnImperial.ForeColor = System.Drawing.Color.White;
-            this.btnImperial.Location = new System.Drawing.Point(8, 40);
-            this.btnImperial.Name = "btnImperial";
-            this.btnImperial.Size = new System.Drawing.Size(267, 48);
-            this.btnImperial.TabIndex = 1;
-            this.btnImperial.Text = global::BeltFlo.Language.Lang.lgImperial;
-            this.btnImperial.UseVisualStyleBackColor = false;
-            this.btnImperial.Click += new System.EventHandler(this.btnImperial_Click);
+            this.btnUnitCwt.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.btnUnitCwt.FlatAppearance.BorderSize = 0;
+            this.btnUnitCwt.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUnitCwt.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
+            this.btnUnitCwt.ForeColor = System.Drawing.Color.White;
+            this.btnUnitCwt.Location = new System.Drawing.Point(8, 40);
+            this.btnUnitCwt.Name = "btnUnitCwt";
+            this.btnUnitCwt.Size = new System.Drawing.Size(176, 48);
+            this.btnUnitCwt.TabIndex = 1;
+            this.btnUnitCwt.Text = "cwt/ac";
+            this.btnUnitCwt.UseVisualStyleBackColor = false;
+            this.btnUnitCwt.Click += new System.EventHandler(this.btnUnitCwt_Click);
             // 
-            // btnMetric
+            // btnUnitTons
             // 
-            this.btnMetric.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
-            this.btnMetric.FlatAppearance.BorderSize = 0;
-            this.btnMetric.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnMetric.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
-            this.btnMetric.ForeColor = System.Drawing.Color.White;
-            this.btnMetric.Location = new System.Drawing.Point(285, 40);
-            this.btnMetric.Name = "btnMetric";
-            this.btnMetric.Size = new System.Drawing.Size(267, 48);
-            this.btnMetric.TabIndex = 2;
-            this.btnMetric.Text = global::BeltFlo.Language.Lang.lgMetric;
-            this.btnMetric.UseVisualStyleBackColor = false;
-            this.btnMetric.Click += new System.EventHandler(this.btnMetric_Click);
+            this.btnUnitTons.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.btnUnitTons.FlatAppearance.BorderSize = 0;
+            this.btnUnitTons.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUnitTons.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
+            this.btnUnitTons.ForeColor = System.Drawing.Color.White;
+            this.btnUnitTons.Location = new System.Drawing.Point(192, 40);
+            this.btnUnitTons.Name = "btnUnitTons";
+            this.btnUnitTons.Size = new System.Drawing.Size(176, 48);
+            this.btnUnitTons.TabIndex = 2;
+            this.btnUnitTons.Text = "tons/ac";
+            this.btnUnitTons.UseVisualStyleBackColor = false;
+            this.btnUnitTons.Click += new System.EventHandler(this.btnUnitTons_Click);
+            // 
+            // btnUnitMetric
+            // 
+            this.btnUnitMetric.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.btnUnitMetric.FlatAppearance.BorderSize = 0;
+            this.btnUnitMetric.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUnitMetric.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold);
+            this.btnUnitMetric.ForeColor = System.Drawing.Color.White;
+            this.btnUnitMetric.Location = new System.Drawing.Point(376, 40);
+            this.btnUnitMetric.Name = "btnUnitMetric";
+            this.btnUnitMetric.Size = new System.Drawing.Size(176, 48);
+            this.btnUnitMetric.TabIndex = 3;
+            this.btnUnitMetric.Text = "t/ha";
+            this.btnUnitMetric.UseVisualStyleBackColor = false;
+            this.btnUnitMetric.Click += new System.EventHandler(this.btnUnitMetric_Click);
             // 
             // lblNetwork
             // 
@@ -398,8 +415,9 @@ namespace BeltFlo.Forms
         private System.Windows.Forms.Label    lblTitle;
         private System.Windows.Forms.Panel    pnlContent;
         private System.Windows.Forms.Label    lblUnits;
-        private System.Windows.Forms.Button   btnImperial;
-        private System.Windows.Forms.Button   btnMetric;
+        private System.Windows.Forms.Button   btnUnitCwt;
+        private System.Windows.Forms.Button   btnUnitTons;
+        private System.Windows.Forms.Button   btnUnitMetric;
         private System.Windows.Forms.Label    lblNetwork;
         private System.Windows.Forms.Button   btnEthernet;
         private System.Windows.Forms.Button   btnCAN;
