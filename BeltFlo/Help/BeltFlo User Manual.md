@@ -695,7 +695,7 @@ The YieldFlo module has a built-in settings page served from its own WiFi hotspo
 
 ### Opening the portal
 
-1. Power the module. It broadcasts a WiFi hotspot named `YieldFlo_ESP32_XXXXXXXX` (the suffix is unique to each module).
+1. Power the module. It broadcasts a WiFi hotspot named `BeltFlo_ESP32_XXXXXXXX` (the suffix is unique to each module).
 2. Connect the PC, tablet, or phone to that hotspot.
 3. Browse to `http://192.168.200.1` (with the default module ID 0 — the address is 192.168.(200 + module ID).1).
 

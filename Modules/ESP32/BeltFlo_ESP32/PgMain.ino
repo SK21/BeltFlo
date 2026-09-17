@@ -73,11 +73,11 @@ String GetPageMain()
     st += "<head>";
     st += "<META content='text/html; charset=utf-8' http-equiv=Content-Type>";
     st += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
-    st += "<title>YieldFlo Module</title>";
+    st += "<title>BeltFlo Module</title>";
     st += GetPageStyle();
     st += "</head>";
     st += "<BODY>";
-    st += "<h1>YieldFlo Module</h1>";
+    st += "<h1>BeltFlo Module</h1>";
     st += "<p class='status'>" + fwVer + "</p>";
 
     st += "<form id=FORM1 method=post action='/'>";
@@ -116,24 +116,22 @@ String GetPageMain()
     // Divider
     st += "<tr><td colspan='2'><hr></td></tr>";
 
-    // Optical sensor signal mode
-    st += "<tr><td colspan='2' style='text-align:center; padding:0;'><h1 class='subhead'>Optical Sensor</h1></td></tr>";
-    st += "<tr>";
-    st += "  <td class='label-col'>Signals</td>";
-    st += "  <td class='input-col'><div class='control-width'><div class='radio-row'>";
-    st += "    <label><input class='styled' type='radio' name='sensormode' value='both'" + String(MDL.UseCompSignal ? " checked" : "") + "> Main + Comp</label>";
-    st += "    <label><input class='styled' type='radio' name='sensormode' value='main'" + String(MDL.UseCompSignal ? "" : " checked") + "> Main only</label>";
-    st += "  </div></div></td>";
-    st += "</tr>";
-    st += "<tr><td colspan='2'><div class='control-width'><div class='hint'>Main only: complementary wire not connected. Choose it unless Comp is definitely wired &mdash; Main + Comp without it discards every paddle and measures nothing.</div></div></td></tr>";
-    st += "<tr>";
-    st += "  <td class='label-col'>Polarity</td>";
-    st += "  <td class='input-col'><div class='control-width'><div class='radio-row'>";
-    st += "    <label><input class='styled' type='radio' name='polarity' value='pnp'" + String(MDL.InvertSensor ? "" : " checked") + "> PNP</label>";
-    st += "    <label><input class='styled' type='radio' name='polarity' value='npn'" + String(MDL.InvertSensor ? " checked" : "") + "> NPN</label>";
-    st += "  </div></div></td>";
-    st += "</tr>";
-    st += "<tr><td colspan='2'><div class='control-width'><div class='hint'>PNP: output HIGH with beam clear. NPN: inverted — select NPN if flow reads high with no grain.</div></div></td></tr>";
+    // Conveyor scale — read-only for now. Everything that decides what a pound
+    // means (zero, span, section length, belt travel per pulse) is the app's and
+    // arrives over the settings message, so there is nothing to set here; what is
+    // useful in the yard is seeing whether the hardware is alive before driving
+    // out to the field.
+    st += "<tr><td colspan='2' style='text-align:center; padding:0;'><h1 class='subhead'>Conveyor Scale</h1></td></tr>";
+    st += "<tr><td class='label-col'>Converter</td><td class='input-col'><div class='control-width'>";
+    st += ScaleFound ? (ScaleIsOK() ? "OK" : "found, not reading") : "not found";
+    st += "</div></td></tr>";
+    st += "<tr><td class='label-col'>Raw counts</td><td class='input-col'><div class='control-width'>" + String(ScaleRaw) + "</div></td></tr>";
+    st += "<tr><td class='label-col'>Section load</td><td class='input-col'><div class='control-width'>" + String(ScaleLb, 1) + " lb</div></td></tr>";
+    st += "<tr><td class='label-col'>Belt pulses</td><td class='input-col'><div class='control-width'>" + String(CumPulses) + (BeltIsRunning() ? " (running)" : " (stopped)") + "</div></td></tr>";
+    st += "<tr><td class='label-col'>Settings</td><td class='input-col'><div class='control-width'>";
+    st += SettingsAreFresh() ? "arriving from BeltFlo" : (ScaleSettingsSeen ? "stale &mdash; BeltFlo stopped sending" : "never received");
+    st += "</div></td></tr>";
+    st += "<tr><td colspan='2'><div class='control-width'><div class='hint'>Zero, span, section length and belt travel per pulse are set in BeltFlo, on the Conveyor Setup and Scale Calibration screens, and sent to the module every two seconds.</div></div></td></tr>";
 
     st += "</table>";
     st += "<p><div class='control-width'><input class='button-72' type='submit' value='Save / Restart'></div></p>";

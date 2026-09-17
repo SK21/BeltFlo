@@ -26,7 +26,6 @@ void handleSettings()
     // returns false for an absent field, so every save from this page would
     // clear the user's "Use this Network" setting and blank the SSID.
     uint8_t oldCommMode = MDL.CommMode;
-    bool   oldUseComp  = MDL.UseCompSignal;
     uint8_t oldE0 = MDL.EthIP0, oldE1 = MDL.EthIP1, oldE2 = MDL.EthIP2;
 
     // Comm mode
@@ -51,23 +50,10 @@ void handleSettings()
         }
     }
 
-    // Optical sensor signal mode
-    String sensormode = server.arg("sensormode");
-    sensormode.trim();
-    MDL.UseCompSignal = (sensormode != "main");
-
-    // Optical sensor polarity (PNP = FarmTrx, NPN = inverted)
-    bool oldInvert = MDL.InvertSensor;
-    String polarity = server.arg("polarity");
-    polarity.trim();
-    MDL.InvertSensor = (polarity == "npn");
-
     server.send(200, "text/html", GetPageMain());
 
     bool changed =
         (MDL.CommMode          != oldCommMode) ||
-        (MDL.UseCompSignal     != oldUseComp)  ||
-        (MDL.InvertSensor      != oldInvert)   ||
         (MDL.EthIP0 != oldE0) || (MDL.EthIP1 != oldE1) || (MDL.EthIP2 != oldE2);
 
     if (changed)

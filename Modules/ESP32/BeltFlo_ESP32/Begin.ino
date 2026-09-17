@@ -69,91 +69,22 @@ void DoSetup()
 	Wire.begin();			// I2C on pins SCL 22, SDA 21
 	Wire.setClock(400000);	//Increase I2C data rate to 400kHz
 
-	// ADS1115
-	if (MDL.ADS1115Enabled)
+	// Belt travel sensor — one pulse per target on a belt roller. Rising edge
+	// only: a proximity sensor's trailing edge carries no extra information, and
+	// counting both would halve the travel each pulse stands for.
+	if (MDL.BeltPin < NC)
 	{
-		Serial.print("Starting ADS1115 at address ");
-		Serial.println(ADS1115_Address);
-		while (!ADSfound)
-		{
-			Wire.beginTransmission(ADS1115_Address);
-			Wire.write(0b00000000);	//Point to Conversion register
-			Wire.endTransmission();
-			ADSfound = (Wire.requestFrom(ADS1115_Address, 2) == 2);
-			Serial.print(".");
-			delay(500);
-			if (ErrorCount++ > 10) break;
-		}
-		Serial.println("");
-		if (ADSfound)
-		{
-			Serial.println("ADS1115 found.");
-			Serial.println("");
-
-			// Configure ALERT/RDY pin for conversion-ready mode:
-			// Set Hi_thresh MSB=1 and Lo_thresh MSB=0 — this puts ALERT/RDY
-			// into conversion-ready mode regardless of comparator settings.
-			Wire.beginTransmission(ADS1115_Address);
-			Wire.write(0x02);		// Hi_thresh register
-			Wire.write(0x80);		// 0x8000 MSB
-			Wire.write(0x00);
-			Wire.endTransmission();
-
-			Wire.beginTransmission(ADS1115_Address);
-			Wire.write(0x03);		// Lo_thresh register
-			Wire.write(0x00);		// 0x0000
-			Wire.write(0x00);
-			Wire.endTransmission();
-
-			// Attach interrupt — ALERT/RDY is open-drain active-low
-			pinMode(MDL.AlertPin, INPUT_PULLUP);
-			attachInterrupt(digitalPinToInterrupt(MDL.AlertPin), onADSReady, FALLING);
-
-			// Start first conversion — moisture (AIN0-AIN1 differential, PGA=±4.096V, 16 SPS)
-			Wire.beginTransmission(ADS1115_Address);
-			Wire.write(0x01);		// Config register
-			Wire.write(0b10000011);	// OS=1, MUX=000 (AIN0-AIN1 diff), PGA=001 (4.096V), MODE=1
-			Wire.write(0b00100000);	// DR=001 (16 SPS), COMP_QUE=00
-			Wire.endTransmission();
-		}
-		else
-		{
-			Serial.println("ADS1115 not found.");
-			Serial.println("ADS1115 disabled.");
-			Serial.println("");
-		}
-	}
-
-	// Optical sensor
-	Serial.print("Starting optical sensor ... ");
-	if (MDL.MainPin < NC && (!MDL.UseCompSignal || MDL.CompPin < NC))
-	{
-		pinMode(MDL.MainPin, INPUT);
-		attachInterrupt(digitalPinToInterrupt(MDL.MainPin), onSensorEdge, CHANGE);
-		if (MDL.UseCompSignal)
-		{
-			pinMode(MDL.CompPin, INPUT);
-			attachInterrupt(digitalPinToInterrupt(MDL.CompPin), onSensorEdge, CHANGE);
-		}
-		BeamBlocked = ((digitalRead(MDL.MainPin) == HIGH) == MDL.InvertSensor);	// PNP: HIGH = clear; NPN inverted
-		LastEdgeUs = micros();
-		SegStartUs = LastEdgeUs;
-		Serial.println(MDL.UseCompSignal ? "OK (Main + Comp)." : "OK (Main only).");
-	}
-	else
-	{
-		Serial.println("pins not configured.");
-	}
-
-	// RPM sensor
-	if (MDL.RPMpin < NC)
-	{
-		Serial.print("Starting RPM sensor ... ");
-		pinMode(MDL.RPMpin, INPUT);
-		attachInterrupt(digitalPinToInterrupt(MDL.RPMpin), onRPMedge, RISING);
-		LastRPMedgeUs = micros();
+		Serial.print("Starting belt sensor ... ");
+		pinMode(MDL.BeltPin, INPUT);
+		attachInterrupt(digitalPinToInterrupt(MDL.BeltPin), onBeltPulse, RISING);
 		Serial.println("OK.");
 	}
+
+	// Conveyor scale converter. A module that cannot find it still runs and still
+	// talks to the app — the ScaleOK flag stays clear and the app says so, which
+	// is more use in the field than a module that looks dead.
+	Serial.print("Starting NAU7802 scale ... ");
+	Serial.println(ScaleSetup() ? "OK." : "not found.");
 
 	// Wifi access point — see Wifi.ino
 	StartWifiAP();
@@ -186,7 +117,7 @@ void DoSetup()
 
 	server.begin();
 
-	MDNS.begin("yieldflo");
+	MDNS.begin("beltflo");
 
 	/* INITIALIZE ESP2SOTA LIBRARY */
 	ESP2SOTA.begin(&server);
@@ -301,11 +232,7 @@ bool PinValid(uint8_t pin)
 bool ValidData()
 {
 	// optional pins: NC allowed, otherwise must be in the valid list
-	if (MDL.RPMpin != NC && !PinValid(MDL.RPMpin)) return false;
-	if (MDL.CompPin != NC && !PinValid(MDL.CompPin)) return false;
-	if (MDL.MainPin != NC && !PinValid(MDL.MainPin)) return false;
-	if (MDL.AlertPin != NC && !PinValid(MDL.AlertPin)) return false;
-	if (MDL.AnalogPin != NC && !PinValid(MDL.AnalogPin)) return false;
+	if (MDL.BeltPin != NC && !PinValid(MDL.BeltPin)) return false;
 
 	// CAN pins are fixed by the PCB and never NC. A corrupt value here makes
 	// TWAI start on the wrong GPIO: the controller reads permanent dominant,
@@ -326,19 +253,12 @@ void LoadDefaults()
 {
 	Serial.println("Loading default settings.");
 
-	strncpy(MDL.APname, "YieldFlo_ESP32", ModStringLengths);
+	strncpy(MDL.APname, "BeltFlo_ESP32", ModStringLengths);
 	strncpy(MDL.APpassword, "", ModStringLengths);
 	MDL.WifiModeUseStation = false;
 	strncpy(MDL.SSID, "Tractor", ModStringLengths);
 	strncpy(MDL.Password, "111222333", ModStringLengths);
-	MDL.ADS1115Enabled = true;
-	MDL.RPMpin = 35;
-	MDL.CompPin = 32;
-	MDL.MainPin = 33;
-	MDL.UseCompSignal = false;	// safe side — see the note on the struct field
-	MDL.InvertSensor = false;
-	MDL.AlertPin = 16;
-	MDL.AnalogPin = NC;
+	MDL.BeltPin = 34;
 	MDL.CommMode = CommModeWifi;
 	MDL.CanTxPin = 14;
 	MDL.CanRxPin = 27;

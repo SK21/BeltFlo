@@ -17,15 +17,14 @@
 // User Defined Errors to Ignore below... [vm.intellisense.ignore-error-codes]
 #include <arduino.h>
 #include <pins_arduino.h> 
-#include "..\YieldFlo_ESP32.ino"
-#include "..\Analog.ino"
+#include "..\BeltFlo_ESP32.ino"
 #include "..\Begin.ino"
 #include "..\Comm.ino"
-#include "..\Flow.ino"
 #include "..\GUI.ino"
 #include "..\PgMain.ino"
 #include "..\PgUpdate.ino"
 #include "..\PgWifi.ino"
+#include "..\Scale.ino"
 #include "..\Wifi.ino"
 #endif
 #endif

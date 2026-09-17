@@ -139,7 +139,7 @@ String GetPageWifi()
     st += "<head>";
     st += "<META content='text/html; charset=utf-8' http-equiv=Content-Type>";
     st += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
-    st += "<title>YieldFlo WiFi</title>";
+    st += "<title>BeltFlo WiFi</title>";
     st += GetPageStyle();
     st += "</head>";
     st += "<BODY>";
