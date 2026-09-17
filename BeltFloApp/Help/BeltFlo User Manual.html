@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>YieldFlo User Manual</title>
+<title>BeltFlo User Manual</title>
 <style>body { font-family: Segoe UI, Arial, sans-serif; font-size: 11pt; max-width: 900px; margin: 40px auto; color: #222; }
 h1 { font-size: 22pt; border-bottom: 2px solid #333; padding-bottom: 6px; }
 h2 { font-size: 15pt; border-bottom: 1px solid #aaa; margin-top: 1.4em; }
@@ -29,14 +29,19 @@ li { margin: 2px 0; }
 }</style>
 </head>
 <body>
-<h1 id="yieldflo-user-manual">YieldFlo User Manual</h1>
+<h1 id="beltflo-user-manual">BeltFlo User Manual</h1>
 
-<p>YieldFlo is a yield monitoring application that works alongside AgOpenGPS (AOG). It records yield rate, moisture, and GPS position continuously while harvesting, and produces spatial yield maps and job reports.</p>
+<p>BeltFlo is a yield monitoring application for potato and other root crops, working alongside AgOpenGPS (AOG). It weighs the crop crossing a conveyor scale on the harvester, records yield and GPS position continuously while digging, and produces spatial yield maps, truck load records and job reports.</p>
 
-<p>YieldFlo receives GPS and section control data from AOG over a local network (UDP). A YieldFlo hardware module connects to the combine's clean-grain elevator and moisture sensor and sends live readings to the PC application.</p>
+<p>BeltFlo receives GPS and section control data from AOG over a local network (UDP). A BeltFlo hardware module reads load cells under a weighed section of the harvester's conveyor, counts belt travel, and sends cumulative pounds to the PC application.</p>
 
-<hr>
+<p><strong>Weight alone is not enough.</strong> A load cell reads how much crop is sitting on the weighed section at that instant, not how much has gone past. BeltFlo multiplies that load by how far the belt has moved:</p>
 
+<blockquote><p>pounds = load on the weighed section × (belt travel ÷ section length)</p></blockquote>
+
+<p>This is why belt travel is counted rather than timed. Conveyor speed varies with engine revs and hydraulic flow, so anything measured against the clock would be wrong whenever the machine changed speed.</p>
+
+<blockquote><p><strong>Work in progress.</strong> BeltFlo is under active development and has not yet been run on a harvester. Treat every number it produces as unproven until you have checked it against certified truck weights.</p></blockquote>
 <h2 id="table-of-contents">Table of Contents</h2>
 
 <ol>
@@ -47,8 +52,8 @@ li { margin: 2px 0; }
 <li><a href="#5-conveyor-setup">Conveyor Setup</a></li>
 <li><a href="#6-profiles">Profiles</a></li>
 <li><a href="#7-fields">Fields</a></li>
-<li><a href="#8-yield-calibration">Yield Calibration</a></li>
-<li><a href="#9-moisture-calibration">Moisture Calibration</a></li>
+<li><a href="#8-scale-calibration">Scale Calibration</a></li>
+<li><a href="#9-loads">Loads</a></li>
 <li><a href="#10-yield-map">Yield Map</a></li>
 <li><a href="#11-job-report">Job Report</a></li>
 <li><a href="#12-settings">Settings</a></li>
@@ -56,8 +61,6 @@ li { margin: 2px 0; }
 <li><a href="#14-module-web-portal">Module Web Portal</a></li>
 <li><a href="#15-troubleshooting">Troubleshooting</a></li>
 </ol>
-
-<hr>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
@@ -73,42 +76,45 @@ li { margin: 2px 0; }
 <tr><td>AgOpenGPS</td><td>Running on the same PC or local network</td></tr>
 </table>
 
-<p><strong>No installer is required.</strong> Extract the YieldFlo folder to any location and run <code>YieldFlo.exe</code>.</p>
+<p><strong>No installer is required.</strong> Extract the BeltFlo folder to any location and run <code>BeltFlo.exe</code>.</p>
 
 <h3>Hardware module</h3>
 
 <ul>
-<li>YieldFlo module (based on ESP32) mounted on the combine</li>
-<li>Connected to the clean-grain elevator optical sensor</li>
-<li>Connected to the capacitance moisture sensor (optional)</li>
-<li>Communicates with the PC via WiFi or CAN bus</li>
+<li>BeltFlo module (based on ESP32) mounted on the harvester</li>
+<li>Connected to load cells under a weighed section of the conveyor</li>
+<li>Connected to a proximity sensor counting belt travel</li>
+<li>Communicates with the PC via WiFi, wired Ethernet or CAN bus</li>
 </ul>
 
 <h3>Network</h3>
 
 <ul>
-<li><strong>WiFi mode:</strong> connect the PC to the same WiFi network as the YieldFlo module, or directly to the module's access point</li>
+<li><strong>WiFi mode:</strong> connect the PC to the same WiFi network as the BeltFlo module, or directly to the module's access point</li>
 <li>AOG must be running and broadcasting GPS/section data on the local network</li>
 </ul>
 
 <h3>Recommended first-run setup</h3>
 
-<p>On first launch YieldFlo creates a default crop, header, and profile. Before starting your first job:</p>
+<p>On first launch BeltFlo creates a default crop and profile. The order below matters: each screen depends on the ones above it.</p>
 
 <ol>
-<li>Open <strong>Menu &rarr; Settings</strong> and select your preferred units (bu/ac or t/ha)</li>
-<li>Open <strong>Menu &rarr; Profiles</strong> and enter your combine ID</li>
-<li>Open <strong>Menu &rarr; Crops</strong> and add or edit crops for your operation</li>
-<li>Open <strong>Menu &rarr; Headers</strong> and enter the correct cutting width</li>
-<li>Open <strong>Menu &rarr; Fields</strong> and add field names if desired</li>
+<li>Open <strong>Menu → Settings</strong> and select your units — cwt/ac, tons/ac or t/ha</li>
+<li>Open <strong>Menu → Profiles</strong> and describe the harvester: rows, row spacing, how far the digger sits ahead of the tractor's pivot, and whether the scale weighs into the truck or into a tank</li>
+<li>Open <strong>Menu → Conveyor Setup</strong> and measure the belt, the weighed section and the thresholds</li>
+<li>Open <strong>Menu → Scale Calibration</strong> and zero the scale on an empty running belt, then set the span with a known weight</li>
+<li>Open <strong>Menu → Crops</strong> and add the crops you dig</li>
+<li>Open <strong>Menu → Fields</strong> and add field names if desired</li>
 </ol>
+
+<p>Steps 2 to 4 are the installation. They are done once per harvester and they decide whether every number after them is right.</p>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
 
 <h2 id="2-main-screen">2. Main Screen</h2>
 
-<p>The main screen displays live harvest data and job status.</p>
+<p>The main screen displays live harvest data, the open truck load, and job status.</p>
 
 <h3>Toolbar buttons</h3>
 
@@ -116,13 +122,15 @@ li { margin: 2px 0; }
 
 <table>
 <tr><th>Button</th><th>Action</th></tr>
-<tr><td><img class="btn-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAO5SURBVGhD7ZjbK3xRFMd//9W4xaCYXELKg0spGpIn4YFikoR4cylPUjQpt1JueXIr5cWLXMIDKQ+E3C/L77vqnOYcy8zeZ6ZO6qz61HTWd/Y+33P2Ze3zz+fz+f8T+qvAAH7QX8Uz4DaeAbfxDLiNZ8BtPAPRyMnJobKyMjGXKBJiIC8v78e1lJQU2tnZocfHR2poaPiRz8rKYuzXdYnLAJ7wwsIC3d7e0uDgoCWXkZFBV1dXhOju7rbkCgsL6fT0lE5OTqixsdGS08WxgeLiYtrf3+cbRIyPj1vy6enpdH5+zrnOzk5LrrS0lF5fXzn39vZGfX19lrwOjgzk5+fT4eEh38DHxweNjY2R3++3aKIZAMFg0Gzj6+uLenp6fmhU0DaQmppKm5ub3DGeYkdHh6iLZQBg7uzt7bEGbdXX14u6aGgbGBgY4A4Rvb29ogaoGAAwcXZ2xrqjoyPKzMwUdb+hZQCdXV9fc2dra2uixkDVAMBENuaEfTGIhZYB4+ljaYy1vusYAEtLS6zFW7DPp2goG0hKSqLd3V3uZHl5WdREomsA4x+TGVFXVydqJJQNFBUV0c3NDXcQCoVETSS6BrBvYG9ADA8PixoJZQO1tbXc+Pv7O1VVVYmaSHQNgNXVVdYvLi6KeQllA01NTdz43d0dFRQUiJpI8EQvLi74P11dXaLGTjgcZv3GxoaYl1A20NzczI2jbJBqHztpaWnmRoX/Sho7U1NTrN/e3hbzEsoGsNQhnp6euBSQNHYqKyuptbWVzUh5O/Pz89zH+vq6mJdQNlBeXk4vLy+8UsRbgEkkJyebqxzehKSRUDaAHdJYJUZHR0VNPKBCvb+/5/ZVJz1QNgDm5ua4g4ODA+VhoQoqUsTDwwOVlJSIGgktAziYGNHe3i5qnICd15jwKFGwaUo6CS0DqERxykJgjc/NzRV1umBIIj4/P7nMljS/oWUA1NTUmIUXnhZMSTpVsMQ+Pz9zexiikiYa2gbA0NAQd4jArqlTfEXS0tJiTtzj42NHb9SRAYzR6elp7hiB5a+6ulrUSuAwj2GD4yTi8vKSKioqRG0sHBkAWLcnJib4BhAosWdmZngMS18boEdB2N/fb05YBH5jj7HrVXFswKCtrc0s2ozA1wYUZqhtJicneYfFWzKGCwITdnZ2ls/XUruqxG0ABAIBLoFxGIkVMLGysiJ+K3JCQgwYZGdn842NjIzw5Mbhf2tri2sblAf4AKCzSamQUANu4BlwG8+A23gG3MYz4DZ/3ICPvgHrsDkSFjQkVwAAAABJRU5ErkJggg==" alt="Exit icon"><strong>Exit</strong></td><td>Close YieldFlo</td></tr>
-<tr><td><img class="btn-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAS4SURBVGhD7ZjpK31dFMef/8qcWUoIhReIMg8hZHj1mMlMGaIMeSVjEm9MeUckkkyRqcxlfGFYv993u/t2Hetc+16e56buqk9u9vfss7/n7LPWOucfBwcHj7/8+1uBAfyg34rdgK2xG7A1dgO2xm5Ai4+PD8XHx1NRURFVVVVRdXU1lZSUUGZmJoWGhrLHfIcfMeDk5CQWOD4+TsfHx/T6+kpc3Nzc0PLyMjU2NlJwcDA7l6V820BGRgYtLi4alvgeb29vdHFxQQcHB7S3t0cnJyd0f39vGH2Ps7MzamtrIw8PD3ZeVaw24OLiQt3d3fT8/GxYEtHq6io1NTVRYmIiBQQEkLu7O7m5uYltFRkZKbYV7tLt7a3hCKL19XWKi4tjz6GCVQa8vLxoenrasASizc1Nys/PF1uJ02sJDw+noaEh41a7urqirKwsVvsVFhtwdXWlmZkZcWLEwMAAeXt7s9qvyM3NpfPzczHP3d0dJScnszpzWGygp6dHnBDR1dXFaiwhOjpaPCMIJICgoCBWp4dFBlJTU417fnBwkNVYQ0JCgvG5mJqaYjV6KBvA1kEKRGxvb387e2hpaGgQcyODpaWlsRoOZQPI8/IEeXl5n8Y9PT2puLiYYmJiPo2pgGy1sbEhzjE3N0eOjo6sTouygYmJCTH52toam23Ky8vFODKKNQ8jKCsrE3M8PDxQREQEq9GiZAB5/PT0VEyOKsppkMuvr6+FBn85E7iqqAeYTzsG/P396fLyUsxRWVnJarQoGUBvg5yNBxi/OQ3AouUCcCeSkpI+jGdnZ9PT0xPNzs7qbpH5+Xlx/NjYGDuuRckAKigC7QEqLKeRYNFYPEK7nerr68X/0WI4Ozt/OE7S29srNGhPuHEtSgbQUSJwYrQHnMYUmEDjhjA1IefZ2trSNYAtKjUqlV3JQE1NjZgUjRnSKafRgkWbPhNRUVHGO2nOgLxLSNV6GlOUDKCfR6Bi6j2AHDAht9Ph4aHY1whzBtChIpDtVFKpkgFZA9ASoxHjNHog6+DOmYY5A9Ik+i1uXIuSgbCwMGOpLywsZDUSXDUYrq2tFXtettAogDL0DKBFx9ZBdHZ2fhrnUDKARa2srIiJsRhOI8EV/yqQDLgHFCn65eVFaNLT0z+NcygZADI74E6EhISwGuDn5yduP7YNrrSW3d1dam1tZY+V2wfHojXhNFqUDQQGBhqzyvDwMKsxBVtED04fGxtLj4+PYv6WlhZWw6FsAMgMgYqck5PDaqwBtUVu0aOjI/L19WV1HBYZwKuk7BjxUo6XEU5nCXgWRkdHxZyIgoICVqeHRQYAFi2rLBo8vIxwOhVw5UdGRsRciP7+flZnDosNALyA4x0WgYca1RP9PKfVAxlHviAhkN2QRjmtOawyAFJSUkQ6lIHPI6WlpWabPbQhqM7INuhKZeDK6z3cX2G1AYCva5OTk4ZlvAc61oWFBerr6xOpt66ujtrb28WikUZNv9rt7++LQsfNrcq3DEjwdQ65X/v1TS92dnaoubnZomyjx48YkKAKV1RUiKyytLRkLF5ozPAhrKOjQ1RY1SKlwo8a0IIUae3eVuU/NfB/YDdga+wGbI3dgK355QYc6A/ZSOwuy+eZOgAAAABJRU5ErkJggg==" alt="─ icon"><strong>─</strong></td><td>Switch to compact (mini) view — see below</td></tr>
-<tr><td><img class="btn-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAIhSURBVGhD7Zi7iiJBFIb3vbwHookGooEogggaiW8g7Q2v6AsYGBsoKqipT2Ci4l0UczHyhp6ZKnaXabcGqsfqrp3dOvDR0NX8pz6L5jT+0Ol05nek7woSkPR6PXxXhABvhABvhABvhABv/h8Bg8EAgUAAQqEQBINB1UD5DoeDuAcSVAJWqxX6/T5cLhdA9Xg8VOFX7XY7iEajxL08QyUQj8d/RgOcz2fVOJ1OcLvdcJ/hcIhPnbSfj1AJlMtlHLper8Hv94PX6wWfz8cct9sN1WoV91oul2AymYj7+QiVQLFYxKGTyYS4zpJMJoN7zWYz9gK0oa+gtJcQcLlckM/noVQq4edoqVQqEIvFZFkItPZZLxIvC3S7Xbz2lbrf7+DxeGR5mgskk0mYTqd4TQmr1QrPFpvNJsvTXIA1XATQPYvFogiz2fxHDkJzgWw2C5vNBrbbLb7Sst/vYTAYgN1ul+VpLtDpdPDaV+p6vfJ/iZ1OJ0iSBKlUChKJBDXpdBoikYgsC6G5AGs0F0CDLJfLKR5k6ANRDLJ3Xhb4JwaZ0WjE95XynIPgIsAS1QXQr016hhWFQuF3L+YC4/GYuM4SNB9Qzedz9gLH4xG/eL1eD19Z0263YTQa4V6LxYLqtKkE0P9Bh8MBB2tVtVqNuJdnqAQQ4XAY6vU6tFotaDQaqtBsNvEpoKH42dfqM9QCfytCgDdCgDdCgDdCgDdCgC96eANXUfkOYTVm9AAAAABJRU5ErkJggg==" alt="Menu icon"><strong>Menu</strong></td><td>Open the main menu</td></tr>
-<tr><td><img class="btn-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAVWSURBVGhD7ZhZTJRXFMfHfd8fXOKWuMQ3l/jkWqPRuMTtWX1xeTFsZbMii0IfVLRKQbHQaCACkQoIsjQGkILshVRKKasIDZRNZNFSWU7zP+UjA3NmvDPQTkjmJD+YzP1/937/b+4999xPp3PQfaGz0/mMW/iPvY7GLTYD1sZmwNrYDFgbm4ERLPNcRtvvbKdTYafI7gc7cnjqQBeiLtCh4EO03m89TXGaIl5nMWNhYNqX0+jk9ycpojCCalpryFi0f2yntIo0colzodU+q8W+zGa0Bg4GH6SMqozBW/w3+vr7qKqlivLf5lNubS6VNJTwzetHQ0cDeSV50YJLC8R+lbHUwAznGeSf5s83q0VqeSpPm803NtPSK0tpjuscmuUyixZ9tYjW+a6jE6EnKDQnlJq7mgevIMp+k01bbmwRx1DCEgO4objXcYO3QJRZnclzfILDBFE/kg1fb6CgzKAh8/g19t/bL2o/i7kGZrrMpPiSeB4YcTP1Js12nS1qP8fhB4epvr2e+2ntbqWdd3eKOpOYa+B2+m0eEHE54bKoMYet/luHFn5FcwWt9F4p6oxijgEs2N7+Xh7sVtotUWMJePLvPrzjfsPyw0SNUVQNIFXmvMnhQbDwsIgl3Y47O+hq8lXaeH2j2G4Mpxgn7hsPaG/gXlEjomrgeMhxHqB/oJ9/CUmDRZzwawLrMKfd4905C0nakeCBFNYV8rVPip+IGhFVA9ikEOmV6TTJcZKogYHE0kTWafGq5pVyhjkbcZav6ezppLXX1ooaA1QMLLmyhGrbarnzi9EXRQ2AAS1DYWF29XTxZ6TLgIwAWu61XLxOA+2NHY18zfnI86LGABUDqG0Qn/o+0abrm0QN0DeADIX1oE0LRGVLJZ0OP21yv0j+LZm1wVnBYrsBKgYwKKK6tZoWeywWNUDfgE+yD3+HUgGf3398z98jooujjT4I7O6IlLIUmugwUdQMQ8WA/VN77rTgbQGXB5IG6BvwTfEd1oZyIfLnyKHdF4v86HdHh2mA2zM3bs+qzqLpztMN2g1QMeAY48idojAzlVVMGQBnws9Q99/d3I5AlhqpQaWKwOLHrj+y3QAVA6jnEagqF15aKGqAvgG/H/2GvkdxF/s6lr9HtH1o40p0nvu8YdcD7CEIlN2THScbtBugYgCFGgIl8Zpra0QN0Dfg+syVDy8ezz14umiBdlPVZ3hBOOuiiqLEdgNUDOAkpS3CYyHHRA2AAW0ji/klZtiegLSK1GhsDwGYnqWNpayHcUljgIqBqU5T6WXlS+4Y9bykAfq/gBbYuUOyQ2iVzyrxGn32fLuHU/XAwADturtL1BigYgBgSiBauluMTiMYePH7C9YhkLWMlR0SKOQQRfVFXHtJGgNUDazwWjF0kgr8KVDUwAAyS9mfZeSd5E1z3eaKOolt32yjnt4e7h9pW9KIqBoAnomePAAGwmFE0gBzbhwgG6HCRSDTzXefL+pEzDGAjrEXIOra60Z3lh0EU0XLPJj/Rx4cEXVGMccAwE03dTbxgMgsyotNALu6Nu8RmHaSziTmGgAH7h3gxYzApoTDiNKuqQcyDnZbLVCtmkqxRrHEAMCTL28qHxye+LR2LvKcyRdWOPzvC9pHj/Ie8XRB4D/WlqRXwlIDAPX7w9yHw94N4RUJKkmcmVGYOcc6c3nwuPDx0CalRfEfxSY3RiVGY0ADZ1hs/R1/dQzemvHAJpVXm8epEu+XpP7MYiwMaODtG8qF+1n3Kak0iV94oSzGGzuU0jjk7A7Yrb5JqTCWBkaCgzpQqiot5b808L9gM2BtbAasjc2AtRnfBnT0D1SSTXkvZLHVAAAAAElFTkSuQmCC" alt="Start icon"><strong>Start</strong></td><td>Start a new job (opens Jobs menu) or resume the paused active job</td></tr>
-<tr><td><img class="btn-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAUSSURBVGhD7Zh5UJVVGMZv+77XtEw1TdvUf9X0V03btE3LTMtMaSmRimYZm4AsKouKI4SGBARigixCoqSCaKkoAoIskgrEDkIDsUWsOQq8+bxxme9e3ns593KLYea+Mz+Y+c7znXOe757lPUfnOkf3svMcXeBsRYc/LnN1NFuxG5hp7AZmGruBmcZuwJjVX95H4QHPU2LkfNoV70y7t7tSWtwSitnwNq1zf5zc510lvmctNjGw3OEa+mHTh1RasIO6OxrJVAwP9VJtRQ7tSfakQOeHxLosZdoGYja8RfVVueNd/DdGR0eo6496OldfTM11RdTWcpY7r42+3jbKTvcnn0W3ifWqYrUBj8+uo5ysMO6sPmoqjvCwCfV5mlYtvZe8FtxEno43kK/THbTW7THauvEDKszZSgN9neNvEDXVnqBQ32fENlSwygA6dKZkz3gXiBqq83iMu35ymag3Jnj5E5T3S9SEefwa0evfELVTYbEBT8fr6WzZPm4YcSTzG/L6/EZROxWxIe9Qb08r1zM40E2bA18Qdeaw2MDR/Zu4QURmmp+osYQwv2cnJn5ney0FfP2gqDOFRQYwYUdHLnJjOVkbRY014MsPDf7J9RYfTxQ1plA2gKWyqbaQG8HEwySWdNaSkejOdeMDRa57VdRIKBuIC3ufGxgbG+VfQtLAVHK0I0UEvTSpDKvSjthFFOzx5KQygHdbGku5jfLCnaJGQtkANilEXeVRcvv0ClGDlQjR1V5HKxbcbFCWnR7AZSV5yQbPtcAg4vxwP61xe1TUGKNkYNXSe6inq5krT9+2TNSAhIi5rOntbqGVX9xtUIY5gzhdnGHwXIv/V/dfWlLbWZe6ZbGoMUbJAHIbxMjIBQrxfkrUgG3hH7Gup7OJ/JbcZVB2eF8Il001PKp+PcC6/MMxYrkxSgaSohy40u6OhklfVostDGB3R/x2+uCljfFyUaNFycDuBBeu9FxDCacHkgbYwsDelBWsa6jOJw+Ha0WNFiUDGdvduFIkZshtJA2whQFkqojGmgLe9SWNFiUDyOcRyCp9nG4XNcAWBg7sCmId0m63eVeKGi1KBvTLI1LiNa6PiBpgCwMleUmsO3UiTSw3RskATlLDQ39xxXFh74kaEB/+MWuw5E42EMpl5UXpBs+1YHi2t1ayLuvHlaLGGCUD7vOvprqqY1wx8nlJA/T7APJ938V3GpTpk8CKskyD51q+W/sKL9VjY2O0OehFUWOMkgGwN8WLOzDY32VyGAW5PMzrOIaL8W4dFfw6VZ85xKmG9rkWJHKI1qZTnHtJGmOUDfgve2DiJHX850hRA8wdasxNym/9n6OLF85z/Vi2JY2EsgGwf+dqbgAN4TAiaazBe+EtnOEisNJ5L7xV1ElYZAAVYy9AIN+ZzllWD4aKfuXB+I8NfVfUmcIiAwCd7u/r4AZxklKdbBLY1fXjHoGMVdKZw2IDIHr9mzyZEUMDPXwYUdk1tWDFwW6rj9yDESbTdHNYZQDgy3e01Yw3j1NaIaXGOpm9sMLhPyr4NTqZm8DDBYH/mFuSXgWrDQDk70XH4g3uhnBFgkwS+T8Ss5+SPDg9KM1Pmdik9PF7c7nZjVGFaRnQgzMstv6/h/vGu2Y6sEk115/kpRL3S1J9lmATA3pw+4aTVP6h76myPJsvvJAW48aurCCVr2FwXlbdpFSwqQFjcFAHKlmltfynBv4P7AZmGruBmcZuYKaZ5QZ09A+HCdmMuVKCOgAAAABJRU5ErkJggg==" alt="Pause icon"><strong>Pause</strong></td><td>Manually pause recording</td></tr>
-<tr><td><img class="btn-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAUPSURBVGhD7ZhZTJRXFMfHfY/bg0vUmLjERzU+adQajcYlcXnWB+OSuGtcHjRqEbeKUEuhGjWFQgHlpQQti1YWF0CguCBJsaAICgFZtSpV4HT+h7mT6TfnG+58TDshmZP84OH+5977/757zz33swXbbF8F2Wxf91Rs+HPCZqOeSsCAvwkY8DcBA/4mYMDIt+PHU9S8efTL+vWUumsXpe3ZQze3bqX4FSsocvp0Otmvn/g7q/jEwKkBAyhx3Toqjo+nphcvyCw+NTXRy4wMun3gAIVPniz25S3dNhC/fDm9ys52TLEzOtraqLGsjN7k59PrvDyqLS7mybvG++pqyjp2jM6NHCn2q4tlA6cHDaLc8+d5sipe3rnDy+byrFkUNm4cnR02jM4MGUIho0dTxLRplLh2LRVdvUof6uocvyCqysmhK7Nni2PoYMkAJvRHUpJjCkSV9+7xGj/Rq5eoN/LDjBlUEBnpNI+38fPSpaK2K7w2cGbwYCpNTuaBETkhIXR26FBR2xUJK1dSS1UV9/Oxvp6i588XdZ7w2kBeWBgPiMg4fFjUeMOVOXOcG7/h+XP6btIkUWeGVwawYdu/fOHBckNDRY0V8OQ/NTZyv09iYkSNGdoGkCpf5+byINh42MSSzirp+/Zx33hAsYsXixoJbQPX16zhATra2/lNGNu/GT6ckjdupPS9ezkTSaTt3k2pO3fS5Zkz3X6PB1JdWMhjlCQmurWboW0AhxSiIjOTgvv0cWu/sWkTt+sE0u2p/v1N+/j73TuKmDrVrV1Cy0DY2LHUXFHBnafs2CFq1BLA4FUPHtCru3c5vSoqsrKosbycNViCyGbGPi5MmEDva2pYc3PLFrd2CS0DqG0Q7Z8/i68fYIkgMHEsp9MDB/KyUOCJYwkhKu/fN91DZamprPn90iWx3YiWgaQNG7hTPMHQMWNEjauBk337ipqU7dtZgzdiZgCnO6IsLY2Ce/cWNa5oGVBPrrqggMsDSaMMeJqcjua3Q4c6NXhL9rcoaVzRMoDMgkBhhtpG0vjKACpVBPaRtE+MaBlAPY9AVRkyapSo8ZWB7KAg1qDsNluKrmgZQKGGQEn8/ZQpokZNDgNL7UClSU8GnsbGsubZtWtiuxEtA7hJtTY3c8fXV68WNWqf4B6AlIp0C1OKX7dt4wMKYZaFsDzrSkpYk3HkiFu7hJYBpEDkcQTqeUmjzgGdwIkrGYhZtIhTNXV0UPSCBW7tEloGwO2DB3nwD2/fissIl5jy9HTefFgibtifOv4jzSIpSHcHFHKImqIirr2M7RLaBi5MnOi8SRVERIga5G1kDjxdU0xS449z51Jbayv3j+UoaSS0DYDMo0d5AAyEy4iksQJObpQXCGS6cyNGiDoJrwygY5wFiJbKym7dZRVYKirzYP0nrFol6szwygDApP+qreUBcZPS3WwSONXVukdkHT8u6jzhtQEQt2wZb2bEx4YGzkA6p6YryDjY8Cryw8PFMr0rLBkAePL1paWO4e1lhv22dmPzZo8frHD5j12yhB5HR3emS3vgP/aWpNfBsgGA+v1xVNS/vg3hEwkqSdyZUZjd2r+fy4PiuDjnIaWi5tEj04NRl24ZUOAOi6O/taXFMTUPYT+k3jx8yKkS35ek/rzBJwYU+PqGm1ThxYv0Z0qK8wDDFfJZQgJ/hvlp4ULtQ0oHnxowog4vnarSKv+pgf+DgAF/EzDgbwIG/E0PN2CjfwCA2AFhBdY7qgAAAABJRU5ErkJggg==" alt="Stop icon"><strong>Stop</strong></td><td>Stop and close the current job (requires confirmation)</td></tr>
+<tr><td><strong>Exit</strong></td><td>Close BeltFlo</td></tr>
+<tr><td><strong>─</strong></td><td>Switch to compact (mini) view — see below</td></tr>
+<tr><td><strong>Menu</strong></td><td>Open the main menu</td></tr>
+<tr><td><strong>▶</strong></td><td>Start a truck load, or resume counting after a pause</td></tr>
+<tr><td><strong>⏸</strong></td><td>Pause — stop counting everything</td></tr>
+<tr><td><strong>⏹</strong></td><td>Finish the open truck load (asks first)</td></tr>
 </table>
+
+<p><strong>▶ and ⏹ control the truck load, not the job.</strong> Jobs are started and finished only on the Jobs screen, so a mistaken tap in a moving cab can never end a day's job.</p>
 
 <p>The menu screen has a <strong>?</strong> button in its title bar that opens this manual.</p>
 
@@ -130,34 +138,43 @@ li { margin: 2px 0; }
 
 <table>
 <tr><th>Panel</th><th>Description</th></tr>
-<tr><td><strong>YIELD</strong></td><td>Instantaneous yield rate (bu/ac or t/ha), smoothed over recent readings</td></tr>
-<tr><td><strong>MOISTURE</strong></td><td>Live grain moisture percentage from the capacitance sensor</td></tr>
-<tr><td>Totals area</td><td>Total area harvested, total mass, and average yield for the current job</td></tr>
+<tr><td><strong>YIELD</strong></td><td>Instantaneous yield rate, smoothed over recent readings</td></tr>
+<tr><td><strong>LOAD n</strong></td><td>Weight in the truck being filled, numbered within the job. Blank between loads. Tap the title to open the Loads screen.</td></tr>
+<tr><td>Totals area</td><td>Average yield, total harvested, and area worked for the current job</td></tr>
 </table>
+
+<p>While paused, the load weight turns orange and its unit is replaced by <strong>PAUSE</strong>, so a pause left on by mistake is hard to miss.</p>
 
 <h3>Sensor bars</h3>
 
 <p>Two horizontal bar gauges below the data panels:</p>
 
 <ul>
-<li><strong>Elev Flow:</strong> Grain obstruction percentage in the clean-grain elevator. Higher = more grain flowing.</li>
-<li><strong>Moisture:</strong> Relative moisture sensor reading scaled to a 0–30% range.</li>
+<li><strong>Flow:</strong> crop crossing the scale, in lb/min or kg/min.</li>
+<li><strong>Belt:</strong> belt speed, in ft/min or m/min. The bar turns blue while the module reports the belt running.</li>
 </ul>
+
+<p>Both read as a fraction of the full-scale values set on the Conveyor Setup screen. Set those from what your machine actually reaches, or the bars tell you nothing.</p>
 
 <h3>Status bar</h3>
 
 <table>
 <tr><th>Indicator</th><th>Green</th><th>Orange</th><th>Red / Silver</th></tr>
 <tr><td><strong>GPS</strong></td><td>AOG connected and sending position</td><td>—</td><td>No AOG data</td></tr>
-<tr><td><strong>Module</strong></td><td>Module data received within 5 s</td><td>Module connected but the sensor is not reading — shows <code>MODULE - NO SENSOR</code></td><td>No module data</td></tr>
-<tr><td><strong>Job name</strong></td><td>Job recording (active)</td><td>Job paused</td><td>No active job (silver)</td></tr>
+<tr><td><strong>Module</strong></td><td>Packets arriving and the module confirms it is receiving settings</td><td>Module sends but is not hearing BeltFlo — check the connection</td><td>No module data</td></tr>
+<tr><td><strong>Scale</strong></td><td>Converter answering, scale tared, belt sensor keeping up</td><td><strong>Zero</strong> — not tared yet; <strong>Belt</strong> — weight moving with no belt pulses</td><td>Red: scale fault or overload</td></tr>
+<tr><td><strong>Job name</strong></td><td>Job recording</td><td>Job paused</td><td>No active job (silver)</td></tr>
 </table>
 
-<p>When YieldFlo displays a notification (e.g. export complete, error), a full-width message overlays the status bar for 10 seconds then clears automatically. Yellow text = informational; red text = error.</p>
+<p><strong>The Scale indicator disappears entirely when there is nothing to report</strong> — no module, or no recent status from it. That is deliberate: the Module indicator beside it already says the link is down, and showing Scale in red as well would accuse the load cells of a fault that has not been observed.</p>
+
+<p><strong>Orange Belt</strong> deserves attention: it means weight is moving across the section but no belt pulses are arriving. Because BeltFlo multiplies weight by belt travel, a dead belt sensor records <em>zero pounds</em> while the harvester digs — it does not read high or low, it reads nothing.</p>
+
+<p>When BeltFlo displays a notification, a full-width message overlays the status bar and clears itself. Yellow text = informational; red text = error. Repeating alarms clear the moment you deal with them.</p>
 
 <h3>Compact (mini) view</h3>
 
-<p>Press <strong>─</strong> in the top-right corner of the main screen to switch to a small floating overlay that shows only the live yield reading. This is useful when running YieldFlo alongside AgOpenGPS on a single monitor.</p>
+<p>Press <strong>─</strong> in the top-right corner of the main screen to switch to a small floating overlay that shows only the live yield reading. This is useful when running BeltFlo alongside AgOpenGPS on a single monitor.</p>
 
 <p>The compact overlay can be dragged anywhere on screen. Press the restore button on the overlay to return to the full main screen. Its position is remembered between sessions.</p>
 
@@ -166,30 +183,42 @@ li { margin: 2px 0; }
 
 <h2 id="3-jobs">3. Jobs</h2>
 
-<p><strong>Menu: Menu &rarr; Jobs</strong></p>
+<p><strong>Menu: Menu → Jobs</strong></p>
 
-<p>A job records yield, moisture, GPS position, and area for a single harvest session. Each job is linked to a crop, header, and profile.</p>
+<p>A job records yield, GPS position, area and truck loads for a single harvest session. Each job is linked to a crop, a harvester profile, and the number of rows being harvested.</p>
 
 <h3>Starting a job</h3>
 
 <ol>
 <li>Press <strong>Menu</strong> on the main screen, then <strong>Jobs</strong></li>
-<li>Press <strong>New</strong> — a draft job is prepared with a default name and the current Crop/Header/Profile, and the <strong>Field</strong> drop-down is focused</li>
+<li>Press <strong>New</strong> — a draft job is prepared with a default name and the current crop and profile</li>
 <li>Select a <strong>Field</strong> (optional) — this replaces the default job name with the field name; the <strong>Job Name</strong> can still be edited afterward</li>
-<li>Adjust <strong>Crop</strong>, <strong>Header</strong>, and <strong>Profile</strong> if needed</li>
+<li>Adjust <strong>Crop</strong> and <strong>Profile</strong> if needed</li>
+<li>Set <strong>Rows</strong> — see below</li>
 <li>Enter any <strong>Notes</strong> for the job (optional)</li>
-<li>Press <strong>Save</strong> — this creates the job and starts it immediately (prompts for confirmation if another job is currently active)</li>
+<li>Press <strong>Start</strong></li>
 </ol>
 
-<p>Recording begins automatically when harvesting conditions are met (speed &gt; 0.5 km/h and AOG sections are on).</p>
+<p>The buttons on this screen are <strong>New</strong>, <strong>Start</strong>, <strong>Finish</strong>, <strong>Save</strong>, <strong>Delete</strong> and <strong>Close</strong>. Starting and finishing a job happens only here, never from the run screen.</p>
+
+<p>Recording begins when harvesting conditions are met: the machine moving above 0.5 km/h, AOG sections on, and crop crossing the scale above the empty-belt threshold.</p>
+
+<h3>Rows harvested</h3>
+
+<p><strong>Rows</strong> defaults to the harvester's own row count from the profile, and that is right for most fields. Raise it when digging a <strong>windrowed</strong> field, where the machine picks up rows that were lifted and laid together earlier — it is collecting crop from more rows than it has diggers, and the area worked per pass is correspondingly wider.</p>
+
+<p>The width the job uses is rows × row spacing, shown beside the setting. Saving a new row count on a running job applies it immediately.</p>
+
+<p>There is no rows control on the run screen. It is not needed: BeltFlo already divides by the width actually meeting standing crop, so a half-overlapped pass at the end of a field comes out at the right yield without anyone touching a control while driving.</p>
 
 <h3>Managing jobs</h3>
 
-<p>The jobs list shows all saved jobs with their status, date, area, and linked field. Click a column header to sort by that column.</p>
+<p>The jobs list shows all saved jobs with their status, date, area and linked field. Click a column header to sort by that column.</p>
 
 <table>
 <tr><th>Action</th><th>Description</th></tr>
-<tr><td><strong>Load</strong></td><td>Make a saved job the active job (prompts if another job is already active)</td></tr>
+<tr><td><strong>Start</strong></td><td>Make a saved job the active job (prompts if another job is already active)</td></tr>
+<tr><td><strong>Finish</strong></td><td>Close the active job and write its totals</td></tr>
 <tr><td><strong>Delete</strong></td><td>Permanently remove a job and all its recorded data — cannot be undone</td></tr>
 </table>
 
@@ -197,72 +226,75 @@ li { margin: 2px 0; }
 
 <h3>Auto-pause</h3>
 
-<p>The job automatically pauses when harvesting stops:</p>
+<p>The job pauses itself when harvesting stops:</p>
+
 <ul>
 <li>Machine speed falls below 0.5 km/h, <strong>or</strong></li>
-<li>AOG turns all header sections off (e.g. turning on headland, travelling over harvested ground)</li>
+<li>AOG turns all sections off (turning on the headland, travelling over dug ground)</li>
 </ul>
 
 <p>When auto-paused the job name turns orange in the status bar. Recording resumes automatically when harvesting conditions return.</p>
 
-<h3>Sensor fault pause</h3>
+<h3>Scale fault pause</h3>
 
-<p>Recording also stops if the yield sensor stops reading — the module reports a sensor error, module data stops arriving, or the sensor reads nothing at all for 30 seconds while harvesting. The Module indicator turns orange and shows <code>NO SENSOR</code>, and a red message appears if this interrupts a pass.</p>
+<p>Recording also stops if the scale stops being trustworthy — the module reports a converter fault or an overload, or module data stops arriving. The Scale indicator turns red and a message appears.</p>
 
-<p>Clean the sensor lens and check its wiring. Recording resumes automatically once the sensor reads again.</p>
+<p>The pass in progress is ended at the last good position, so the map shows a gap over the ground crossed while the scale was down rather than filling it with a yield that was never measured. That ground is not counted in the job's acres or pounds.</p>
 
-<p>The pass in progress is ended at the last good position, so the map shows a gap over the ground crossed while the sensor was down rather than filling it in with a yield that was never measured. That ground is not counted in the job's acres or bushels.</p>
+<h3>Pause — and what it means</h3>
 
-<h3>Manual pause and resume</h3>
+<p>Press <strong>⏸</strong> on the main screen to pause. <strong>Pause stops counting everything</strong>: nothing goes to the job, nothing to the open truck load, and no map points are recorded. Press <strong>▶</strong> to resume.</p>
 
-<p>Press <strong>Pause</strong> on the main screen to manually pause recording. Press <strong>Start</strong> to resume.</p>
+<p>Pause is for the times when crop crossing the scale should not be credited to anything:</p>
 
-<h3>Stopping a job</h3>
+<ul>
+<li><strong>Cleaning the belt</strong>, where dirt and trash cross the section</li>
+<li><strong>Clearing a jam by reversing the belt</strong> — a single proximity sensor cannot tell direction, so reversing counts as forward travel and would add phantom pounds</li>
+<li><strong>Dumping crop on purpose</strong></li>
+</ul>
 
-<p>Press <strong>Stop</strong> &rarr; confirm. The job is saved and closed. All totals are written to the database. The job remains in the list and can be viewed in the Job Report.</p>
+<p>Pausing also drops whatever is in transit between the digger and the scale, and closes the current map pass, so resuming starts a fresh ribbon rather than bridging the gap with a straight line across ground that was never dug.</p>
+
+<h3>Resume from Pause when Sections On</h3>
+
+<p>A setting on the Settings screen, <strong>Off</strong> by default.</p>
+
+<p><strong>On:</strong> if AOG's sections switch from off to on while paused, BeltFlo resumes counting by itself and says so. Only the off-to-on change counts, so pausing with the digger already down does not immediately undo itself.</p>
+
+<p><strong>Off:</strong> BeltFlo beeps and shows a red warning every two seconds — <em>PAUSED - sections on, nothing counted</em> — until you press <strong>▶</strong>, the sections go off, or AOG stops sending. This is the safer default: it assumes you meant to pause and makes sure you cannot forget.</p>
 
 <h3>Resume on start</h3>
 
-<p>If <strong>Resume Job on Start</strong> is enabled in Settings, the active job is automatically reloaded when YieldFlo restarts. Useful if the PC is rebooted during a harvest day.</p>
+<p>If <strong>Resume Job on Start</strong> is enabled in Settings, the active job is reloaded when BeltFlo restarts. Useful if the PC is rebooted during a harvest day.</p>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
 
 <h2 id="4-crops">4. Crops</h2>
 
-<p><strong>Menu: Menu &rarr; Crops</strong></p>
+<p><strong>Menu: Menu → Crops</strong></p>
 
-<p>Crops store the grain-specific parameters used in yield calculations and reporting.</p>
+<p>Crops are a name and nothing more — Potato, Sugar Beet, Carrot, Onion. Each job records which crop it dug, and reports and the job list show it.</p>
 
-<h3>Crop settings</h3>
-
-<table>
-<tr><th>Field</th><th>Description</th></tr>
-<tr><td><strong>Name</strong></td><td>Crop name (e.g. Wheat, Corn, Canola)</td></tr>
-<tr><td><strong>Category</strong></td><td>Grain type category</td></tr>
-<tr><td><strong>Bushel Wt</strong></td><td>Shown when units are <strong>bu/ac</strong>. The fixed bushel weight for the crop in lb/bu — wheat 60, barley 48, oats 34. Converts harvested mass to bushels.</td></tr>
-<tr><td><strong>Test Wt</strong></td><td>Shown when units are <strong>t/ha</strong>. The same setting in kg/hL, as quoted on a grain receipt.</td></tr>
-<tr><td><strong>Market Moisture</strong></td><td>Standard moisture for yield reporting (e.g. 14.5% for wheat)</td></tr>
-</table>
+<p>Unlike a grain monitor, BeltFlo needs no crop parameters at all. The scale delivers pounds directly, so there is no bushel weight, test weight or moisture standard to get wrong. Nothing BeltFlo records depends on which crop is selected.</p>
 
 <h3>Adding a crop</h3>
 
 <ol>
 <li>Press <strong>New</strong> and enter a crop name</li>
-<li>Set the test weight and market moisture</li>
 <li>Press <strong>Save</strong></li>
 </ol>
 
 <p>Select a crop from the list to edit it. At least one crop must exist at all times.</p>
 
-<p>Select a crop and press <strong>Delete</strong> to remove it &mdash; you will be asked to confirm. A crop used by a saved job cannot be deleted.</p>
+<p>Select a crop and press <strong>Delete</strong> to remove it — you will be asked to confirm. A crop used by a saved job cannot be deleted.</p>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
 
 <h2 id="5-conveyor-setup">5. Conveyor Setup</h2>
 
-<p><strong>Menu: Menu &rarr; Conveyor Setup</strong></p>
+<p><strong>Menu: Menu → Conveyor Setup</strong></p>
 
 <p>Conveyor Setup holds everything BeltFlo needs to turn a weight on the belt into pounds harvested: how far the belt moves per pulse, how long the weighed section is, and when the belt counts as empty or stopped. The settings belong to the <strong>active harvester profile</strong>, so changing profile changes them all. They cannot be saved while a job is running.</p>
 
@@ -272,7 +304,7 @@ li { margin: 2px 0; }
 <tr><th>Field</th><th>Description</th></tr>
 <tr><td><strong>Belt per Pulse</strong></td><td>How far the belt travels for one pulse from the belt sensor, in inches or centimetres. Set it with <strong>Measure Belt</strong> rather than by hand.</td></tr>
 <tr><td><strong>Pulses per Belt Turn</strong></td><td>Pulses counted in one full turn of the belt. Filled in by <strong>Measure Belt</strong>. Used to average the zero over exactly one belt turn on the Scale Calibration screen.</td></tr>
-<tr><td><strong>Weigh Section Length</strong></td><td>Length of the belt the load cells carry, in inches or centimetres. Weight &times; belt travel over this length is what BeltFlo integrates into pounds.</td></tr>
+<tr><td><strong>Weigh Section Length</strong></td><td>Length of the belt the load cells carry, in inches or centimetres. Weight × belt travel over this length is what BeltFlo integrates into pounds.</td></tr>
 <tr><td><strong>Empty Belt Below</strong></td><td>The empty-belt threshold. Flow below it is treated as an empty belt and is not counted. See below.</td></tr>
 <tr><td><strong>Belt Stopped After</strong></td><td>How long without a pulse before the belt counts as stopped.</td></tr>
 <tr><td><strong>Dig to Scale Delay</strong></td><td>Seconds crop takes to travel from the digger to the scale. Map points are matched back to the position the machine held that many seconds earlier.</td></tr>
@@ -280,18 +312,18 @@ li { margin: 2px 0; }
 <tr><td><strong>Belt Bar Full At</strong></td><td>The belt speed the run screen's Belt bar reads as full.</td></tr>
 </table>
 
-<h3>Empty Belt Below &mdash; setting the empty-belt threshold</h3>
+<h3>Empty Belt Below — setting the empty-belt threshold</h3>
 
 <p>A conveyor is never truly empty. Dirt, small stones, trash and crop residue ride the belt between tubers, and the load cells weigh all of it. Without a threshold BeltFlo would keep adding that rubbish to the job, the open load and the yield map all day, including during the long stretches when the harvester is running but not digging.</p>
 
-<p><strong>Empty Belt Below</strong> is the cut-off. While flow across the scale stays below it, nothing is counted &mdash; not the job total, not the truck load, and no map points. As soon as flow rises above it, counting resumes.</p>
+<p><strong>Empty Belt Below</strong> is the cut-off. While flow across the scale stays below it, nothing is counted — not the job total, not the truck load, and no map points. As soon as flow rises above it, counting resumes.</p>
 
 <p><strong>The default is 3 lb/min (0.05 lb/s), and it is almost certainly too low for a real machine.</strong> It was chosen before any readings from a real belt existed. Set it from your own machine, once, the first time the harvester runs:</p>
 
 <ol>
-<li>Start the harvester and run the conveyor at normal speed with <strong>nothing being dug</strong> &mdash; the belt turning empty, as it does on the headland or while waiting for a truck.</li>
-<li>Open <strong>Menu &rarr; Conveyor Setup</strong> and watch the live readouts at the bottom of the screen for a minute. Let the belt carry whatever dirt and trash it normally carries.</li>
-<li>Note the highest flow you see on the run screen's Flow bar over that minute &mdash; that is your empty-belt noise.</li>
+<li>Start the harvester and run the conveyor at normal speed with <strong>nothing being dug</strong> — the belt turning empty, as it does on the headland or while waiting for a truck.</li>
+<li>Open <strong>Menu → Conveyor Setup</strong> and watch the live readouts at the bottom of the screen for a minute. Let the belt carry whatever dirt and trash it normally carries.</li>
+<li>Note the highest flow you see on the run screen's Flow bar over that minute — that is your empty-belt noise.</li>
 <li>Tap <strong>Empty Belt Below</strong> and enter a little above that figure, roughly 1.5 times the highest reading. A margin matters more than precision: too low and dirt counts as crop; too high and the thin flow at the start and end of a pass is thrown away.</li>
 <li>Press <strong>Save</strong>.</li>
 </ol>
@@ -302,7 +334,7 @@ li { margin: 2px 0; }
 
 <h3>Live readout</h3>
 
-<p>The bottom of the screen shows what the module is reporting right now: pulses since the last reset, pulse rate, belt speed, distance travelled and whether the belt is running. Without a module connected it reads &ldquo;No module&rdquo;. <strong>Reset Distance</strong> zeroes the distance counter.</p>
+<p>The bottom of the screen shows what the module is reporting right now: pulses since the last reset, pulse rate, belt speed, distance travelled and whether the belt is running. Without a module connected it reads "No module". <strong>Reset Distance</strong> zeroes the distance counter.</p>
 
 <h3>Measure Belt</h3>
 
@@ -320,9 +352,9 @@ li { margin: 2px 0; }
 
 <h3>Bar full scale</h3>
 
-<p>The two bars on the run screen read as a fraction of <strong>Flow Bar Full At</strong> and <strong>Belt Bar Full At</strong>. Set them from what your machine actually reaches when digging well, not from what it could reach in theory &mdash; a bar that never leaves the first third tells the operator as little as one that is always pegged. The live readouts on this screen and the run screen's own numbers are the figures to use. These are display settings only: they change nothing that is recorded.</p>
+<p>The two bars on the run screen read as a fraction of <strong>Flow Bar Full At</strong> and <strong>Belt Bar Full At</strong>. Set them from what your machine actually reaches when digging well, not from what it could reach in theory — a bar that never leaves the first third tells the operator as little as one that is always pegged. The live readouts on this screen and the run screen's own numbers are the figures to use. These are display settings only: they change nothing that is recorded.</p>
 
-<p>Because of that, <strong>these two can be changed while a job is running</strong> &mdash; which is when you will want to, having watched a bar sit pegged or barely move for half a field. Change them and press Save; harvesting carries on untouched.</p>
+<p>Because of that, <strong>these two can be changed while a job is running</strong> — which is when you will want to, having watched a bar sit pegged or barely move for half a field. Change them and press Save; harvesting carries on untouched.</p>
 
 <h3>Saving</h3>
 
@@ -335,42 +367,64 @@ li { margin: 2px 0; }
 
 <h2 id="6-profiles">6. Profiles</h2>
 
-<p><strong>Menu: Menu &rarr; Profiles</strong></p>
+<p><strong>Menu: Menu → Profiles</strong></p>
 
-<p>Profiles store combine-specific and calibration settings. Use a separate profile for each combine if running YieldFlo on multiple machines.</p>
+<p>A profile describes one harvester. Everything about the machine lives here — its rows, its geometry, where its scale weighs to, and, through the two screens above, its conveyor settings and scale calibration. Use a separate profile for each harvester if BeltFlo is moved between machines.</p>
+
+<p><strong>Changing profile changes all of it at once</strong>, including the calibration, which is why the conveyor and calibration screens always work on the active profile and say which one in their title.</p>
 
 <h3>Profile settings</h3>
 
 <table>
 <tr><th>Field</th><th>Description</th></tr>
-<tr><td><strong>Name</strong></td><td>Profile name (e.g. JD 9600, Case 2388)</td></tr>
-<tr><td><strong>Combine ID</strong></td><td>Identifier for the module — must match the module configuration</td></tr>
-<tr><td><strong>Moisture offset</strong></td><td>Fixed offset applied to all moisture readings for this profile</td></tr>
-<tr><td><strong>Moisture scale</strong></td><td>%/count scale factor for the moisture sensor</td></tr>
-<tr><td><strong>Temperature offset</strong></td><td>Temperature offset (°C)</td></tr>
-<tr><td><strong>Temperature scale</strong></td><td>°C/count scale factor for the temperature sensor</td></tr>
+<tr><td><strong>Name</strong></td><td>Profile name (e.g. Grimme SE 260, Spudnik 6640)</td></tr>
+<tr><td><strong>Harvester ID</strong></td><td>Identifier for the module — must match the module configuration</td></tr>
+<tr><td><strong>Rows</strong></td><td>How many rows the digger lifts. Root-crop harvesters have a fixed row count, which is why this belongs to the machine and not to a header record.</td></tr>
+<tr><td><strong>Row Spacing</strong></td><td>Centre-to-centre row spacing, in inches or centimetres</td></tr>
+<tr><td><strong>Ahead of Pivot</strong></td><td>How far the digger sits ahead of the position AOG broadcasts. Enter AOG's <strong>pivot-to-implement</strong> distance from its implement setup. <strong>Negative</strong> for a digger that trails behind the tractor's pivot, which is the usual case for a towed harvester.</td></tr>
+<tr><td><strong>Scale weighs into</strong></td><td><strong>Truck</strong> or <strong>Tank</strong> — see below. This one setting changes how loads are corrected and which alarms apply.</td></tr>
 </table>
 
-<blockquote><strong>Note:</strong> Moisture and temperature calibration values are set in <strong>Menu &rarr; Moisture Cal</strong> and saved automatically to the active profile.</blockquote>
+<p>The resulting digging width is shown as you edit, so a mistyped spacing is obvious before it is saved.</p>
+
+<h3>Scale weighs into: Truck or Tank</h3>
+
+<p>This describes where the weighed crop goes after it crosses the scale, and it is the most consequential setting on this screen.</p>
+
+<p><strong>Truck</strong> — the harvester loads directly into the truck alongside. What crosses the scale between one truck leaving and the next arriving is exactly one load, so a certified ticket can be matched against that load and used to correct it, or to correct the scale.</p>
+
+<p><strong>Tank</strong> — the scale sits before an on-board tank or bunker. Crop crosses the scale into the tank, and the tank empties into trucks on its own schedule. The map is still right, because crop reaches the scale a fixed time after being dug, but a truck load no longer corresponds to anything the scale saw. So:</p>
+
+<ul>
+<li>Load weights are approximate, and per-load correction is hidden</li>
+<li>The whole job is corrected instead, against the total of all its tickets, once the job is finished and every load has a ticket — empty the tank before finishing</li>
+<li>The "No load open" alarm is switched off, because the scale cannot see truck changes and would sound at every one</li>
+</ul>
+
+<p>If your machine has no tank, choose Truck. If it has one and the cells are after it rather than before, the load weights will match trucks but the map cannot work, because time spent in the tank varies.</p>
 
 <h3>Adding a profile</h3>
 
 <ol>
 <li>Press <strong>New</strong> and enter a profile name</li>
-<li>Enter the Combine ID to match your module</li>
+<li>Enter the Harvester ID to match your module</li>
+<li>Enter the rows, row spacing and Ahead of Pivot</li>
+<li>Choose whether the scale weighs into the truck or a tank</li>
 <li>Press <strong>Save</strong></li>
 </ol>
 
+<p>Saving the active profile applies the changes immediately. A new profile starts with its own, uncalibrated conveyor configuration — it needs Conveyor Setup and Scale Calibration run against it before it will weigh correctly.</p>
+
 <p>At least one profile must exist at all times.</p>
 
-<p>Select a profile and press <strong>Delete</strong> to remove it &mdash; you will be asked to confirm. A profile used by a saved job cannot be deleted.</p>
+<p>Select a profile and press <strong>Delete</strong> to remove it — you will be asked to confirm. A profile used by a saved job cannot be deleted.</p>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
 
 <h2 id="7-fields">7. Fields</h2>
 
-<p><strong>Menu: Menu &rarr; Fields</strong></p>
+<p><strong>Menu: Menu → Fields</strong></p>
 
 <p>Fields are optional location labels that can be assigned to jobs for organisation and reporting.</p>
 
@@ -383,208 +437,152 @@ li { margin: 2px 0; }
 
 <p>Fields are not required. A job can be created without a field selected.</p>
 
-<p>Select a field and press <strong>Delete</strong> to remove it &mdash; you will be asked to confirm. A field used by a saved job cannot be deleted.</p>
+<p>Select a field and press <strong>Delete</strong> to remove it — you will be asked to confirm. A field used by a saved job cannot be deleted.</p>
 
 <h3>Importing fields from AgOpenGPS</h3>
 
-<p>Press <strong>Import</strong> to open a checklist of field names found in AgOpenGPS's and TWOL's field folders (<code>Documents\AgOpenGPS\Fields</code> and <code>Documents\TWOL\Fields</code>). Fields already present in YieldFlo are shown but cannot be re-checked. Tick the fields to bring in (or press <strong>Select All</strong>), then press <strong>Import</strong> to add them as new field records — only the field name is imported, not boundary data.</p>
+<p>Press <strong>Import</strong> to open a checklist of field names found in AgOpenGPS's and TWOL's field folders (<code>Documents\AgOpenGPS\Fields</code> and <code>Documents\TWOL\Fields</code>). Fields already present in BeltFlo are shown but cannot be re-checked. Tick the fields to bring in (or press <strong>Select All</strong>), then press <strong>Import</strong> to add them as new field records — only the field name is imported, not boundary data.</p>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
 
-<h2 id="8-yield-calibration">8. Yield Calibration</h2>
+<h2 id="8-scale-calibration">8. Scale Calibration</h2>
 
-<p><strong>Menu: Menu &rarr; Yield Cal</strong></p>
+<p><strong>Menu: Menu → Scale Calibration</strong></p>
 
-<p>Yield calibration corrects the elevator sensor reading to match the actual mass of grain harvested. Two parameters are set here:</p>
+<p>Two numbers turn a raw converter reading into pounds:</p>
 
-<ul>
-<li><strong>Sensor Baseline</strong> — the obstruction reading with paddles running but no grain. It belongs to the machine, not the crop: it is stored on the active <strong>profile</strong> and stays put when you change crops.</li>
-<li><strong>Yield Factor</strong> — a multiplier that scales the sensor reading to match a weighed reference</li>
-</ul>
+<blockquote><p>weight = (reading − <strong>zero</strong>) × <strong>span</strong></p></blockquote>
 
-<h3>Setting the baseline</h3>
+<p>The <strong>zero</strong> is what the scale reads with nothing on it. The <strong>span</strong> is what one count of reading is worth. They are found by different procedures and they fail in different ways, which is what makes them separable in the field.</p>
+
+<p>Like Conveyor Setup, this screen works on the active profile and is refused while a job is running.</p>
+
+<h3>Live readout</h3>
+
+<p>The top of the screen shows what the module is reporting: raw counts, the weight that implies after the current zero and span, and whether the reading is <strong>Stable</strong> or <strong>Unstable</strong>. Stability is judged over the last two seconds; wait for Stable before trusting anything you read here.</p>
+
+<h3>Zero Scale</h3>
+
+<p>Zeroes the scale against an empty belt. <strong>The belt must be running</strong> — a stationary belt does not average out the splice, the worn patches or the dirt that sits on one part of it.</p>
 
 <ol>
-<li>Start the clean-grain elevator with no grain</li>
-<li>Open <strong>Menu &rarr; Yield Cal</strong></li>
-<li>Press <strong>Set Baseline</strong> &mdash; it samples for 5 seconds and enters the result in the <strong>Sensor Baseline</strong> field</li>
-<li>Press <strong>Save</strong></li>
+<li>Run the conveyor at normal speed with nothing being dug</li>
+<li>Press <strong>Zero Scale</strong></li>
+<li>Wait — BeltFlo averages over one full belt turn if <strong>Pulses per Belt Turn</strong> is set on the Conveyor Setup screen, or 30 seconds if it is not. One belt turn is much the better figure, which is why Measure Belt is worth doing first.</li>
+<li>Press <strong>Save</strong> to keep it</li>
 </ol>
 
-<p>Nothing takes effect, and nothing is saved, until <strong>Save</strong> is pressed &mdash; this applies to both Set Baseline and Calculate.</p>
+<p>Nothing changes until you press Save.</p>
 
-<blockquote><strong>Tip:</strong> Run the empty elevator for at least 10 seconds before setting the baseline so the reading stabilises.</blockquote>
+<p><strong>Re-taring is routine, not an installation step.</strong> Dirt builds up on the cells and the belt through a day, and a zero error adds a fixed amount for every inch of belt that passes — whatever is on it. Over a day of running that becomes phantom pounds. Re-zero when the belt is empty and running, as often as is convenient.</p>
 
-<p>A baseline above 0.25 turns the <strong>Sensor Baseline</strong> field orange, and <strong>Save</strong> asks for confirmation. An empty elevator should read well below this &mdash; check for grain or dirt in the elevator and run <strong>Set Baseline</strong> again. You can save the high value if you know it is correct.</p>
+<h3>Known Weight — setting the span</h3>
 
-<h3>Noise readout</h3>
+<ol>
+<li>Stop the belt</li>
+<li>Place a known weight on the weighed section, with nothing else touching it</li>
+<li>Press <strong>Known Weight</strong> and enter what it weighs</li>
+<li>BeltFlo averages for 5 seconds and works out pounds per count</li>
+<li>Press <strong>Save</strong> to keep it</li>
+</ol>
 
-<p>Next to the <strong>Set Baseline</strong> button, the <strong>Noise</strong> readout shows how many electrical glitches per second the module is rejecting on the optical sensor signal, averaged over the last 5 seconds. On a healthy installation it reads <strong>0</strong>; the value turns orange when glitches are being rejected, and shows <strong>--</strong> when no module is connected.</p>
+<p>The span is refused if the reading moved by less than 100 counts — that means the weight is not on the section, or the scale was never zeroed.</p>
 
-<p>A rising noise value &mdash; especially one that climbs with elevator speed &mdash; indicates electrical interference on the sensor wire (static discharge from the elevator, a chafed or loose wire shaken by vibration, or pickup from nearby wiring). The module filters these glitches out of the yield reading automatically, but persistent noise is worth fixing at the source: check the sensor wire's routing and shielding, connector condition, and the ground path from the sensor bracket and elevator housing to the chassis. The readout works in both sensor signal modes, including Main only.</p>
+<p><strong>A static weight is only an approximation, and it is important to understand why.</strong> The span absorbs the entire chain between the load cells and a pound: cell sensitivity, amplifier gain, any error in the weighed section length, any error in belt travel per pulse, and belt slip. All of those are proportional, so one number corrects all of them at once. But hanging a weight on the section exercises the cells and nothing else. Only crop actually running across the belt exercises the geometry and the drive.</p>
 
-<p>On module firmware that supports it, a second figure appears next to Noise: <strong>G:n/s</strong>, the rate at which the module is discarding false paddle signals caused by grain crossing the beam between paddles. Unlike Noise this is not an electrical fault &mdash; a low rate that rises with flow is normal and needs no action. It shows on both WiFi and CAN connections, and is hidden when the module firmware predates the feature.</p>
+<p>So the known weight gets the scale into the right order of magnitude on installation day, when no truck has been filled yet. The real calibration comes from a truck ticket — see the Loads screen — and it is applied only when you ask for it.</p>
 
-<h3>Paddle rate readout</h3>
+<h3>Which one is wrong?</h3>
 
-<p>Below the <strong>Set Baseline</strong> button, the <strong>Paddles</strong> readout shows how many elevator paddles per second the sensor is seeing, averaged over the last 5 seconds. It shows <strong>--</strong> when no module is connected or the module firmware predates the feature.</p>
-
-<p>Use it to verify the sensor is catching every paddle: the value should match the paddle rate calculated from elevator speed and paddle spacing, and should scale directly with elevator rpm. A reading at half the expected rate means the sensor is missing paddles (alignment or sensing-range problem). On combines with another optical yield monitor sharing the sensor, the value can be compared directly against that monitor's own sensor calibration result &mdash; these are usually reported on the monitor's sensor calibration screen as an obstruction percentage at a given frequency in Hz.</p>
-
-<h3>Processing delay</h3>
-
-<p>The processing delay accounts for the travel time of grain from the header to the elevator sensor. Set this value (in seconds) to match your combine. Typical range is 4–12 seconds.</p>
-
-<h3>Two ways to calibrate</h3>
-
-<p>The lower half of the Yield Cal screen has two tabs. Both work out a new Yield Factor the same way — comparing what the sensor measured against a real weight — and differ only in where the measured figure comes from.</p>
+<p>If loads come back wrong against certified weights, the pattern tells you which number to fix:</p>
 
 <table>
-<tr><th>Tab</th><th>Measured figure</th><th>Use when</th></tr>
-<tr><td><strong>Calibration Run</strong></td><td>A pass you start and stop by hand</td><td>You can weigh one cart or tank on its own</td></tr>
-<tr><td><strong>Whole Field Calibration</strong></td><td>The active job&rsquo;s running total</td><td>Grain has crossed a scale and you know the total for the job</td></tr>
+<tr><th>What you see</th><th>What it means</th></tr>
+<tr><td>Light loads wrong, heavy loads about right</td><td><strong>Zero</strong> error. Re-tare. A fixed offset per inch of belt barely shows on a heavy load and badly distorts a light one.</td></tr>
+<tr><td>Everything off by the same percentage</td><td><strong>Span</strong> error. Use Update Calibration on the Loads screen against a ticket you trust.</td></tr>
+<tr><td>Neither pattern — errors scattered</td><td>Stop adjusting. Check the mechanical installation: rigidity, dirt build-up, the free roller end, and whether anything is fouling the weighed section. Repeated calibration will not rescue a scale that is mounted badly.</td></tr>
 </table>
 
-<h3>Weight units</h3>
+<h3>Calibration revisions</h3>
 
-<p>In imperial, the button beside the weight box switches entry between <strong>bu</strong> and <strong>lbs</strong> — press it to change. Enter whichever unit the ticket is in; there is no need to convert by hand.</p>
+<p>Changing the <strong>span</strong> starts a new calibration revision, because it changes what an already-recorded pound meant. Changing the <strong>zero</strong> alone updates the current revision in place.</p>
 
-<p>The choice applies to both tabs and is remembered between sessions. Switching converts whatever is already in the box, so the amount itself does not change. In metric the button reads <strong>kg</strong> and is inactive.</p>
-
-<h3>Running a calibration pass</h3>
-
-<p>A calibration pass measures the actual mass of grain harvested during a known run, then adjusts the Yield Factor to match.</p>
-
-<p><strong>Preparation:</strong> Position a weigh wagon or grain cart to catch grain from the unloading auger and record start and end weights.</p>
-
-<ol>
-<li>Open <strong>Menu &rarr; Yield Cal</strong> and select the <strong>Calibration Run</strong> tab</li>
-<li>Press <strong>Start Run</strong> — the app begins accumulating sensor data</li>
-<li>Harvest a suitable area (at least one full tank is recommended)</li>
-<li>Press <strong>Stop Run</strong></li>
-<li>Weigh the harvested grain</li>
-<li>Enter the actual weight in the <strong>Actual weight</strong> field</li>
-<li>Press <strong>Calculate</strong></li>
-</ol>
-
-<p>YieldFlo calculates a new Yield Factor and enters it in the <strong>Yield Factor</strong> field. Press <strong>Save</strong> to store it against the active profile.</p>
-
-<p>Below the <strong>Save</strong> button, a <strong>Baseline last saved</strong> line shows when this profile's Sensor Baseline was last changed. Saving a Yield Factor on its own does not move it &mdash; the date answers how long ago the sensor was zeroed. It shows <strong>--</strong> until a baseline has been set.</p>
-
-<h3>Entering the weight later</h3>
-
-<p><strong>Stop Run</strong> freezes the measured total. Harvesting after that does not add to it, so you can carry on combining and enter the weight whenever the grain is next weighed — later the same day, or days later.</p>
-
-<p>The <strong>Measured</strong> line carries the date and time the run was stopped, so a total left standing can be told apart from a fresh one.</p>
-
-<p>While a run is waiting for its weight:</p>
-
-<ul>
-<li>Pressing <strong>Start Run</strong> again discards it. You are asked first, and the prompt shows the standing total and its date.</li>
-<li>The run is saved, so it survives closing YieldFlo. If the app was closed while a run was still going, it comes back marked <strong>(interrupted)</strong> in orange — grain harvested after the time shown is missing from its total, so a factor fitted to it reads high. <strong>Calculate</strong> warns before using it.</li>
-<li>Changing crop or profile before the weight is entered blocks <strong>Calculate</strong>. The run was measured under one crop, and that is the crop its factor belongs to. Switch back to apply it.</li>
-</ul>
-
-<p>Once the factor has been saved with <strong>Save</strong> the run is spent, and is cleared — the <strong>Measured</strong> line returns to blank. The Yield Factor stays as saved.</p>
-
-<h3>Whole Field Calibration</h3>
-
-<p>Instead of a dedicated pass, this fits the Yield Factor to the total the active job has already recorded. There is no separate procedure to run: the weight comes from scale tickets you have anyway.</p>
-
-<p>It is not only an end-of-field operation. The job total accumulates continuously, so it can be applied whenever grain has been weighed — after the first few loads, part way through, or when the field is finished.</p>
-
-<ol>
-<li>Open <strong>Menu &rarr; Yield Cal</strong> and select the <strong>Whole Field Calibration</strong> tab</li>
-<li>Check the <strong>Job</strong> line — it names the job and the crop it was started under</li>
-<li>Enter the running total in <strong>Total harvested</strong></li>
-<li>Press <strong>Calculate</strong>, then <strong>Save</strong></li>
-</ol>
-
-<blockquote>
-<p><strong>Enter the cumulative total</strong> — everything hauled off this job so far, not just the latest load. A single load fits a factor several times too small, and nothing in the result would reveal it.</p>
-</blockquote>
-
-<p>After saving, YieldFlo offers to recalculate the job. Accepting rewrites the job&rsquo;s recorded points and total using the new factor, so the map and the job total agree with the weight entered. Declining leaves the job as recorded and changes only the factor used from here on.</p>
-
-<p>Applying more than once is normal. Each recalculation puts the whole job onto the factor being saved, so a later, larger ticket simply supersedes the earlier fit.</p>
-
-<p><strong>Check the yield figure before saving.</strong> As the weight is typed, the tab shows the yield it implies over the acres the job recorded, alongside what was actually recorded. If the implied figure is not one the field could have grown, suspect the acres: ground the app did not record — an auto-pause, or a sensor fault — still crossed the scale, so the recorded total reads short and the factor comes out high. The figure turns orange when it exceeds the recorded yield by half.</p>
-
-<p>The tab is inactive when no job is recording, and says so if the crop has been changed since the job started.</p>
-
-<h3>Manual factor adjustment</h3>
-
-<p>The Yield Factor can also be adjusted manually in the <strong>Yield Factor</strong> field. Increase to raise yield readings; decrease to lower them.</p>
+<p>Every map point and every load stores the revision it was recorded under. That is what lets a correction applied weeks later know exactly which calibration produced the number it is correcting, and it is why updating the span from an old load's ticket cannot double-correct a span that has moved since.</p>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
 
-<h2 id="9-moisture-calibration">9. Moisture Calibration</h2>
+<h2 id="9-loads">9. Loads</h2>
 
-<p><strong>Menu: Menu &rarr; Moisture Cal</strong></p>
+<p><strong>Menu: Menu → Loads</strong>, or tap the <strong>LOAD</strong> title on the run screen</p>
 
-<p>Moisture and temperature readings are both calculated the same way:</p>
+<p>A load is one truck. BeltFlo records what its own scale measured, and later — often days later, when the tickets come back from the scale house — what the truck actually weighed. The difference between the two is the most valuable number in the system, because it is the only independent check on everything else.</p>
 
-<pre>Value = raw_count &times; scale  +  offset</pre>
+<h3>Running loads from the cab</h3>
 
-<p>Both support single-point calibration. With offset set to 0, adjust scale until the displayed reading matches a reference instrument:</p>
+<p>On the run screen: <strong>▶</strong> opens a load, <strong>⏹</strong> finishes it. The LOAD tile shows the weight climbing in the truck being filled.</p>
 
-<pre>scale = known_value / raw_count</pre>
+<p>On a machine that loads directly into trucks, one tap splits the trucks exactly. Weight is load × belt travel, so while the unloading conveyor is stopped for a truck change nothing crosses the scale and nothing is counted — there is no need to rush the tap.</p>
 
-<p>For example: if the raw count is 420 and a certified meter reads 18.5%, set scale to 18.5 &divide; 420 &asymp; 0.044. The offset field can then be used for fine trimming against a second reference point if needed.</p>
+<p><strong>"No load open" alarm.</strong> If crop is crossing the scale with no load open, a job running and the profile set to Truck, BeltFlo beeps and shows a red message every two seconds after five seconds of flow. The weight still counts to the job and the map; only the truck record is missing. Press <strong>▶</strong> and the message clears at once. The alarm never sounds on a Tank profile, where the scale cannot see truck boundaries.</p>
 
-<h3>Quick calibration &mdash; Calculate</h3>
+<h3>The list</h3>
 
-<ol>
-<li>Take a grain sample and measure it with a certified grain moisture meter</li>
-<li>Open <strong>Menu &rarr; Moisture Cal</strong></li>
-<li>With the module connected and grain flowing, note the <strong>App reads:</strong> value</li>
-<li>Enter the meter's reading in <strong>Meter:</strong></li>
-<li>Press <strong>Calculate</strong> &mdash; the <strong>Offset</strong> field is filled in for you</li>
-<li>Press <strong>Save</strong></li>
-</ol>
-
-<p>Temperature works the same way: enter a thermometer reading in the Temperature section's <strong>Meter:</strong> field and press its <strong>Calculate</strong>.</p>
-
-<h3>Full calibration &mdash; scale</h3>
-
-<p>Calculate shifts every reading by the same amount. If the reading is correct at one moisture but wrong at another, set the scale instead:</p>
-
-<ol>
-<li>Set <strong>Offset</strong> to 0</li>
-<li>With grain flowing, adjust <strong>%/count</strong> until the displayed reading matches the meter</li>
-<li>Press <strong>Save</strong></li>
-</ol>
-
-<h3>Moisture calibration fields</h3>
+<p>Every job's loads, oldest first. The load being filled is green and its weight updates each second.</p>
 
 <table>
-<tr><th>Field</th><th>Saved to</th><th>Description</th></tr>
-<tr><td><strong>%</strong></td><td>Active crop</td><td>Moisture offset — set to 0 for single-point scale calibration</td></tr>
-<tr><td><strong>%/count</strong></td><td>Active profile</td><td>Scale factor converting raw ADS1115 counts to moisture percent</td></tr>
+<tr><th>Column</th><th>Meaning</th></tr>
+<tr><td><strong>Load</strong></td><td>Number within its job — load 1 is that job's first truck</td></tr>
+<tr><td><strong>Job</strong></td><td>The job it belongs to. A load belongs to exactly one job and finishes with it.</td></tr>
+<tr><td><strong>Truck</strong></td><td>Set with <strong>Rename</strong>; blank until you name it</td></tr>
+<tr><td><strong>Monitor</strong></td><td>What BeltFlo weighed</td></tr>
+<tr><td><strong>Ticket</strong></td><td>The certified weight, once entered</td></tr>
+<tr><td><strong>Diff %</strong></td><td>How far apart they are</td></tr>
+<tr><td><strong>Status</strong></td><td>Filling, Waiting, Weighed or Corrected, plus any flag</td></tr>
 </table>
 
-<h3>Temperature calibration</h3>
+<h3>Flags</h3>
 
-<p>Same principle as moisture. The default scale of 0.0125 assumes an LM35 sensor (10 mV/°C at PGA = 4.096 V). With offset at 0, adjust <strong>°C/count</strong> until the reading matches a thermometer.</p>
+<p>One tap sets a flag on the selected load: <strong>Wet</strong>, <strong>Spoiled</strong>, <strong>Trash</strong> or <strong>Stones</strong>, or <strong>None</strong>. Flags are stored in English so reports read the same in any language. They do not change any number — they record why a load was unusual, which matters when you come back to a strange-looking correction factor later.</p>
+
+<h3>Entering a ticket</h3>
+
+<p>Tap the <strong>Ticket</strong> box and enter the certified weight. BeltFlo shows the difference and the factor (ticket ÷ monitor). Then choose what it means:</p>
+
+<p><strong>Save Weight Only</strong> — the ticket is recorded and the map is left exactly as measured. Use this when you do not trust the ticket, or when the load was genuinely unusual — a flagged load, or one you know included a clean-out tail. The load is marked Weighed.</p>
+
+<p><strong>Correct This Load</strong> — the difference is real and belongs to this load. Its map points and the job total are rescaled by the factor. Use this when one load is out and the others are not. The load is marked Corrected.</p>
+
+<p><strong>Update Calibration</strong> — the difference is the scale itself. BeltFlo shows you the old and new span, changes it, sends it to the module, starts a new calibration revision, and corrects the load as well. Use this when load after load comes back off by about the same percentage.</p>
+
+<p>The new span is worked out from the span of <strong>the load's own revision</strong>, not the current one, so a span you changed last week cannot be corrected twice by a ticket from before it.</p>
+
+<blockquote><p><strong>The monitor weight is never overwritten</strong>, and points always rescale from the factor they carry now to the one wanted. Entering a different ticket later, or going back to Save Weight Only, never compounds.</p></blockquote>
+
+<h3>Tank machines</h3>
+
+<p>On a profile whose scale weighs into a tank, Correct This Load and Update Calibration are hidden, because one truck does not correspond to anything the scale saw. <strong>Correct Job</strong> replaces them: it rescales the whole job against the total of all its tickets. It is available only when the job is finished and every load has a ticket, and it works from the current job total, so pressing it twice changes nothing.</p>
+
+<p>Empty the tank before finishing the job, or the crop still in it will be counted as harvested but never appear on a ticket.</p>
+
+<h3>Other actions</h3>
 
 <table>
-<tr><th>Field</th><th>Saved to</th><th>Description</th></tr>
-<tr><td><strong>°C</strong></td><td>Active profile</td><td>Temperature offset — set to 0 for single-point scale calibration</td></tr>
-<tr><td><strong>°C/count</strong></td><td>Active profile</td><td>Scale factor converting raw ADS1115 counts to degrees Celsius</td></tr>
+<tr><th>Action</th><th>What it does</th></tr>
+<tr><td><strong>Rename</strong></td><td>Name the truck. This is the only place truck names are entered — starting a load never asks, because you are watching a truck fill, not typing.</td></tr>
+<tr><td><strong>Reopen</strong></td><td>Continue a Waiting load of the running job, for a truck pulled aside and brought back to be topped up. Its weight carries on from where it stopped. Only possible when no other load is open.</td></tr>
+<tr><td><strong>Delete</strong></td><td>Remove the load record. Confirmed first. The map points stay in the job.</td></tr>
 </table>
-
-<blockquote><strong>Note:</strong> Temperature calibration is optional. Temperature does not appear directly on the main screen.</blockquote>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
 
 <h2 id="10-yield-map">10. Yield Map</h2>
 
-<p><strong>Menu: Menu &rarr; Yield Map</strong></p>
+<p><strong>Menu: Menu → Yield Map</strong></p>
 
-<p>The yield map displays a colour-coded spatial plot of yield rate across the harvested area. Each data point is drawn as a filled swath polygon sized to the header width and oriented to the GPS heading at that point.</p>
+<p>The yield map displays a colour-coded spatial plot of yield rate across the harvested area. Each data point is drawn as a filled swath polygon sized to the digging width and oriented to the GPS heading at that point.</p>
 
 <h3>Colour scale</h3>
 
@@ -603,12 +601,12 @@ li { margin: 2px 0; }
 
 <h3>Mini mode</h3>
 
-<p>When opened from the menu, the yield map starts as a small floating 300&times;300 overlay (mini mode). The title bar shows the active job name and zoom controls.</p>
+<p>When opened from the menu, the yield map starts as a small floating 300×300 overlay (mini mode). The title bar shows the active job name and zoom controls.</p>
 
 <table>
 <tr><th>Control</th><th>Action</th></tr>
 <tr><td><strong>─</strong> / <strong>+</strong></td><td>Zoom out / in</td></tr>
-<tr><td><strong>&times;</strong></td><td>Close the map overlay</td></tr>
+<tr><td><strong>×</strong></td><td>Close the map overlay</td></tr>
 <tr><td>Click the map</td><td>Expand to full-screen mode</td></tr>
 <tr><td>Drag the title bar</td><td>Move the overlay</td></tr>
 </table>
@@ -623,7 +621,7 @@ li { margin: 2px 0; }
 <tr><th>Control</th><th>Action</th></tr>
 <tr><td>Job selector (drop-down)</td><td>Choose which job to display</td></tr>
 <tr><td><strong>─</strong> / <strong>+</strong></td><td>Zoom out / in</td></tr>
-<tr><td><strong>Recalculate</strong></td><td>Re-derives every point's yield for the selected job from its stored raw sensor reading using the crop's <em>current</em> calibration, then repaints the map and updates the job total — see below</td></tr>
+<tr><td><strong>Recalculate</strong></td><td>Explains where correction is done — see below</td></tr>
 <tr><td><strong>Print</strong></td><td>Export the map as a PNG image — see below</td></tr>
 <tr><td><strong>Close</strong></td><td>Close the map</td></tr>
 </table>
@@ -636,7 +634,9 @@ li { margin: 2px 0; }
 
 <h3>Recalculating yield</h3>
 
-<p>If you change a crop's calibration (Sensor Baseline or Yield Factor) <em>after</em> a job was recorded, the job's existing points still reflect the old calibration. Press <strong>Recalculate</strong> in the full-screen toolbar, then confirm the prompt, to re-derive every point's yield from its stored raw sensor reading using the crop's current calibration and repaint the map with the corrected values. The job's total in the Job Report is updated to match. This only affects the selected job and does not change the raw sensor data.</p>
+<p>A map is corrected from the <strong>Loads</strong> screen, not from here, because in BeltFlo a correction comes from a certified truck weight rather than from a crop setting. Entering a ticket and pressing Correct This Load rescales that load's points and the job total; on a tank machine, Correct Job rescales the whole job. The Recalculate button says as much if pressed.</p>
+
+<p>Corrections apply to the map as soon as they are made, so a map open on screen shows the corrected values the next time it refreshes.</p>
 
 <h3>Exporting the map as a PNG</h3>
 
@@ -655,7 +655,7 @@ li { margin: 2px 0; }
 
 <h2 id="11-job-report">11. Job Report</h2>
 
-<p><strong>Menu: Menu &rarr; Reports</strong></p>
+<p><strong>Menu: Menu → Reports</strong></p>
 
 <p>The job report shows a summary of a completed or active job. Select a job from the list on the left to view its details.</p>
 
@@ -667,9 +667,9 @@ li { margin: 2px 0; }
 <tr><td><strong>Field</strong></td><td>Field name assigned to the job (if set)</td></tr>
 <tr><td><strong>Crop</strong></td><td>Crop assigned to the job (if set)</td></tr>
 <tr><td><strong>Area</strong></td><td>Total area harvested (ac or ha)</td></tr>
-<tr><td><strong>Total</strong></td><td>Total mass harvested (bu or tonnes)</td></tr>
+<tr><td><strong>Total</strong></td><td>Total harvested (cwt, tons or tonnes)</td></tr>
 <tr><td><strong>Avg Yield</strong></td><td>Average yield rate across all data points</td></tr>
-<tr><td><strong>Avg Moisture</strong></td><td>Average grain moisture across all data points</td></tr>
+<tr><td><strong>Loads</strong></td><td>Number of truck loads recorded for the job</td></tr>
 <tr><td><strong>Data Points</strong></td><td>Number of recorded GPS data points</td></tr>
 </table>
 
@@ -694,14 +694,14 @@ li { margin: 2px 0; }
 <tr><td>Timestamp</td><td>Date and time of the reading</td></tr>
 <tr><td>Latitude</td><td>GPS latitude (decimal degrees)</td></tr>
 <tr><td>Longitude</td><td>GPS longitude (decimal degrees)</td></tr>
-<tr><td>WidthMeters</td><td>Header cutting width (metres)</td></tr>
+<tr><td>WidthMeters</td><td>Digging width (metres) — rows harvested × row spacing</td></tr>
 <tr><td>Yield_kgha</td><td>Yield rate in kg/ha</td></tr>
 <tr><td>ElevationMeters</td><td>GPS elevation (metres)</td></tr>
 <tr><td>Speed_kmh</td><td>Ground speed (km/h)</td></tr>
 <tr><td>Heading</td><td>GPS heading (degrees)</td></tr>
-<tr><td>Moisture_pct</td><td>Grain moisture (%)</td></tr>
+<tr><td>PoundsInc</td><td>Pounds recorded at this point</td></tr>
 <tr><td>HaAccumulated</td><td>Cumulative area at this point (ha)</td></tr>
-<tr><td>Sensor1Raw</td><td>Raw elevator sensor ratio</td></tr>
+<tr><td>BeltFtMin</td><td>Belt speed at this point (ft/min)</td></tr>
 </table>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
@@ -709,53 +709,55 @@ li { margin: 2px 0; }
 
 <h2 id="12-settings">12. Settings</h2>
 
-<p><strong>Menu: Menu &rarr; Settings</strong></p>
+<p><strong>Menu: Menu → Settings</strong></p>
 
 <h3>Units</h3>
 
 <table>
-<tr><th>Units setting</th><th>bu/ac</th><th>t/ha</th></tr>
-<tr><td><strong>Yield rate</strong></td><td>bu/ac</td><td>t/ha</td></tr>
+<tr><th>Quantity</th><th>Imperial</th><th>Metric</th></tr>
+<tr><td><strong>Yield rate</strong></td><td>cwt/ac or tons/ac</td><td>t/ha</td></tr>
 <tr><td><strong>Area</strong></td><td>acres</td><td>hectares</td></tr>
-<tr><td><strong>Speed</strong></td><td>mph</td><td>km/h</td></tr>
-<tr><td><strong>Mass</strong></td><td>bushels</td><td>tonnes</td></tr>
-<tr><td><strong>Header width</strong></td><td>feet</td><td>metres</td></tr>
-<tr><td><strong>Test weight</strong></td><td>lb/bu</td><td>kg/hL</td></tr>
+<tr><td><strong>Total harvested</strong></td><td>hundredweight or short tons</td><td>tonnes</td></tr>
+<tr><td><strong>Truck loads and tickets</strong></td><td>pounds, or short tons with tons/ac</td><td>kilograms</td></tr>
+<tr><td><strong>Flow</strong></td><td>lb/min</td><td>kg/min</td></tr>
+<tr><td><strong>Belt speed</strong></td><td>ft/min</td><td>m/min</td></tr>
+<tr><td><strong>Digging width, row spacing</strong></td><td>feet, inches</td><td>metres, centimetres</td></tr>
+<tr><td><strong>Scale readings</strong></td><td>pounds</td><td>kilograms</td></tr>
 </table>
 
-<p>Changing units takes effect immediately. Historical data is stored internally in acres and bushels and converted for display.</p>
+<p>Changing units takes effect immediately. Everything is stored internally in pounds and acres and converted for display, so switching units never alters a recorded figure. Truck loads and tickets follow the same choice: pounds with cwt/ac, short tons with tons/ac, kilograms in metric.</p>
 
 <h3>Module communication</h3>
 
 <table>
 <tr><th>Setting</th><th>Description</th></tr>
-<tr><td><strong>WiFi / Ethernet</strong></td><td>Module communicates over UDP on port 30100 &mdash; via the module's WiFi access point / a shared WiFi network, or via wired Ethernet (W5500 board on the module).</td></tr>
+<tr><td><strong>WiFi / Ethernet</strong></td><td>Module communicates over UDP — the module sends on port 30300 and listens on 30400 — via the module's WiFi access point / a shared WiFi network, or via wired Ethernet (W5500 board on the module).</td></tr>
 <tr><td><strong>CAN</strong></td><td>Module communicates over CAN bus via a USB CAN interface.</td></tr>
 <tr><td><strong>CAN Driver</strong></td><td>Select the CAN interface driver (SLCAN, InnoMaker, or PCAN).</td></tr>
 <tr><td><strong>COM Port</strong></td><td>Serial/USB port for the CAN interface (SLCAN driver only).</td></tr>
-<tr><td>Rescan button</td><td>Beside <strong>COM Port</strong> (CAN mode only) &mdash; refreshes the list of connected serial ports.</td></tr>
+<tr><td>Rescan button</td><td>Beside <strong>COM Port</strong> (CAN mode only) — refreshes the list of connected serial ports.</td></tr>
 </table>
 
 <p>When <strong>CAN</strong> mode is selected, an <strong>Adapter: Connected</strong> / <strong>Not Connected</strong> indicator appears below the port settings, showing whether the CAN adapter that is actually running (from previously saved settings) is open and seeing bus traffic. It updates live and does not reflect the driver/port currently selected in the drop-downs until they are saved and applied.</p>
 
-<p>The module can also send the same UDP packets over <strong>wired Ethernet</strong> (W5500 board attached to the module). No app setting is needed &mdash; select Ethernet mode in the module's web portal and give the PC's wired adapter a static IP on the module's subnet (default <code>192.168.1.x</code>). The app receives WiFi and Ethernet packets on the same port.</p>
+<p>The module can also send the same UDP packets over <strong>wired Ethernet</strong> (W5500 board attached to the module). No app setting is needed — select Ethernet mode in the module's web portal and give the PC's wired adapter a static IP on the module's subnet (default <code>192.168.1.x</code>). The app receives WiFi and Ethernet packets on the same port.</p>
 
-<blockquote><strong>Module setup page:</strong> the module's own settings (communication mode, sensor signals, WiFi credentials, firmware update) are configured on its built-in web page at <code>http://192.168.200.1</code>, reached while connected to the module's WiFi hotspot &mdash; see <a href="#14-module-web-portal">Module Web Portal</a>.</blockquote>
+<blockquote><p><strong>Module setup page:</strong> the module's own settings (communication mode, WiFi credentials, firmware update) are configured on its built-in web page at <code>http://192.168.200.1</code>, reached while connected to the module's WiFi hotspot — see <a href="#14-module-web-portal">Module Web Portal</a>.</p></blockquote>
 
 <h4>Supported CAN adapters</h4>
 
 <table>
 <tr><th>Driver</th><th>Adapters</th><th>Notes</th></tr>
-<tr><td><strong>SLCAN</strong></td><td>CANable (slcan firmware), SH-C30A, other SLCAN adapters</td><td>Appears as a COM port &mdash; select it under <strong>COM Port</strong>.</td></tr>
-<tr><td><strong>InnoMaker</strong></td><td>InnoMaker USB2CAN</td><td>Requires the vendor's driver and SDK files: copy <code>InnoMakerUsb2CanLib.dll</code> and <code>LibUsbDotNet.dll</code> from the InnoMaker USB2CAN C# SDK (<code>Lib</code> folder) into the YieldFlo application folder. Download them as raw binaries, not from a GitHub web page. The COM Port setting is ignored &mdash; the first adapter found is used.</td></tr>
-<tr><td><strong>PCAN</strong></td><td>Peak PCAN-USB</td><td>Install the PEAK device driver package (includes PCAN-Basic) from peak-system.com &mdash; no files need to be copied. The COM Port setting is ignored &mdash; the first adapter found on PCAN USB channels 1&ndash;8 is used.</td></tr>
+<tr><td><strong>SLCAN</strong></td><td>CANable (slcan firmware), SH-C30A, other SLCAN adapters</td><td>Appears as a COM port — select it under <strong>COM Port</strong>.</td></tr>
+<tr><td><strong>InnoMaker</strong></td><td>InnoMaker USB2CAN</td><td>Requires the vendor's driver and SDK files: copy <code>InnoMakerUsb2CanLib.dll</code> and <code>LibUsbDotNet.dll</code> from the InnoMaker USB2CAN C# SDK (<code>Lib</code> folder) into the BeltFlo application folder. Download them as raw binaries, not from a GitHub web page. The COM Port setting is ignored — the first adapter found is used.</td></tr>
+<tr><td><strong>PCAN</strong></td><td>Peak PCAN-USB</td><td>Install the PEAK device driver package (includes PCAN-Basic) from peak-system.com — no files need to be copied. The COM Port setting is ignored — the first adapter found on PCAN USB channels 1–8 is used.</td></tr>
 </table>
 
-<p>If CAN fails to start, the reason is written to the error log in <code>Documents\YieldFlo\Logs</code>.</p>
+<p>If CAN fails to start, the reason is written to the error log in <code>Documents\BeltFlo\Logs</code>.</p>
 
 <h3>Resume Job on Start</h3>
 
-<p>When enabled, YieldFlo automatically reloads the active job when the app starts. Useful if the PC is rebooted during a harvest day.</p>
+<p>When enabled, BeltFlo automatically reloads the active job when the app starts. Useful if the PC is rebooted during a harvest day.</p>
 
 <h3>Saving settings</h3>
 
@@ -766,9 +768,9 @@ li { margin: 2px 0; }
 
 <h2 id="13-language">13. Language</h2>
 
-<p><strong>Menu: Menu &rarr; Language</strong></p>
+<p><strong>Menu: Menu → Language</strong></p>
 
-<p>YieldFlo supports the following languages:</p>
+<p>BeltFlo supports the following languages:</p>
 
 <table>
 <tr><th>Code</th><th>Language</th></tr>
@@ -785,43 +787,47 @@ li { margin: 2px 0; }
 <h3>Changing language</h3>
 
 <ol>
-<li>Press <strong>Menu &rarr; Language</strong></li>
+<li>Press <strong>Menu → Language</strong></li>
 <li>Select the desired language from the list</li>
 <li>Press <strong>Save &amp; Restart</strong></li>
 </ol>
 
-<p>YieldFlo will restart automatically with the new language applied.</p>
+<p>BeltFlo will restart automatically with the new language applied.</p>
 
-<blockquote><strong>Note:</strong> If AgOpenGPS is already installed, YieldFlo will automatically use the same language on first launch.</blockquote>
+<blockquote><p><strong>Note:</strong> If AgOpenGPS is already installed, BeltFlo will automatically use the same language on first launch.</p></blockquote>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
 
 <h2 id="14-module-web-portal">14. Module Web Portal</h2>
 
-<p>The YieldFlo module has a built-in settings page served from its own WiFi hotspot. Use it to configure the communication mode, the optical sensor signals, and WiFi credentials, and to update the module firmware.</p>
+<p>The BeltFlo module has a built-in settings page served from its own WiFi hotspot. Use it to configure the communication mode and WiFi credentials, to check the scale hardware, and to update the module firmware.</p>
 
 <h3>Opening the portal</h3>
 
 <ol>
 <li>Power the module. It broadcasts a WiFi hotspot named <code>BeltFlo_ESP32_XXXXXXXX</code> (the suffix is unique to each module).</li>
 <li>Connect the PC, tablet, or phone to that hotspot.</li>
-<li>Browse to <code>http://192.168.200.1</code> (with the default module ID 0 — the address is 192.168.(200&nbsp;+&nbsp;module&nbsp;ID).1).</li>
+<li>Browse to <code>http://192.168.200.1</code> (with the default module ID 0 — the address is 192.168.(200 + module ID).1).</li>
 </ol>
 
 <h3>Settings</h3>
 
 <table>
 <tr><th>Setting</th><th>Description</th></tr>
-<tr><td><strong>Communication &mdash; Mode</strong></td><td>WiFi (UDP), CAN bus, or Ethernet (UDP over a wired W5500 board). WiFi/Ethernet and CAN must match the Module communication setting in the PC app &mdash; the app treats WiFi and Ethernet identically.</td></tr>
-<tr><td><strong>Communication &mdash; Ethernet subnet</strong></td><td>First three octets of the wired network (default <code>192.168.1</code>). The module takes IP <code>subnet.(50 + module ID)</code>; give the PC's wired adapter a static IP on the same subnet (e.g. <code>192.168.1.10</code>). In Ethernet mode the portal shows whether the W5500 board and cable link are detected.</td></tr>
-<tr><td><strong>Optical Sensor &mdash; Signals</strong></td><td><strong>Main + Comp</strong> (default): both receiver outputs are wired to the module. The module compares them on every edge and rejects electrical noise glitches. <strong>Main only</strong>: only the main signal wire is connected &mdash; for example, when sharing the elevator sensor with another yield monitor through a harness that does not carry the complementary wire. Noise rejection is disabled in this mode.</td></tr>
-<tr><td><strong>Optical Sensor &mdash; Polarity</strong></td><td><strong>PNP</strong> (default &mdash; output HIGH with beam clear, the common choice for this kind of sensor) or <strong>NPN</strong> (inverted logic). Select NPN if flow reads high with no grain and low with grain.</td></tr>
+<tr><td><strong>Communication — Mode</strong></td><td>WiFi (UDP), CAN bus, or Ethernet (UDP over a wired W5500 board). WiFi/Ethernet and CAN must match the Module communication setting in the PC app — the app treats WiFi and Ethernet identically.</td></tr>
+<tr><td><strong>Communication — Ethernet subnet</strong></td><td>First three octets of the wired network (default <code>192.168.1</code>). The module takes IP <code>subnet.(50 + module ID)</code>; give the PC's wired adapter a static IP on the same subnet (e.g. <code>192.168.1.10</code>). In Ethernet mode the portal shows whether the W5500 board and cable link are detected.</td></tr>
 </table>
 
 <p>Press <strong>Save / Restart</strong> to store the settings in the module and restart it.</p>
 
-<p>WiFi settings are on their own page &mdash; follow the <strong>WiFi Network</strong> link at the bottom of the portal.</p>
+<h3>Conveyor Scale panel</h3>
+
+<p>Below the settings the portal shows the scale, read-only: whether the converter answered, its raw counts, the live load on the weighed section, the belt pulse count with running or stopped, and whether settings are still arriving from BeltFlo.</p>
+
+<p>Nothing here can be edited, because the calibration belongs to the application — zero, span, section length and belt travel per pulse are set on the Conveyor Setup and Scale Calibration screens and sent down every two seconds. The panel exists to answer one question in the yard, before driving to the field: is this module's hardware alive?</p>
+
+<p>WiFi settings are on their own page — follow the <strong>WiFi Network</strong> link at the bottom of the portal.</p>
 
 <h3>WiFi network</h3>
 
@@ -844,16 +850,16 @@ li { margin: 2px 0; }
 <tr><td><strong>Network</strong></td><td>Name of the network to join. Tap a scan result to fill this in, or type it in for a hidden network.</td></tr>
 <tr><td><strong>Password</strong></td><td>Password for that network.</td></tr>
 <tr><td><strong>Use this Network</strong></td><td>Joins the network. Stays on until you turn it off.</td></tr>
-<tr><td><strong>Hotspot &mdash; Password</strong></td><td>Password for the module's own hotspot. Use 8&ndash;10 characters, or leave empty for an open hotspot.</td></tr>
+<tr><td><strong>Hotspot — Password</strong></td><td>Password for the module's own hotspot. Use 8–10 characters, or leave empty for an open hotspot.</td></tr>
 </table>
 
-<p>If the module cannot join, it keeps trying in the background and the page shows the reason. <strong>Password refused</strong> means the password is wrong &mdash; correct it and press <strong>Save / Restart</strong>. Press <strong>Retry Connection Now</strong> to try again straight away after changing something at the router.</p>
+<p>If the module cannot join, it keeps trying in the background and the page shows the reason. <strong>Password refused</strong> means the password is wrong — correct it and press <strong>Save / Restart</strong>. Press <strong>Retry Connection Now</strong> to try again straight away after changing something at the router.</p>
 
 <h3>Firmware update</h3>
 
-<p>The <strong>Update Firmware</strong> link at the bottom of the portal opens the over-the-air update page. Select the compiled firmware file (<code>.bin</code>) and upload it &mdash; the module flashes itself and restarts. The installed firmware version is shown at the top of the portal page.</p>
+<p>The <strong>Update Firmware</strong> link at the bottom of the portal opens the over-the-air update page. Select the compiled firmware file (<code>.bin</code>) and upload it — the module flashes itself and restarts. The installed firmware version is shown at the top of the portal page.</p>
 
-<blockquote><strong>Note:</strong> A firmware update that changes the stored settings layout resets the module to factory defaults. Reopen the portal afterwards and re-enter your settings.</blockquote>
+<blockquote><p><strong>Note:</strong> A firmware update that changes the stored settings layout resets the module to factory defaults. Reopen the portal afterwards and re-enter your settings.</p></blockquote>
 
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
 <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
@@ -861,13 +867,15 @@ li { margin: 2px 0; }
 <h2 id="15-troubleshooting">15. Troubleshooting</h2>
 
 <h3>GPS indicator stays red</h3>
+
 <ul>
 <li>Confirm AgOpenGPS is running on the same PC or local network</li>
 <li>Check that both apps are on the same subnet</li>
-<li>Verify the network configuration in YieldFlo Settings</li>
+<li>Verify the network configuration in BeltFlo Settings</li>
 </ul>
 
 <h3>Module indicator stays off</h3>
+
 <ul>
 <li>Check the module is powered and the WiFi or CAN connection is active</li>
 <li>In WiFi mode, confirm the PC is connected to the correct network</li>
@@ -876,50 +884,65 @@ li { margin: 2px 0; }
 </ul>
 
 <h3>Module will not join a WiFi network</h3>
+
 <ul>
-<li>Open the module portal and follow the <strong>WiFi Network</strong> link &mdash; the page shows the current state</li>
+<li>Open the module portal and follow the <strong>WiFi Network</strong> link — the page shows the current state</li>
 <li><strong>Password refused</strong> means the password is wrong; correct it and press <strong>Save / Restart</strong></li>
 <li>Press <strong>Scan for Networks</strong> to confirm the network is in range</li>
 <li>Press <strong>Retry Connection Now</strong> after changing anything at the router</li>
 </ul>
 
-<h3>Yield reads zero or very low</h3>
+<h3>Yield reads zero while digging</h3>
+
+<p>Work down this list in order — the first two are far more common than the rest.</p>
+
 <ul>
-<li>Check the elevator optical sensor alignment and wiring</li>
-<li>Verify the Sensor Baseline is set correctly (set with elevator running empty)</li>
-<li>Confirm the processing delay is appropriate for your combine</li>
-<li>If the sensor's complementary wire is not connected, set <strong>Signals</strong> to <strong>Main only</strong> in the module web portal &mdash; in Main + Comp mode a missing complementary signal causes erratic, low readings</li>
+<li><strong>Check the Scale indicator for orange "Belt".</strong> Weight is moving but no belt pulses are arriving, so BeltFlo multiplies by zero travel and records nothing. Check the proximity sensor, its gap to the targets, and its wiring.</li>
+<li><strong>Check the empty-belt threshold.</strong> If it is set far too high, ordinary flow is being treated as an empty belt. Watch the Flow bar while digging and compare against <strong>Empty Belt Below</strong> on Conveyor Setup.</li>
+<li>Check the Scale indicator for orange <strong>Zero</strong> — the module has no zero, so it is not weighing yet. Run Zero Scale.</li>
+<li>Check the job is actually recording: running, not paused, sections on, above 0.5 km/h.</li>
+<li>On the module portal, check the Conveyor Scale panel shows the converter found and the belt pulses climbing.</li>
 </ul>
 
-<h3>Moisture reads incorrectly</h3>
+<h3>Yield reads high</h3>
+
 <ul>
-<li>Verify the moisture sensor is installed and wired correctly</li>
-<li>Check that the moisture calibration (offset and scale) is set in the active profile via <strong>Menu &rarr; Moisture Cal</strong></li>
-<li>Compare against a certified grain moisture meter and adjust the calibration</li>
+<li><strong>Suspect the empty-belt threshold first.</strong> Set too low, dirt, stones and trash on a running belt count as crop all day. The symptom is BeltFlo reading consistently heavier than the truck tickets.</li>
+<li>Re-zero the scale with the belt running empty. A zero that has drifted with the day's dirt adds a little for every inch of belt that passes.</li>
+<li>Check nothing is fouling the weighed section — a stone wedged against the frame, or crop build-up bridging to a fixed part of the machine.</li>
+</ul>
+
+<h3>Loads do not match the truck tickets</h3>
+
+<ul>
+<li>Read the table in <a href="#8-scale-calibration">Scale Calibration</a> — the pattern of the errors tells you whether to re-tare or to change the span.</li>
+<li>Check the load was not flagged: a wet, trashy or stony load is genuinely different, not a calibration error.</li>
+<li>On a tank machine, individual load weights are expected to be approximate. Correct the finished job as a whole instead.</li>
 </ul>
 
 <h3>App crashes on start</h3>
+
 <ul>
-<li>Check <code>YieldFlo_Crash.log</code> in the application folder for details</li>
+<li>Check <code>BeltFlo_Crash.log</code> in the application folder for details</li>
 </ul>
 
 <h3>Job does not resume after restart</h3>
+
 <ul>
 <li>Ensure <strong>Resume Job on Start</strong> is enabled in Settings</li>
-<li>The job must have been active (not stopped) when YieldFlo was closed</li>
+<li>The job must have been active (not stopped) when BeltFlo was closed</li>
 </ul>
 
 <h3>AOG UDP failed to start</h3>
+
 <ul>
-<li>If AgOpenGPS Rate Controller (RC) is running, both RC and YieldFlo must be built from current source for UDP port sharing to work</li>
-<li>YieldFlo will still function for module data — only GPS reception will be affected</li>
+<li>If AgOpenGPS Rate Controller (RC) is running, both RC and BeltFlo must be built from current source for UDP port sharing to work</li>
+<li>BeltFlo will still function for module data — only GPS reception will be affected</li>
 </ul>
 
+<p><em>BeltFlo is designed for use with AgOpenGPS. It is not a certified weighing system and must not be used as the basis for settlement, sale or any other transaction. Use a certified weighbridge for that. BeltFlo's purpose is to show you where the crop came from.</em></p>
+
 <p class="back-link"><a href="#table-of-contents">&#8593; Contents</a></p>
-
-<hr>
-
-<p><em>YieldFlo is designed for use with AgOpenGPS. It is not a certified weighing system and should not be used as the sole basis for grain settlement.</em></p>
 
 </body>
 </html>

@@ -64,32 +64,19 @@ namespace BeltFlo.Language
         internal static string lgTitleScaleCal    => Get("lgTitleScaleCal");
         internal static string lgTitleFields      => Get("lgTitleFields");
         internal static string lgTitleImportFields => Get("lgTitleImportFields");
-        internal static string lgTitleYieldCal    => Get("lgTitleYieldCal");
-        internal static string lgTitleMoistureCal => Get("lgTitleMoistureCal");
         internal static string lgTitleJobReport   => Get("lgTitleJobReport");
         internal static string lgTitleYieldMap    => Get("lgTitleYieldMap");
         internal static string lgTitleLanguage    => Get("lgTitleLanguage");
 
         // ── Main form ────────────────────────────────────────────────────────
         internal static string lgYield         => Get("lgYield");
-        internal static string lgMoisture      => Get("lgMoisture");
         internal static string lgSpeed         => Get("lgSpeed");
-        internal static string lgSensors       => Get("lgSensors");
-        internal static string lgElevFlow      => Get("lgElevFlow");
-        internal static string lgMoistureLabel => Get("lgMoistureLabel");
         internal static string lgGPS           => Get("lgGPS");
         internal static string lgModule        => Get("lgModule");
         internal static string lgNoActiveJob   => Get("lgNoActiveJob");
         internal static string lgJobStatusOn   => Get("lgJobStatusOn");
         internal static string lgJobStatusOff  => Get("lgJobStatusOff");
         internal static string lgDataWriteError => Get("lgDataWriteError");
-        internal static string lgNoSensor       => Get("lgNoSensor");
-        internal static string lgNoComp         => Get("lgNoComp");
-        internal static string lgBaselineHigh       => Get("lgBaselineHigh");
-        internal static string lgBaselineHighPrompt => Get("lgBaselineHighPrompt");
-        internal static string lgSensorFault    => Get("lgSensorFault");
-        internal static string lgCompFault      => Get("lgCompFault");
-        internal static string lgSensorRestored => Get("lgSensorRestored");
         internal static string lgStopJobPrompt => Get("lgStopJobPrompt");
         internal static string lgStopJob       => Get("lgStopJob");
         internal static string lgMenu          => Get("lgMenu");
@@ -115,66 +102,11 @@ namespace BeltFlo.Language
         internal static string lgSettingsSaved => Get("lgSettingsSaved");
 
         // ── Yield Cal form ───────────────────────────────────────────────────
-        internal static string lgProcessingDelay    => Get("lgProcessingDelay");
         internal static string lgSeconds            => Get("lgSeconds");
-        internal static string lgSensorBaseline     => Get("lgSensorBaseline");
-        internal static string lgBaselineNote       => Get("lgBaselineNote");
-        internal static string lgSetBaseline        => Get("lgSetBaseline");
-        internal static string lgBaselineNoModule   => Get("lgBaselineNoModule");
-        internal static string lgNoise              => Get("lgNoise");
-        internal static string lgPaddles            => Get("lgPaddles");
-        internal static string lgBaselineSaved          => Get("lgBaselineSaved");
-        internal static string lgYieldFactor        => Get("lgYieldFactor");
-        internal static string lgFactorNote         => Get("lgFactorNote");
-        internal static string lgCalibrationRun     => Get("lgCalibrationRun");
-        internal static string lgStartRun           => Get("lgStartRun");
-        internal static string lgStopRun            => Get("lgStopRun");
-        internal static string lgMeasuredBlank      => Get("lgMeasuredBlank");
-        internal static string lgActualWeight       => Get("lgActualWeight");
-        internal static string lgCalibrationTip     => Get("lgCalibrationTip");
-        internal static string lgCalSaved           => Get("lgCalSaved");
-        internal static string lgPendingSave        => Get("lgPendingSave");
-        internal static string lgEnterWeighedAmt    => Get("lgEnterWeighedAmt");
-        internal static string lgNoMeasuredData     => Get("lgNoMeasuredData");
-        internal static string lgNewFactorResult    => Get("lgNewFactorResult");
-        internal static string lgFactorUpdated      => Get("lgFactorUpdated");
-        internal static string lgSetBaselineConfirm => Get("lgSetBaselineConfirm");
-        internal static string lgMeasuredMetric     => Get("lgMeasuredMetric");
-        internal static string lgMeasuredImperial   => Get("lgMeasuredImperial");
-        internal static string lgCalRunAt           => Get("lgCalRunAt");
-        internal static string lgCalRunSince        => Get("lgCalRunSince");
-        internal static string lgCalRunInterrupted  => Get("lgCalRunInterrupted");
-        internal static string lgCalRunDiscard      => Get("lgCalRunDiscard");
-        internal static string lgCalRunDiscardPrompt     => Get("lgCalRunDiscardPrompt");
-        internal static string lgCalRunWrongCrop    => Get("lgCalRunWrongCrop");
-        internal static string lgCalRunInterruptedTitle  => Get("lgCalRunInterruptedTitle");
-        internal static string lgCalRunInterruptedPrompt => Get("lgCalRunInterruptedPrompt");
 
         // ── Whole Field Calibration tab ──────────────────────────────────────
-        internal static string lgTabCalRun          => Get("lgTabCalRun");
-        internal static string lgTabFieldCal        => Get("lgTabFieldCal");
-        internal static string lgFieldWeightLabel   => Get("lgFieldWeightLabel");
-        internal static string lgFieldJob           => Get("lgFieldJob");
-        internal static string lgFieldCropMismatch  => Get("lgFieldCropMismatch");
-        internal static string lgFieldNoJob         => Get("lgFieldNoJob");
-        internal static string lgFieldRecordedImperial => Get("lgFieldRecordedImperial");
-        internal static string lgFieldRecordedMetric   => Get("lgFieldRecordedMetric");
-        internal static string lgFieldImplied       => Get("lgFieldImplied");
-        internal static string lgFieldNoData        => Get("lgFieldNoData");
-        internal static string lgFieldWrongCrop     => Get("lgFieldWrongCrop");
-        internal static string lgFieldRecalcTitle   => Get("lgFieldRecalcTitle");
-        internal static string lgFieldRecalcPrompt  => Get("lgFieldRecalcPrompt");
-        internal static string lgFieldRecalcDone    => Get("lgFieldRecalcDone");
 
         // ── Moisture Cal form ────────────────────────────────────────────────
-        internal static string lgMoistureSection    => Get("lgMoistureSection");
-        internal static string lgPercentSavedToCrop => Get("lgPercentSavedToCrop");
-        internal static string lgPercentPerCount    => Get("lgPercentPerCount");
-        internal static string lgTemperatureSection => Get("lgTemperatureSection");
-        internal static string lgDegCSavedToProfile => Get("lgDegCSavedToProfile");
-        internal static string lgDegCPerCount       => Get("lgDegCPerCount");
-        internal static string lgNoLiveMoistReading => Get("lgNoLiveMoistReading");
-        internal static string lgNoLiveTempReading  => Get("lgNoLiveTempReading");
         internal static string lgSaved              => Get("lgSaved");
 
         // ── Jobs form ────────────────────────────────────────────────────────
@@ -195,18 +127,11 @@ namespace BeltFlo.Language
         internal static string lgItemInUseByJob    => Get("lgItemInUseByJob");
 
         // ── Crops form ───────────────────────────────────────────────────────
-        internal static string lgCategoryLabel    => Get("lgCategoryLabel");
-        internal static string lgTestWeight       => Get("lgTestWeight");
-        internal static string lgBushelWeight     => Get("lgBushelWeight");
-        internal static string lgMktMoisture      => Get("lgMktMoisture");
         internal static string lgEnterCropName    => Get("lgEnterCropName");
-        internal static string lgTestWeightRequired => Get("lgTestWeightRequired");
         internal static string lgMustHaveOneCrop  => Get("lgMustHaveOneCrop");
         internal static string lgDeleteCropPrompt => Get("lgDeleteCropPrompt");
 
         // ── Headers form ─────────────────────────────────────────────────────
-        internal static string lgType               => Get("lgType");
-        internal static string lgWidth              => Get("lgWidth");
         internal static string lgRows               => Get("lgRows");
         internal static string lgRowSpacing         => Get("lgRowSpacing");
         internal static string lgAheadOfPivot       => Get("lgAheadOfPivot");
@@ -255,12 +180,10 @@ namespace BeltFlo.Language
         internal static string lgJobReport    => Get("lgJobReport");
         internal static string lgPrint        => Get("lgPrint");
         internal static string lgRecalcMap       => Get("lgRecalcMap");
-        internal static string lgRecalcMapPrompt => Get("lgRecalcMapPrompt");
         internal static string lgFieldColon   => Get("lgFieldColon");
         internal static string lgAreaColon    => Get("lgAreaColon");
         internal static string lgTotalColon   => Get("lgTotalColon");
         internal static string lgAvgYield     => Get("lgAvgYield");
-        internal static string lgAvgMoisture  => Get("lgAvgMoisture");
         internal static string lgDataPoints   => Get("lgDataPoints");
         internal static string lgExportCsv    => Get("lgExportCsv");
         internal static string lgExportFailed => Get("lgExportFailed");

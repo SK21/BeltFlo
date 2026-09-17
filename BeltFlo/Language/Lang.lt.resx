@@ -24,7 +24,6 @@
   <data name="lgNone"      xml:space="preserve"><value>(nėra)</value></data>
   <data name="lgName"      xml:space="preserve"><value>Pavadinimas:</value></data>
   <data name="lgCrop"      xml:space="preserve"><value>Kultūra:</value></data>
-  <data name="lgHeader"    xml:space="preserve"><value>Galva:</value></data>
   <data name="lgProfile"   xml:space="preserve"><value>Profilis:</value></data>
   <data name="lgField"     xml:space="preserve"><value>Laukas:</value></data>
   <data name="lgOffset"    xml:space="preserve"><value>Poslinkis:</value></data>
@@ -41,36 +40,22 @@
   <data name="lgTitleSettings"    xml:space="preserve"><value>Nustatymai</value></data>
   <data name="lgTitleJobs"        xml:space="preserve"><value>Darbai</value></data>
   <data name="lgTitleCrops"       xml:space="preserve"><value>Kultūros</value></data>
-  <data name="lgTitleHeaders"     xml:space="preserve"><value>Galvos</value></data>
   <data name="lgTitleProfiles"    xml:space="preserve"><value>Profiliai</value></data>
   <data name="lgTitleFields"      xml:space="preserve"><value>Laukai</value></data>
   <data name="lgTitleImportFields" xml:space="preserve"><value>Importuoti laukus</value></data>
-  <data name="lgTitleYieldCal"    xml:space="preserve"><value>Derliaus kalibravimas</value></data>
-  <data name="lgTitleMoistureCal" xml:space="preserve"><value>Drėgmės kalibravimas</value></data>
   <data name="lgTitleJobReport"   xml:space="preserve"><value>Darbo ataskaita</value></data>
   <data name="lgTitleYieldMap"    xml:space="preserve"><value>Derliaus žemėlapis</value></data>
   <data name="lgTitleLanguage"    xml:space="preserve"><value>Kalba</value></data>
 
   <!-- Main form -->
   <data name="lgYield"         xml:space="preserve"><value>DERLIUS</value></data>
-  <data name="lgMoisture"      xml:space="preserve"><value>DRĖGMĖ</value></data>
   <data name="lgSpeed"         xml:space="preserve"><value>GREITIS</value></data>
-  <data name="lgSensors"       xml:space="preserve"><value>Jutikliai:</value></data>
-  <data name="lgElevFlow"      xml:space="preserve"><value>Elevatoriaus srautas</value></data>
-  <data name="lgMoistureLabel" xml:space="preserve"><value>Drėgmė</value></data>
   <data name="lgGPS"           xml:space="preserve"><value>GPS</value></data>
   <data name="lgModule"        xml:space="preserve"><value>Modulis</value></data>
   <data name="lgNoActiveJob"   xml:space="preserve"><value>Nėra aktyvaus darbo</value></data>
   <data name="lgJobStatusOn"   xml:space="preserve"><value> - Įjungta</value></data>
   <data name="lgJobStatusOff"  xml:space="preserve"><value> - Išjungta</value></data>
   <data name="lgDataWriteError" xml:space="preserve"><value> - ĮRAŠYMO KLAIDA</value></data>
-  <data name="lgNoSensor"       xml:space="preserve"><value>NĖRA JUTIKLIO</value></data>
-  <data name="lgNoComp"         xml:space="preserve"><value>NĖRA COMP</value></data>
-  <data name="lgBaselineHigh"       xml:space="preserve"><value>Bazinė vertė atrodo didelė</value></data>
-  <data name="lgBaselineHighPrompt" xml:space="preserve"><value>Bazinė vertė {0:0.###} didelė tuščiam elevatoriui. Vis tiek išsaugoti?</value></data>
-  <data name="lgSensorFault"    xml:space="preserve"><value>Jutiklio klaida - įrašymas pristabdytas. Patikrinkite jutiklį.</value></data>
-  <data name="lgCompFault"      xml:space="preserve"><value>Nėra Comp signalo - įrašymas pristabdytas. Nustatykite modulį į 'Main only'.</value></data>
-  <data name="lgSensorRestored" xml:space="preserve"><value>Jutiklis veikia - įrašymas tęsiamas.</value></data>
   <data name="lgStopJobPrompt" xml:space="preserve"><value>Sustabdyti ir uždaryti šį darbą?</value></data>
   <data name="lgStopJob"       xml:space="preserve"><value>Sustabdyti darbą</value></data>
   <data name="lgMenu"          xml:space="preserve"><value>Meniu</value></data>
@@ -97,44 +82,9 @@
   <data name="lgSettingsSaved" xml:space="preserve"><value>Nustatymai išsaugoti.</value></data>
 
   <!-- Yield Cal form -->
-  <data name="lgProcessingDelay"    xml:space="preserve"><value>Apdorojimo vėlinimas:</value></data>
   <data name="lgSeconds"            xml:space="preserve"><value>sekundės</value></data>
-  <data name="lgSensorBaseline"     xml:space="preserve"><value>Jutiklio bazinė vertė:</value></data>
-  <data name="lgBaselineNote"       xml:space="preserve"><value>užtvėrimo santykis be grūdų (0–1)</value></data>
-  <data name="lgSetBaseline"        xml:space="preserve"><value>Nustatyti bazinę vertę</value></data>
-  <data name="lgNoise"              xml:space="preserve"><value>Triukšmas</value></data>
-  <data name="lgPaddles"            xml:space="preserve"><value>Mentelės</value></data>
-  <data name="lgBaselineSaved"  xml:space="preserve"><value>Nulinė vertė išsaugota:</value></data>
-  <data name="lgBaselineNoModule"   xml:space="preserve"><value>Modulis neprijungtas.</value></data>
-  <data name="lgYieldFactor"        xml:space="preserve"><value>Derliaus koeficientas:</value></data>
-  <data name="lgFactorNote"         xml:space="preserve"><value>kalibravimo dauginamasis — padidinkite, kad padidintumėte rodmenis</value></data>
-  <data name="lgCalibrationRun"     xml:space="preserve"><value>─── Kalibravimo ciklas ────────────────────────</value></data>
-  <data name="lgStartRun"           xml:space="preserve"><value>Pradėti ciklą</value></data>
-  <data name="lgStopRun"            xml:space="preserve"><value>Sustabdyti ciklą</value></data>
-  <data name="lgMeasuredBlank"      xml:space="preserve"><value>Išmatuota: —</value></data>
-  <data name="lgActualWeight"       xml:space="preserve"><value>Tikrasis svoris:</value></data>
-  <data name="lgCalibrationTip"     xml:space="preserve"><value>Patarimas: paleiskite tuščią elevatorių 10 s bazinei vertei nustatyti.</value></data>
-  <data name="lgCalSaved"           xml:space="preserve"><value>Kalibravimas išsaugotas ir pritaikytas.</value></data>
-  <data name="lgPendingSave"        xml:space="preserve"><value>Paspauskite „Išsaugoti &amp;&amp; Taikyti", kad patvirtintumėte.</value></data>
-  <data name="lgEnterWeighedAmt"    xml:space="preserve"><value>Įveskite faktinį pasverto svorio kiekį.</value></data>
-  <data name="lgNoMeasuredData"     xml:space="preserve"><value>Nėra matavimo duomenų — pirmiausia atlikite kalibravimo ciklą.</value></data>
-  <data name="lgNewFactorResult"    xml:space="preserve"><value>Naujas koeficientas: {0:F3}</value></data>
-  <data name="lgFactorUpdated"      xml:space="preserve"><value>Koeficientas atnaujintas į {0:F3} ir išsaugotas.</value></data>
-  <data name="lgSetBaselineConfirm" xml:space="preserve"><value>Nustatyti bazinę vertę {0:F3}?
-
-Įsitikinkite, kad elevatorius veikia be grūdų.</value></data>
-  <data name="lgMeasuredMetric"     xml:space="preserve"><value>Išmatuota: {0:F2} t</value></data>
-  <data name="lgMeasuredImperial"   xml:space="preserve"><value>Išmatuota: {0:F2} bu ({1:F0} lbs)</value></data>
 
   <!-- Moisture Cal form -->
-  <data name="lgMoistureSection"    xml:space="preserve"><value>Drėgmė</value></data>
-  <data name="lgPercentSavedToCrop" xml:space="preserve"><value>% (išsaugota kultūroje)</value></data>
-  <data name="lgPercentPerCount"    xml:space="preserve"><value>%/impulsas (išsaugota profilyje)</value></data>
-  <data name="lgTemperatureSection" xml:space="preserve"><value>Temperatūra</value></data>
-  <data name="lgDegCSavedToProfile" xml:space="preserve"><value>°C (išsaugota profilyje)</value></data>
-  <data name="lgDegCPerCount"       xml:space="preserve"><value>°C/impulsas (išsaugota profilyje)</value></data>
-  <data name="lgNoLiveMoistReading" xml:space="preserve"><value>Nėra tiesioginių drėgmės rodmenų.</value></data>
-  <data name="lgNoLiveTempReading"  xml:space="preserve"><value>Nėra tiesioginių temperatūros rodmenų.</value></data>
   <data name="lgSaved"              xml:space="preserve"><value>Išsaugota.</value></data>
 
   <!-- Jobs form -->
@@ -146,7 +96,6 @@
   <data name="lgColAcres"          xml:space="preserve"><value>Hektarai</value></data>
   <data name="lgColField"          xml:space="preserve"><value>Laukas</value></data>
   <data name="lgSelectCropFirst"   xml:space="preserve"><value>Pirmiausia pasirinkite kultūrą.</value></data>
-  <data name="lgSelectHeaderFirst" xml:space="preserve"><value>Pirmiausia pasirinkite galvą.</value></data>
   <data name="lgSelectJobFirst"    xml:space="preserve"><value>Pirmiausia pasirinkite darbą iš sąrašo.</value></data>
   <data name="lgEnterJobName"      xml:space="preserve"><value>Įveskite darbo pavadinimą.</value></data>
   <data name="lgMustHaveOneJob"    xml:space="preserve"><value>Reikalingas bent vienas darbas.</value></data>
@@ -156,21 +105,11 @@
   <data name="lgItemInUseByJob"    xml:space="preserve"><value>Ištrinti negalima — naudoja bent vienas darbas.</value></data>
 
   <!-- Crops form -->
-  <data name="lgCategoryLabel"    xml:space="preserve"><value>Kategorija:</value></data>
-  <data name="lgTestWeight"       xml:space="preserve"><value>Bandomasis svoris:</value></data>
-  <data name="lgMktMoisture"      xml:space="preserve"><value>Rinkos drėgmė:</value></data>
   <data name="lgEnterCropName"    xml:space="preserve"><value>Įveskite kultūros pavadinimą.</value></data>
-  <data name="lgTestWeightRequired" xml:space="preserve"><value>Įveskite didesnį nei nulis natūrinį svorį.</value></data>
   <data name="lgMustHaveOneCrop"  xml:space="preserve"><value>Reikalinga bent viena kultūra.</value></data>
   <data name="lgDeleteCropPrompt" xml:space="preserve"><value>Ištrinti šią kultūrą?</value></data>
 
   <!-- Headers form -->
-  <data name="lgType"               xml:space="preserve"><value>Tipas:</value></data>
-  <data name="lgWidth"              xml:space="preserve"><value>Plotis:</value></data>
-  <data name="lgHeaderOffset"       xml:space="preserve"><value>Prieš sukimosi tašką:</value></data>
-  <data name="lgEnterHeaderName"    xml:space="preserve"><value>Įveskite galvos pavadinimą.</value></data>
-  <data name="lgMustHaveOneHeader"  xml:space="preserve"><value>Reikalinga bent viena galva.</value></data>
-  <data name="lgDeleteHeaderPrompt" xml:space="preserve"><value>Ištrinti šią galvą?</value></data>
 
   <!-- Profiles form -->
   <data name="lgCombineId"           xml:space="preserve"><value>Kombainų ID:</value></data>
@@ -186,12 +125,10 @@
   <data name="lgJobReport"    xml:space="preserve"><value>Užduoties ataskaita</value></data>
   <data name="lgPrint"       xml:space="preserve"><value>Spausdinti</value></data>
   <data name="lgRecalcMap"       xml:space="preserve"><value>Perskaičiuoti</value></data>
-  <data name="lgRecalcMapPrompt" xml:space="preserve"><value>Perskaičiuoti šio darbo derliaus žemėlapį naudojant esamą kalibravimą? Ankstesnės pavaizduotos reikšmės bus perrašytos.</value></data>
   <data name="lgFieldColon"   xml:space="preserve"><value>Laukas:</value></data>
   <data name="lgAreaColon"    xml:space="preserve"><value>Plotas:</value></data>
   <data name="lgTotalColon"   xml:space="preserve"><value>Iš viso:</value></data>
   <data name="lgAvgYield"     xml:space="preserve"><value>Vid. derlius:</value></data>
-  <data name="lgAvgMoisture"  xml:space="preserve"><value>Vid. drėgmė:</value></data>
   <data name="lgDataPoints"   xml:space="preserve"><value>Duomenų taškai:</value></data>
   <data name="lgExportCsv"    xml:space="preserve"><value>Eksportuoti CSV</value></data>
   <data name="lgExportFailed" xml:space="preserve"><value>Eksportavimas nepavyko — nėra duomenų arba klaida.</value></data>
@@ -201,5 +138,93 @@
   <data name="lgLow"    xml:space="preserve"><value>Žemas</value></data>
   <data name="lgHigh"   xml:space="preserve"><value>Aukštas</value></data>
   <data name="lgNoJobs" xml:space="preserve"><value>Nėra darbų</value></data>
+
+
+  <!-- BeltFlo: conveyor scale, loads and alarms -->
+  <data name="lgRowsHarvested" xml:space="preserve"><value>Eilės:</value></data>
+  <data name="lgTitleConveyor" xml:space="preserve"><value>Konvejeris</value></data>
+  <data name="lgTitleScaleCal" xml:space="preserve"><value>Svarstyklių kalibravimas</value></data>
+  <data name="lgRows" xml:space="preserve"><value>Eilės:</value></data>
+  <data name="lgRowSpacing" xml:space="preserve"><value>Tarpueiliai:</value></data>
+  <data name="lgAheadOfPivot" xml:space="preserve"><value>Prieš pasukimo tašką:</value></data>
+  <data name="lgScaleWeighsInto" xml:space="preserve"><value>Svarstyklės sveria į:</value></data>
+  <data name="lgTruck" xml:space="preserve"><value>Sunkvežimis</value></data>
+  <data name="lgTank" xml:space="preserve"><value>Bunkeris</value></data>
+  <data name="lgDiggingWidth" xml:space="preserve"><value>Kasimo plotis: {0}</value></data>
+  <data name="lgRowsInfo" xml:space="preserve"><value>{0} pločio  (kasamoji turi {1} eiles)</value></data>
+  <data name="lgBeltPerPulse" xml:space="preserve"><value>Juosta impulsui:</value></data>
+  <data name="lgPulsesPerRev" xml:space="preserve"><value>Impulsai apsisukimui:</value></data>
+  <data name="lgSectionLength" xml:space="preserve"><value>Sveriamoji atkarpa:</value></data>
+  <data name="lgEmptyBeltBelow" xml:space="preserve"><value>Juosta tuščia žemiau:</value></data>
+  <data name="lgBeltStoppedAfter" xml:space="preserve"><value>Juosta sustojo po:</value></data>
+  <data name="lgDigToScaleDelay" xml:space="preserve"><value>Delsa nuo kasimo iki svarstyklių:</value></data>
+  <data name="lgBarFullFlow" xml:space="preserve"><value>Srauto juosta pilna ties:</value></data>
+  <data name="lgBarFullBelt" xml:space="preserve"><value>Juostos juosta pilna ties:</value></data>
+  <data name="lgMeasureBelt" xml:space="preserve"><value>Matuoti juostą</value></data>
+  <data name="lgResetDistance" xml:space="preserve"><value>Atstatyti atstumą</value></data>
+  <data name="lgConveyorJobRunning" xml:space="preserve"><value>Prieš keičiant šį nustatymą, užbaikite darbą.</value></data>
+  <data name="lgBarScalesOnly" xml:space="preserve"><value>Darbas vyksta - keisti galima tik juostų skalės ribas.</value></data>
+  <data name="lgCalRaw" xml:space="preserve"><value>Neapdorota vertė:</value></data>
+  <data name="lgCalWeight" xml:space="preserve"><value>Ant atkarpos:</value></data>
+  <data name="lgCalReading" xml:space="preserve"><value>Rodmuo:</value></data>
+  <data name="lgCalZero" xml:space="preserve"><value>Nulis:</value></data>
+  <data name="lgCalSpan" xml:space="preserve"><value>Nuolydis:</value></data>
+  <data name="lgCalStable" xml:space="preserve"><value>Stabilu</value></data>
+  <data name="lgCalUnstable" xml:space="preserve"><value>Nestabilu</value></data>
+  <data name="lgCalZeroScale" xml:space="preserve"><value>Nulinti svarstykles</value></data>
+  <data name="lgCalKnownWeight" xml:space="preserve"><value>Žinomas svoris</value></data>
+  <data name="lgNoScale" xml:space="preserve"><value>NĖRA SVARSTYKLIŲ</value></data>
+  <data name="lgScaleFault" xml:space="preserve"><value>Svarstyklių triktis - įrašymas pristabdytas</value></data>
+  <data name="lgScaleRestored" xml:space="preserve"><value>Svarstyklės OK - įrašymas tęsiamas</value></data>
+  <data name="lgLoads" xml:space="preserve"><value>Kroviniai:</value></data>
+  <data name="lgTitleLoads" xml:space="preserve"><value>Kroviniai</value></data>
+  <data name="lgNewLoad" xml:space="preserve"><value>Naujas krovinys</value></data>
+  <data name="lgFinishLoad" xml:space="preserve"><value>Užbaigti krovinį</value></data>
+  <data name="lgFlow" xml:space="preserve"><value>Srautas</value></data>
+  <data name="lgBelt" xml:space="preserve"><value>Juosta</value></data>
+  <data name="lgRecording" xml:space="preserve"><value>Įraš.</value></data>
+  <data name="lgRecalcLater" xml:space="preserve"><value>Žemėlapio korekcija atliekama Krovinių lange</value></data>
+  <data name="lgStatusScale" xml:space="preserve"><value>Svarstyklės</value></data>
+  <data name="lgStatusZero" xml:space="preserve"><value>Nulis</value></data>
+  <data name="lgModuleNotReceiving" xml:space="preserve"><value>Modulis negauna duomenų iš BeltFlo - patikrinkite ryšį</value></data>
+  <data name="lgFinishJob" xml:space="preserve"><value>Užbaigti</value></data>
+  <data name="lgFinishLoadPrompt" xml:space="preserve"><value>Užbaigti šį krovinį? Jo svoris išsaugomas, kol bus įvestas patvirtintas svoris.</value></data>
+  <data name="lgPaused" xml:space="preserve"><value>Pristabdyta - niekas neskaičiuojama</value></data>
+  <data name="lgResumed" xml:space="preserve"><value>Skaičiavimas tęsiamas</value></data>
+  <data name="lgResumedSectionsOn" xml:space="preserve"><value>Sekcijos įjungtos - skaičiavimas tęsiamas</value></data>
+  <data name="lgPausedSectionsOn" xml:space="preserve"><value>PRISTABDYTA - sekcijos įjungtos, neskaičiuojama. Spauskite ▶</value></data>
+  <data name="lgNoLoadOpen" xml:space="preserve"><value>Nėra atidaryto krovinio - spauskite ▶</value></data>
+  <data name="lgJobStatusPaused" xml:space="preserve"><value> - Pristabdyta</value></data>
+  <data name="lgAutoResumePause" xml:space="preserve"><value>Tęsti po pauzės, kai sekcijos įjungiamos</value></data>
+  <data name="lgScreenNotBuilt" xml:space="preserve"><value>Langas {0} dar nesukurtas</value></data>
+  <data name="lgBeltSensorSuspect" xml:space="preserve"><value>Nėra juostos impulsų - svoris neįrašomas</value></data>
+  <data name="lgColJob" xml:space="preserve"><value>Darbas</value></data>
+  <data name="lgColMonitor" xml:space="preserve"><value>Monitorius</value></data>
+  <data name="lgColTicket" xml:space="preserve"><value>Kvitas</value></data>
+  <data name="lgColDiff" xml:space="preserve"><value>Skirt. %</value></data>
+  <data name="lgFlag" xml:space="preserve"><value>Žyma</value></data>
+  <data name="lgFlagNone" xml:space="preserve"><value>Nėra</value></data>
+  <data name="lgFlagWet" xml:space="preserve"><value>Šlapias</value></data>
+  <data name="lgFlagSpoiled" xml:space="preserve"><value>Sugedęs</value></data>
+  <data name="lgFlagTrash" xml:space="preserve"><value>Priemaišos</value></data>
+  <data name="lgFlagStones" xml:space="preserve"><value>Akmenys</value></data>
+  <data name="lgMonitorWeight" xml:space="preserve"><value>Monitorius</value></data>
+  <data name="lgTicketWeight" xml:space="preserve"><value>Kvitas</value></data>
+  <data name="lgDifference" xml:space="preserve"><value>Skirtumas</value></data>
+  <data name="lgFactor" xml:space="preserve"><value>Koeficientas</value></data>
+  <data name="lgSaveWeightOnly" xml:space="preserve"><value>Išsaugoti tik svorį</value></data>
+  <data name="lgCorrectLoad" xml:space="preserve"><value>Taisyti šį krovinį</value></data>
+  <data name="lgUpdateCalibration" xml:space="preserve"><value>Atnaujinti kalibravimą</value></data>
+  <data name="lgCorrectJob" xml:space="preserve"><value>Taisyti darbą</value></data>
+  <data name="lgRename" xml:space="preserve"><value>Pervadinti</value></data>
+  <data name="lgReopen" xml:space="preserve"><value>Atidaryti iš naujo</value></data>
+  <data name="lgLoadActive" xml:space="preserve"><value>Pildoma</value></data>
+  <data name="lgLoadWaiting" xml:space="preserve"><value>Laukia</value></data>
+  <data name="lgLoadWeighed" xml:space="preserve"><value>Pasvertas</value></data>
+  <data name="lgLoadCorrected" xml:space="preserve"><value>Pataisytas</value></data>
+  <data name="lgNoLoads" xml:space="preserve"><value>Krovinių dar nėra</value></data>
+  <data name="lgDeleteLoadPrompt" xml:space="preserve"><value>Ištrinti {1} krovinį {0}? Jo žemėlapio taškai lieka darbe.</value></data>
+  <data name="lgUpdateCalPrompt" xml:space="preserve"><value>Keisti svarstyklių nuolydį iš {0} į {1} ({2})? Šis krovinys taip pat pataisomas, o modulis nuo šiol sveria su nauju nuolydžiu.</value></data>
+  <data name="lgCorrectJobPrompt" xml:space="preserve"><value>Taisyti {0} koeficientu {1}? Visi žemėlapio taškai ir darbo suma pritaikomi pagal kvitus.</value></data>
 
 </root>

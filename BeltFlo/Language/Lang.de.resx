@@ -24,7 +24,6 @@
   <data name="lgNone"      xml:space="preserve"><value>(keine)</value></data>
   <data name="lgName"      xml:space="preserve"><value>Name:</value></data>
   <data name="lgCrop"      xml:space="preserve"><value>Frucht:</value></data>
-  <data name="lgHeader"    xml:space="preserve"><value>Schneidwerk:</value></data>
   <data name="lgProfile"   xml:space="preserve"><value>Profil:</value></data>
   <data name="lgField"     xml:space="preserve"><value>Feld:</value></data>
   <data name="lgOffset"    xml:space="preserve"><value>Versatz:</value></data>
@@ -41,36 +40,22 @@
   <data name="lgTitleSettings"    xml:space="preserve"><value>Einstellungen</value></data>
   <data name="lgTitleJobs"        xml:space="preserve"><value>Aufträge</value></data>
   <data name="lgTitleCrops"       xml:space="preserve"><value>Kulturen</value></data>
-  <data name="lgTitleHeaders"     xml:space="preserve"><value>Schneidwerke</value></data>
   <data name="lgTitleProfiles"    xml:space="preserve"><value>Profile</value></data>
   <data name="lgTitleFields"      xml:space="preserve"><value>Felder</value></data>
   <data name="lgTitleImportFields" xml:space="preserve"><value>Felder importieren</value></data>
-  <data name="lgTitleYieldCal"    xml:space="preserve"><value>Ertrag Kalibrierung</value></data>
-  <data name="lgTitleMoistureCal" xml:space="preserve"><value>Feuchte Kalibrierung</value></data>
   <data name="lgTitleJobReport"   xml:space="preserve"><value>Auftragsbericht</value></data>
   <data name="lgTitleYieldMap"    xml:space="preserve"><value>Ertragskarte</value></data>
   <data name="lgTitleLanguage"    xml:space="preserve"><value>Sprache</value></data>
 
   <!-- Main form -->
   <data name="lgYield"         xml:space="preserve"><value>ERTRAG</value></data>
-  <data name="lgMoisture"      xml:space="preserve"><value>FEUCHTE</value></data>
   <data name="lgSpeed"         xml:space="preserve"><value>GESCHW.</value></data>
-  <data name="lgSensors"       xml:space="preserve"><value>Sensoren:</value></data>
-  <data name="lgElevFlow"      xml:space="preserve"><value>Elevatorfluss</value></data>
-  <data name="lgMoistureLabel" xml:space="preserve"><value>Feuchte</value></data>
   <data name="lgGPS"           xml:space="preserve"><value>GPS</value></data>
   <data name="lgModule"        xml:space="preserve"><value>Modul</value></data>
   <data name="lgNoActiveJob"   xml:space="preserve"><value>Kein Auftrag</value></data>
   <data name="lgJobStatusOn"   xml:space="preserve"><value> - Ein</value></data>
   <data name="lgJobStatusOff"  xml:space="preserve"><value> - Aus</value></data>
   <data name="lgDataWriteError" xml:space="preserve"><value> - SPEICHERFEHLER</value></data>
-  <data name="lgNoSensor"       xml:space="preserve"><value>KEIN SENSOR</value></data>
-  <data name="lgNoComp"         xml:space="preserve"><value>KEIN COMP</value></data>
-  <data name="lgBaselineHigh"       xml:space="preserve"><value>Grundwert scheint hoch</value></data>
-  <data name="lgBaselineHighPrompt" xml:space="preserve"><value>Grundwert {0:0.###} ist hoch für einen leeren Elevator. Trotzdem speichern?</value></data>
-  <data name="lgSensorFault"    xml:space="preserve"><value>Sensorfehler - Aufzeichnung pausiert. Sensor prüfen.</value></data>
-  <data name="lgCompFault"      xml:space="preserve"><value>Kein Comp-Signal - Aufzeichnung pausiert. Modul auf 'Main only' stellen.</value></data>
-  <data name="lgSensorRestored" xml:space="preserve"><value>Sensor OK - Aufzeichnung fortgesetzt.</value></data>
   <data name="lgStopJobPrompt" xml:space="preserve"><value>Auftrag stoppen und schließen?</value></data>
   <data name="lgStopJob"       xml:space="preserve"><value>Auftrag stoppen</value></data>
   <data name="lgMenu"          xml:space="preserve"><value>Menü</value></data>
@@ -97,44 +82,9 @@
   <data name="lgSettingsSaved" xml:space="preserve"><value>Einstellungen gespeichert.</value></data>
 
   <!-- Yield Cal form -->
-  <data name="lgProcessingDelay"    xml:space="preserve"><value>Verarbeitungsverzögerung:</value></data>
   <data name="lgSeconds"            xml:space="preserve"><value>Sekunden</value></data>
-  <data name="lgSensorBaseline"     xml:space="preserve"><value>Sensor-Grundwert:</value></data>
-  <data name="lgBaselineNote"       xml:space="preserve"><value>Verschlussgrad ohne Erntegut (0–1)</value></data>
-  <data name="lgSetBaseline"        xml:space="preserve"><value>Grundwert setzen</value></data>
-  <data name="lgNoise"              xml:space="preserve"><value>Rauschen</value></data>
-  <data name="lgPaddles"            xml:space="preserve"><value>Paddel</value></data>
-  <data name="lgBaselineSaved"  xml:space="preserve"><value>Nullpunkt zuletzt gespeichert:</value></data>
-  <data name="lgBaselineNoModule"   xml:space="preserve"><value>Modul nicht verbunden.</value></data>
-  <data name="lgYieldFactor"        xml:space="preserve"><value>Ertragsfaktor:</value></data>
-  <data name="lgFactorNote"         xml:space="preserve"><value>Kalibrierungsmultiplikator — erhöhen um Ertragswerte anzuheben</value></data>
-  <data name="lgCalibrationRun"     xml:space="preserve"><value>─── Kalibrierungslauf ─────────────────────────</value></data>
-  <data name="lgStartRun"           xml:space="preserve"><value>Lauf starten</value></data>
-  <data name="lgStopRun"            xml:space="preserve"><value>Lauf stoppen</value></data>
-  <data name="lgMeasuredBlank"      xml:space="preserve"><value>Gemessen: —</value></data>
-  <data name="lgActualWeight"       xml:space="preserve"><value>Tatsächliches Gewicht:</value></data>
-  <data name="lgCalibrationTip"     xml:space="preserve"><value>Tipp: leeren Elevator 10 Sek. laufen lassen um den Grundwert zu ermitteln.</value></data>
-  <data name="lgCalSaved"           xml:space="preserve"><value>Kalibrierung gespeichert und angewendet.</value></data>
-  <data name="lgPendingSave"        xml:space="preserve"><value>Zum Bestätigen „Speichern &amp;&amp; Anwenden" drücken.</value></data>
-  <data name="lgEnterWeighedAmt"    xml:space="preserve"><value>Tatsächliches gewogenes Gewicht eingeben.</value></data>
-  <data name="lgNoMeasuredData"     xml:space="preserve"><value>Keine Messdaten — zuerst einen Kalibrierungslauf durchführen.</value></data>
-  <data name="lgNewFactorResult"    xml:space="preserve"><value>Neuer Faktor: {0:F3}</value></data>
-  <data name="lgFactorUpdated"      xml:space="preserve"><value>Faktor auf {0:F3} aktualisiert und gespeichert.</value></data>
-  <data name="lgSetBaselineConfirm" xml:space="preserve"><value>Grundwert auf {0:F3} setzen?
-
-Elevator muss ohne Erntegut laufen.</value></data>
-  <data name="lgMeasuredMetric"     xml:space="preserve"><value>Gemessen: {0:F2} t</value></data>
-  <data name="lgMeasuredImperial"   xml:space="preserve"><value>Gemessen: {0:F2} bu ({1:F0} lbs)</value></data>
 
   <!-- Moisture Cal form -->
-  <data name="lgMoistureSection"    xml:space="preserve"><value>Feuchte</value></data>
-  <data name="lgPercentSavedToCrop" xml:space="preserve"><value>% (in Kultur gespeichert)</value></data>
-  <data name="lgPercentPerCount"    xml:space="preserve"><value>%/Zählung (in Profil gespeichert)</value></data>
-  <data name="lgTemperatureSection" xml:space="preserve"><value>Temperatur</value></data>
-  <data name="lgDegCSavedToProfile" xml:space="preserve"><value>°C (in Profil gespeichert)</value></data>
-  <data name="lgDegCPerCount"       xml:space="preserve"><value>°C/Zählung (in Profil gespeichert)</value></data>
-  <data name="lgNoLiveMoistReading" xml:space="preserve"><value>Kein Live-Feuchtemesswert.</value></data>
-  <data name="lgNoLiveTempReading"  xml:space="preserve"><value>Kein Live-Temperaturmesswert.</value></data>
   <data name="lgSaved"              xml:space="preserve"><value>Gespeichert.</value></data>
 
   <!-- Jobs form -->
@@ -146,7 +96,6 @@ Elevator muss ohne Erntegut laufen.</value></data>
   <data name="lgColAcres"          xml:space="preserve"><value>Hektar</value></data>
   <data name="lgColField"          xml:space="preserve"><value>Feld</value></data>
   <data name="lgSelectCropFirst"   xml:space="preserve"><value>Zuerst eine Kultur auswählen.</value></data>
-  <data name="lgSelectHeaderFirst" xml:space="preserve"><value>Zuerst ein Schneidwerk auswählen.</value></data>
   <data name="lgSelectJobFirst"    xml:space="preserve"><value>Zuerst einen Auftrag aus der Liste auswählen.</value></data>
   <data name="lgEnterJobName"      xml:space="preserve"><value>Auftragsnamen eingeben.</value></data>
   <data name="lgMustHaveOneJob"    xml:space="preserve"><value>Mindestens ein Auftrag erforderlich.</value></data>
@@ -156,21 +105,11 @@ Elevator muss ohne Erntegut laufen.</value></data>
   <data name="lgItemInUseByJob"    xml:space="preserve"><value>Löschen nicht möglich — wird von mindestens einem Auftrag verwendet.</value></data>
 
   <!-- Crops form -->
-  <data name="lgCategoryLabel"    xml:space="preserve"><value>Kategorie:</value></data>
-  <data name="lgTestWeight"       xml:space="preserve"><value>Testgewicht:</value></data>
-  <data name="lgMktMoisture"      xml:space="preserve"><value>Marktfeuchte:</value></data>
   <data name="lgEnterCropName"    xml:space="preserve"><value>Kulturnamen eingeben.</value></data>
-  <data name="lgTestWeightRequired" xml:space="preserve"><value>Geben Sie ein Hektolitergewicht größer als null ein.</value></data>
   <data name="lgMustHaveOneCrop"  xml:space="preserve"><value>Mindestens eine Kultur erforderlich.</value></data>
   <data name="lgDeleteCropPrompt" xml:space="preserve"><value>Diese Kultur löschen?</value></data>
 
   <!-- Headers form -->
-  <data name="lgType"               xml:space="preserve"><value>Typ:</value></data>
-  <data name="lgWidth"              xml:space="preserve"><value>Breite:</value></data>
-  <data name="lgHeaderOffset"       xml:space="preserve"><value>Vor dem Drehpunkt:</value></data>
-  <data name="lgEnterHeaderName"    xml:space="preserve"><value>Schneidwerknamen eingeben.</value></data>
-  <data name="lgMustHaveOneHeader"  xml:space="preserve"><value>Mindestens ein Schneidwerk erforderlich.</value></data>
-  <data name="lgDeleteHeaderPrompt" xml:space="preserve"><value>Dieses Schneidwerk löschen?</value></data>
 
   <!-- Profiles form -->
   <data name="lgCombineId"           xml:space="preserve"><value>Mähdrescher-ID:</value></data>
@@ -186,12 +125,10 @@ Elevator muss ohne Erntegut laufen.</value></data>
   <data name="lgJobReport"    xml:space="preserve"><value>Jobbericht</value></data>
   <data name="lgPrint"       xml:space="preserve"><value>Drucken</value></data>
   <data name="lgRecalcMap"       xml:space="preserve"><value>Neu berechnen</value></data>
-  <data name="lgRecalcMapPrompt" xml:space="preserve"><value>Diese Ertragskarte mit der aktuellen Kalibrierung neu berechnen? Bereits dargestellte Werte werden überschrieben.</value></data>
   <data name="lgFieldColon"   xml:space="preserve"><value>Feld:</value></data>
   <data name="lgAreaColon"    xml:space="preserve"><value>Fläche:</value></data>
   <data name="lgTotalColon"   xml:space="preserve"><value>Gesamt:</value></data>
   <data name="lgAvgYield"     xml:space="preserve"><value>Ø Ertrag:</value></data>
-  <data name="lgAvgMoisture"  xml:space="preserve"><value>Ø Feuchte:</value></data>
   <data name="lgDataPoints"   xml:space="preserve"><value>Datenpunkte:</value></data>
   <data name="lgExportCsv"    xml:space="preserve"><value>CSV exportieren</value></data>
   <data name="lgExportFailed" xml:space="preserve"><value>Export fehlgeschlagen — keine Daten oder Fehler.</value></data>
@@ -201,5 +138,93 @@ Elevator muss ohne Erntegut laufen.</value></data>
   <data name="lgLow"    xml:space="preserve"><value>Niedrig</value></data>
   <data name="lgHigh"   xml:space="preserve"><value>Hoch</value></data>
   <data name="lgNoJobs" xml:space="preserve"><value>Keine Aufträge</value></data>
+
+
+  <!-- BeltFlo: conveyor scale, loads and alarms -->
+  <data name="lgRowsHarvested" xml:space="preserve"><value>Reihen:</value></data>
+  <data name="lgTitleConveyor" xml:space="preserve"><value>Förderband</value></data>
+  <data name="lgTitleScaleCal" xml:space="preserve"><value>Waage kalibrieren</value></data>
+  <data name="lgRows" xml:space="preserve"><value>Reihen:</value></data>
+  <data name="lgRowSpacing" xml:space="preserve"><value>Reihenabstand:</value></data>
+  <data name="lgAheadOfPivot" xml:space="preserve"><value>Vor dem Drehpunkt:</value></data>
+  <data name="lgScaleWeighsInto" xml:space="preserve"><value>Waage wiegt in:</value></data>
+  <data name="lgTruck" xml:space="preserve"><value>LKW</value></data>
+  <data name="lgTank" xml:space="preserve"><value>Bunker</value></data>
+  <data name="lgDiggingWidth" xml:space="preserve"><value>Rodebreite: {0}</value></data>
+  <data name="lgRowsInfo" xml:space="preserve"><value>{0} breit  (Roder hat {1} Reihen)</value></data>
+  <data name="lgBeltPerPulse" xml:space="preserve"><value>Band pro Impuls:</value></data>
+  <data name="lgPulsesPerRev" xml:space="preserve"><value>Impulse pro Umlauf:</value></data>
+  <data name="lgSectionLength" xml:space="preserve"><value>Wiegeabschnitt:</value></data>
+  <data name="lgEmptyBeltBelow" xml:space="preserve"><value>Band leer unter:</value></data>
+  <data name="lgBeltStoppedAfter" xml:space="preserve"><value>Band gestoppt nach:</value></data>
+  <data name="lgDigToScaleDelay" xml:space="preserve"><value>Verzögerung Roden–Waage:</value></data>
+  <data name="lgBarFullFlow" xml:space="preserve"><value>Balken Fluss voll bei:</value></data>
+  <data name="lgBarFullBelt" xml:space="preserve"><value>Balken Band voll bei:</value></data>
+  <data name="lgMeasureBelt" xml:space="preserve"><value>Band messen</value></data>
+  <data name="lgResetDistance" xml:space="preserve"><value>Strecke zurücksetzen</value></data>
+  <data name="lgConveyorJobRunning" xml:space="preserve"><value>Auftrag beenden, bevor diese Einstellung geändert wird.</value></data>
+  <data name="lgBarScalesOnly" xml:space="preserve"><value>Auftrag läuft - nur die Balken-Endwerte sind änderbar.</value></data>
+  <data name="lgCalRaw" xml:space="preserve"><value>Rohwert:</value></data>
+  <data name="lgCalWeight" xml:space="preserve"><value>Auf dem Abschnitt:</value></data>
+  <data name="lgCalReading" xml:space="preserve"><value>Anzeige:</value></data>
+  <data name="lgCalZero" xml:space="preserve"><value>Nullpunkt:</value></data>
+  <data name="lgCalSpan" xml:space="preserve"><value>Steigung:</value></data>
+  <data name="lgCalStable" xml:space="preserve"><value>Stabil</value></data>
+  <data name="lgCalUnstable" xml:space="preserve"><value>Instabil</value></data>
+  <data name="lgCalZeroScale" xml:space="preserve"><value>Waage nullen</value></data>
+  <data name="lgCalKnownWeight" xml:space="preserve"><value>Bekanntes Gewicht</value></data>
+  <data name="lgNoScale" xml:space="preserve"><value>KEINE WAAGE</value></data>
+  <data name="lgScaleFault" xml:space="preserve"><value>Waagenfehler - Aufzeichnung pausiert</value></data>
+  <data name="lgScaleRestored" xml:space="preserve"><value>Waage OK - Aufzeichnung fortgesetzt</value></data>
+  <data name="lgLoads" xml:space="preserve"><value>Fuhren:</value></data>
+  <data name="lgTitleLoads" xml:space="preserve"><value>Fuhren</value></data>
+  <data name="lgNewLoad" xml:space="preserve"><value>Neue Fuhre</value></data>
+  <data name="lgFinishLoad" xml:space="preserve"><value>Fuhre beenden</value></data>
+  <data name="lgFlow" xml:space="preserve"><value>Fluss</value></data>
+  <data name="lgBelt" xml:space="preserve"><value>Band</value></data>
+  <data name="lgRecording" xml:space="preserve"><value>Aufz.</value></data>
+  <data name="lgRecalcLater" xml:space="preserve"><value>Kartenkorrektur erfolgt im Fuhren-Fenster</value></data>
+  <data name="lgStatusScale" xml:space="preserve"><value>Waage</value></data>
+  <data name="lgStatusZero" xml:space="preserve"><value>Null</value></data>
+  <data name="lgModuleNotReceiving" xml:space="preserve"><value>Modul empfängt nichts von BeltFlo - Verbindung prüfen</value></data>
+  <data name="lgFinishJob" xml:space="preserve"><value>Beenden</value></data>
+  <data name="lgFinishLoadPrompt" xml:space="preserve"><value>Diese Fuhre beenden? Ihr Gewicht bleibt erhalten, bis das Wiegescheingewicht eingegeben wird.</value></data>
+  <data name="lgPaused" xml:space="preserve"><value>Pausiert - es wird nichts gezählt</value></data>
+  <data name="lgResumed" xml:space="preserve"><value>Zählung fortgesetzt</value></data>
+  <data name="lgResumedSectionsOn" xml:space="preserve"><value>Sektionen an - Zählung fortgesetzt</value></data>
+  <data name="lgPausedSectionsOn" xml:space="preserve"><value>PAUSIERT - Sektionen an, nichts gezählt. ▶ drücken</value></data>
+  <data name="lgNoLoadOpen" xml:space="preserve"><value>Keine Fuhre offen - ▶ drücken</value></data>
+  <data name="lgJobStatusPaused" xml:space="preserve"><value> - Pausiert</value></data>
+  <data name="lgAutoResumePause" xml:space="preserve"><value>Bei Sektionen an aus Pause fortsetzen</value></data>
+  <data name="lgScreenNotBuilt" xml:space="preserve"><value>Fenster {0} ist noch nicht fertig</value></data>
+  <data name="lgBeltSensorSuspect" xml:space="preserve"><value>Keine Bandimpulse - Gewicht wird nicht erfasst</value></data>
+  <data name="lgColJob" xml:space="preserve"><value>Auftrag</value></data>
+  <data name="lgColMonitor" xml:space="preserve"><value>Monitor</value></data>
+  <data name="lgColTicket" xml:space="preserve"><value>Schein</value></data>
+  <data name="lgColDiff" xml:space="preserve"><value>Diff. %</value></data>
+  <data name="lgFlag" xml:space="preserve"><value>Kennzeichen</value></data>
+  <data name="lgFlagNone" xml:space="preserve"><value>Keins</value></data>
+  <data name="lgFlagWet" xml:space="preserve"><value>Nass</value></data>
+  <data name="lgFlagSpoiled" xml:space="preserve"><value>Verdorben</value></data>
+  <data name="lgFlagTrash" xml:space="preserve"><value>Besatz</value></data>
+  <data name="lgFlagStones" xml:space="preserve"><value>Steine</value></data>
+  <data name="lgMonitorWeight" xml:space="preserve"><value>Monitor</value></data>
+  <data name="lgTicketWeight" xml:space="preserve"><value>Schein</value></data>
+  <data name="lgDifference" xml:space="preserve"><value>Differenz</value></data>
+  <data name="lgFactor" xml:space="preserve"><value>Faktor</value></data>
+  <data name="lgSaveWeightOnly" xml:space="preserve"><value>Nur Gewicht speichern</value></data>
+  <data name="lgCorrectLoad" xml:space="preserve"><value>Diese Fuhre korrigieren</value></data>
+  <data name="lgUpdateCalibration" xml:space="preserve"><value>Kalibrierung ändern</value></data>
+  <data name="lgCorrectJob" xml:space="preserve"><value>Auftrag korrigieren</value></data>
+  <data name="lgRename" xml:space="preserve"><value>Umbenennen</value></data>
+  <data name="lgReopen" xml:space="preserve"><value>Wieder öffnen</value></data>
+  <data name="lgLoadActive" xml:space="preserve"><value>Wird beladen</value></data>
+  <data name="lgLoadWaiting" xml:space="preserve"><value>Wartet</value></data>
+  <data name="lgLoadWeighed" xml:space="preserve"><value>Gewogen</value></data>
+  <data name="lgLoadCorrected" xml:space="preserve"><value>Korrigiert</value></data>
+  <data name="lgNoLoads" xml:space="preserve"><value>Noch keine Fuhren</value></data>
+  <data name="lgDeleteLoadPrompt" xml:space="preserve"><value>Fuhre {0} von {1} löschen? Ihre Kartenpunkte bleiben im Auftrag.</value></data>
+  <data name="lgUpdateCalPrompt" xml:space="preserve"><value>Waagensteigung von {0} auf {1} ändern ({2})? Diese Fuhre wird ebenfalls korrigiert, und das Modul wiegt ab sofort mit der neuen Steigung.</value></data>
+  <data name="lgCorrectJobPrompt" xml:space="preserve"><value>{0} um {1} korrigieren? Alle Kartenpunkte und die Auftragssumme werden an die Wiegescheine angepasst.</value></data>
 
 </root>

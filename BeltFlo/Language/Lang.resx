@@ -100,32 +100,19 @@
   <data name="lgTitleScaleCal" xml:space="preserve"><value>Scale Calibration</value></data>
   <data name="lgTitleFields" xml:space="preserve"><value>Fields</value></data>
   <data name="lgTitleImportFields" xml:space="preserve"><value>Import Fields</value></data>
-  <data name="lgTitleYieldCal" xml:space="preserve"><value>Yield Cal</value></data>
-  <data name="lgTitleMoistureCal" xml:space="preserve"><value>Moisture Cal</value></data>
   <data name="lgTitleJobReport" xml:space="preserve"><value>Job Report</value></data>
   <data name="lgTitleYieldMap" xml:space="preserve"><value>Yield Map</value></data>
   <data name="lgTitleLanguage" xml:space="preserve"><value>Language</value></data>
 
   <!-- ── Main form ──────────────────────────────────────────────────────── -->
   <data name="lgYield" xml:space="preserve"><value>YIELD</value></data>
-  <data name="lgMoisture" xml:space="preserve"><value>MOISTURE</value></data>
   <data name="lgSpeed" xml:space="preserve"><value>SPEED</value></data>
-  <data name="lgSensors" xml:space="preserve"><value>Sensors:</value></data>
-  <data name="lgElevFlow" xml:space="preserve"><value>Elev Flow</value></data>
-  <data name="lgMoistureLabel" xml:space="preserve"><value>Moisture</value></data>
   <data name="lgGPS" xml:space="preserve"><value>GPS</value></data>
   <data name="lgModule" xml:space="preserve"><value>Module</value></data>
   <data name="lgNoActiveJob" xml:space="preserve"><value>No Active Job</value></data>
   <data name="lgJobStatusOn" xml:space="preserve"><value> - On</value></data>
   <data name="lgJobStatusOff" xml:space="preserve"><value> - Off</value></data>
   <data name="lgDataWriteError" xml:space="preserve"><value> - SAVE ERROR</value></data>
-  <data name="lgNoSensor" xml:space="preserve"><value>NO SENSOR</value></data>
-  <data name="lgNoComp" xml:space="preserve"><value>NO COMP</value></data>
-  <data name="lgBaselineHigh" xml:space="preserve"><value>Baseline Looks High</value></data>
-  <data name="lgBaselineHighPrompt" xml:space="preserve"><value>Baseline {0:0.###} is high for an empty elevator. Save anyway?</value></data>
-  <data name="lgSensorFault" xml:space="preserve"><value>Sensor fault - recording paused. Check the sensor.</value></data>
-  <data name="lgCompFault" xml:space="preserve"><value>No comp signal - recording paused. Set the module to Main only.</value></data>
-  <data name="lgSensorRestored" xml:space="preserve"><value>Sensor OK - recording resumed.</value></data>
   <data name="lgStopJobPrompt" xml:space="preserve"><value>Stop and close this job?</value></data>
   <data name="lgStopJob" xml:space="preserve"><value>Stop Job</value></data>
   <data name="lgMenu" xml:space="preserve"><value>Menu</value></data>
@@ -158,77 +145,11 @@
   <data name="lgSettingsSaved" xml:space="preserve"><value>Settings saved.</value></data>
 
   <!-- ── Yield Cal form ─────────────────────────────────────────────────── -->
-  <data name="lgProcessingDelay" xml:space="preserve"><value>Processing Delay:</value></data>
   <data name="lgSeconds" xml:space="preserve"><value>seconds</value></data>
-  <data name="lgSensorBaseline" xml:space="preserve"><value>Sensor Baseline:</value></data>
-  <data name="lgBaselineNote" xml:space="preserve"><value>obstruction ratio with no grain (0–1)</value></data>
-  <data name="lgSetBaseline" xml:space="preserve"><value>Set Baseline</value></data>
-  <data name="lgNoise" xml:space="preserve"><value>Noise</value></data>
-  <data name="lgPaddles" xml:space="preserve"><value>Paddles</value></data>
-  <data name="lgBaselineSaved" xml:space="preserve"><value>Baseline last saved:</value></data>
-  <data name="lgBaselineNoModule" xml:space="preserve"><value>Module not connected.</value></data>
-  <data name="lgYieldFactor" xml:space="preserve"><value>Yield Factor:</value></data>
-  <data name="lgFactorNote" xml:space="preserve"><value>calibration multiplier — increase to raise yield readings</value></data>
-  <data name="lgCalibrationRun" xml:space="preserve"><value>─── Calibration Run ───────────────────────────</value></data>
-  <data name="lgStartRun" xml:space="preserve"><value>Start Run</value></data>
-  <data name="lgStopRun" xml:space="preserve"><value>Stop Run</value></data>
-  <data name="lgMeasuredBlank" xml:space="preserve"><value>Measured: —</value></data>
-  <data name="lgActualWeight" xml:space="preserve"><value>Actual weight:</value></data>
-  <data name="lgCalibrationTip" xml:space="preserve"><value>Tip: run empty elevator for 10s to find baseline sensor reading.</value></data>
-  <data name="lgCalSaved" xml:space="preserve"><value>Calibration saved and applied.</value></data>
-  <data name="lgPendingSave" xml:space="preserve"><value>Press Save &amp;&amp; Apply to confirm.</value></data>
-  <data name="lgEnterWeighedAmt" xml:space="preserve"><value>Enter the actual weighed amount.</value></data>
-  <data name="lgNoMeasuredData" xml:space="preserve"><value>No measured data — run a calibration pass first.</value></data>
-  <data name="lgNewFactorResult" xml:space="preserve"><value>New factor: {0:F3}</value></data>
-  <data name="lgFactorUpdated" xml:space="preserve"><value>Factor updated to {0:F3} and saved.</value></data>
-  <data name="lgSetBaselineConfirm" xml:space="preserve"><value>Set baseline to {0:F3}?
-
-Make sure the elevator is running with no grain.</value></data>
-  <data name="lgMeasuredMetric" xml:space="preserve"><value>Measured: {0:F2} t</value></data>
-  <data name="lgMeasuredImperial" xml:space="preserve"><value>Measured: {0:F2} bu ({1:F0} lbs)</value></data>
-  <data name="lgCalRunAt" xml:space="preserve"><value>at {0}</value></data>
-  <data name="lgCalRunSince" xml:space="preserve"><value>since {0}</value></data>
-  <data name="lgCalRunInterrupted" xml:space="preserve"><value>(interrupted)</value></data>
-  <data name="lgCalRunDiscard" xml:space="preserve"><value>Discard Run</value></data>
-  <data name="lgCalRunDiscardPrompt" xml:space="preserve"><value>A finished run is waiting for its weight:
-
-{0}
-taken {1}
-
-Starting a new run discards it. Continue?</value></data>
-  <data name="lgCalRunWrongCrop" xml:space="preserve"><value>This run was taken under a different crop or profile. Switch back to apply it.</value></data>
-  <data name="lgCalRunInterruptedTitle" xml:space="preserve"><value>Interrupted Run</value></data>
-  <data name="lgCalRunInterruptedPrompt" xml:space="preserve"><value>This run was still going when BeltFlo closed. Grain harvested after the time shown is missing from its total, so the new factor may read high.
-
-Apply anyway?</value></data>
 
   <!-- ── Whole Field Calibration tab ────────────────────────────────────── -->
-  <data name="lgTabCalRun" xml:space="preserve"><value>Calibration Run</value></data>
-  <data name="lgTabFieldCal" xml:space="preserve"><value>Whole Field Calibration</value></data>
-  <data name="lgFieldWeightLabel" xml:space="preserve"><value>Total harvested:</value></data>
-  <data name="lgFieldJob" xml:space="preserve"><value>Job: {0}     Crop: {1}</value></data>
-  <data name="lgFieldCropMismatch" xml:space="preserve"><value>crop changed since this job started</value></data>
-  <data name="lgFieldNoJob" xml:space="preserve"><value>No active job — start a job to calibrate from its total.</value></data>
-  <data name="lgFieldRecordedImperial" xml:space="preserve"><value>Recorded: {0:F1} bu over {1:F1} ac  =  {2:F1} bu/ac</value></data>
-  <data name="lgFieldRecordedMetric" xml:space="preserve"><value>Recorded: {0:F2} t over {1:F1} ha  =  {2:F2} t/ha</value></data>
-  <data name="lgFieldImplied" xml:space="preserve"><value>Entered weight  =  {0:F1} {1}</value></data>
-  <data name="lgFieldNoData" xml:space="preserve"><value>This job has not recorded any grain yet.</value></data>
-  <data name="lgFieldWrongCrop" xml:space="preserve"><value>The active job was started under a different crop or profile.</value></data>
-  <data name="lgFieldRecalcTitle" xml:space="preserve"><value>Recalculate Job</value></data>
-  <data name="lgFieldRecalcPrompt" xml:space="preserve"><value>Yield Factor saved.
-
-Rewrite this job's recorded points and total using the new factor, so the map and the job total match the weight entered?</value></data>
-  <data name="lgFieldRecalcDone" xml:space="preserve"><value>{0} points recalculated.</value></data>
 
   <!-- ── Moisture Cal form ──────────────────────────────────────────────── -->
-  <data name="lgMoistureSection" xml:space="preserve"><value>Moisture</value></data>
-  <data name="lgPercentSavedToCrop" xml:space="preserve"><value>% (saved to crop)</value></data>
-  <data name="lgPercentPerCount" xml:space="preserve"><value>%/count (saved to profile)</value></data>
-  <data name="lgTemperatureSection" xml:space="preserve"><value>Temperature</value></data>
-  <data name="lgDegCSavedToProfile" xml:space="preserve"><value>°C (saved to profile)</value></data>
-  <data name="lgDegCPerCount" xml:space="preserve"><value>°C/count (saved to profile)</value></data>
-  <data name="lgNoLiveMoistReading" xml:space="preserve"><value>No live moisture reading.</value></data>
-  <data name="lgNoLiveTempReading" xml:space="preserve"><value>No live temperature reading.</value></data>
   <data name="lgSaved" xml:space="preserve"><value>Saved.</value></data>
 
   <!-- ── Jobs form ──────────────────────────────────────────────────────── -->
@@ -249,23 +170,16 @@ Rewrite this job's recorded points and total using the new factor, so the map an
   <data name="lgItemInUseByJob" xml:space="preserve"><value>Cannot delete — it is used by one or more jobs.</value></data>
 
   <!-- ── Crops form ─────────────────────────────────────────────────────── -->
-  <data name="lgCategoryLabel" xml:space="preserve"><value>Category:</value></data>
-  <data name="lgTestWeight" xml:space="preserve"><value>Test Wt:</value></data>
-  <data name="lgMktMoisture" xml:space="preserve"><value>Mkt Moisture:</value></data>
   <data name="lgEnterCropName" xml:space="preserve"><value>Enter a crop name.</value></data>
   <data name="lgMustHaveOneCrop" xml:space="preserve"><value>Must have at least one crop.</value></data>
   <data name="lgDeleteCropPrompt" xml:space="preserve"><value>Delete this crop?</value></data>
-  <data name="lgTestWeightRequired" xml:space="preserve"><value>Enter a test weight greater than zero.</value></data>
   <!-- Shown in bu/ac mode only, in place of lgTestWeight. The field holds the
        statutory bushel weight (a fixed per-crop constant, wheat 60 lb/bu), not
        a measured test weight — the old label invited users to type their
        elevator ticket figure, which skews every bushel total. Deliberately
        left untranslated: bu/ac mode is North America, and missing keys fall
        back to English (see Lang.Designer.cs). -->
-  <data name="lgBushelWeight" xml:space="preserve"><value>Bushel Wt:</value></data>
 
-  <data name="lgType" xml:space="preserve"><value>Type:</value></data>
-  <data name="lgWidth" xml:space="preserve"><value>Width:</value></data>
 
   <!-- ── Harvester profiles form ───────────────────────────────────────── -->
   <data name="lgCombineId" xml:space="preserve"><value>Harvester ID:</value></data>
@@ -314,12 +228,10 @@ Rewrite this job's recorded points and total using the new factor, so the map an
   <data name="lgJobReport" xml:space="preserve"><value>Job Report</value></data>
   <data name="lgPrint" xml:space="preserve"><value>Print</value></data>
   <data name="lgRecalcMap" xml:space="preserve"><value>Recalculate</value></data>
-  <data name="lgRecalcMapPrompt" xml:space="preserve"><value>Recalculate this job's yield map using the current calibration? Previously plotted values will be overwritten.</value></data>
   <data name="lgFieldColon" xml:space="preserve"><value>Field:</value></data>
   <data name="lgAreaColon" xml:space="preserve"><value>Area:</value></data>
   <data name="lgTotalColon" xml:space="preserve"><value>Total:</value></data>
   <data name="lgAvgYield" xml:space="preserve"><value>Avg Yield:</value></data>
-  <data name="lgAvgMoisture" xml:space="preserve"><value>Avg Moisture:</value></data>
   <data name="lgDataPoints" xml:space="preserve"><value>Data Points:</value></data>
   <data name="lgExportCsv" xml:space="preserve"><value>Export CSV</value></data>
   <data name="lgExportFailed" xml:space="preserve"><value>Export failed — no data or error.</value></data>

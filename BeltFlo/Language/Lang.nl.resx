@@ -24,7 +24,6 @@
   <data name="lgNone"      xml:space="preserve"><value>(geen)</value></data>
   <data name="lgName"      xml:space="preserve"><value>Naam:</value></data>
   <data name="lgCrop"      xml:space="preserve"><value>Gewas:</value></data>
-  <data name="lgHeader"    xml:space="preserve"><value>Maaikop:</value></data>
   <data name="lgProfile"   xml:space="preserve"><value>Profiel:</value></data>
   <data name="lgField"     xml:space="preserve"><value>Perceel:</value></data>
   <data name="lgOffset"    xml:space="preserve"><value>Offset:</value></data>
@@ -41,36 +40,22 @@
   <data name="lgTitleSettings"    xml:space="preserve"><value>Instellingen</value></data>
   <data name="lgTitleJobs"        xml:space="preserve"><value>Taken</value></data>
   <data name="lgTitleCrops"       xml:space="preserve"><value>Gewassen</value></data>
-  <data name="lgTitleHeaders"     xml:space="preserve"><value>Maakoppen</value></data>
   <data name="lgTitleProfiles"    xml:space="preserve"><value>Profielen</value></data>
   <data name="lgTitleFields"      xml:space="preserve"><value>Percelen</value></data>
   <data name="lgTitleImportFields" xml:space="preserve"><value>Percelen importeren</value></data>
-  <data name="lgTitleYieldCal"    xml:space="preserve"><value>Opbrengst kalibratie</value></data>
-  <data name="lgTitleMoistureCal" xml:space="preserve"><value>Vocht kalibratie</value></data>
   <data name="lgTitleJobReport"   xml:space="preserve"><value>Taakrapport</value></data>
   <data name="lgTitleYieldMap"    xml:space="preserve"><value>Opbrengstkaart</value></data>
   <data name="lgTitleLanguage"    xml:space="preserve"><value>Taal</value></data>
 
   <!-- Main form -->
   <data name="lgYield"         xml:space="preserve"><value>OPBRENGST</value></data>
-  <data name="lgMoisture"      xml:space="preserve"><value>VOCHT</value></data>
   <data name="lgSpeed"         xml:space="preserve"><value>SNELHEID</value></data>
-  <data name="lgSensors"       xml:space="preserve"><value>Sensoren:</value></data>
-  <data name="lgElevFlow"      xml:space="preserve"><value>Elevatordoorvoer</value></data>
-  <data name="lgMoistureLabel" xml:space="preserve"><value>Vocht</value></data>
   <data name="lgGPS"           xml:space="preserve"><value>GPS</value></data>
   <data name="lgModule"        xml:space="preserve"><value>Module</value></data>
   <data name="lgNoActiveJob"   xml:space="preserve"><value>Geen actieve taak</value></data>
   <data name="lgJobStatusOn"   xml:space="preserve"><value> - Aan</value></data>
   <data name="lgJobStatusOff"  xml:space="preserve"><value> - Uit</value></data>
   <data name="lgDataWriteError" xml:space="preserve"><value> - OPSLAGFOUT</value></data>
-  <data name="lgNoSensor"       xml:space="preserve"><value>GEEN SENSOR</value></data>
-  <data name="lgNoComp"         xml:space="preserve"><value>GEEN COMP</value></data>
-  <data name="lgBaselineHigh"       xml:space="preserve"><value>Nulwaarde lijkt hoog</value></data>
-  <data name="lgBaselineHighPrompt" xml:space="preserve"><value>Nulwaarde {0:0.###} is hoog voor een lege elevator. Toch opslaan?</value></data>
-  <data name="lgSensorFault"    xml:space="preserve"><value>Sensorfout - opname gepauzeerd. Controleer de sensor.</value></data>
-  <data name="lgCompFault"      xml:space="preserve"><value>Geen Comp-signaal - opname gepauzeerd. Zet de module op 'Main only'.</value></data>
-  <data name="lgSensorRestored" xml:space="preserve"><value>Sensor OK - opname hervat.</value></data>
   <data name="lgStopJobPrompt" xml:space="preserve"><value>Taak stoppen en sluiten?</value></data>
   <data name="lgStopJob"       xml:space="preserve"><value>Taak stoppen</value></data>
   <data name="lgMenu"          xml:space="preserve"><value>Menu</value></data>
@@ -97,44 +82,9 @@
   <data name="lgSettingsSaved" xml:space="preserve"><value>Instellingen opgeslagen.</value></data>
 
   <!-- Yield Cal form -->
-  <data name="lgProcessingDelay"    xml:space="preserve"><value>Verwerkingsvertraging:</value></data>
   <data name="lgSeconds"            xml:space="preserve"><value>seconden</value></data>
-  <data name="lgSensorBaseline"     xml:space="preserve"><value>Sensor basiswaarde:</value></data>
-  <data name="lgBaselineNote"       xml:space="preserve"><value>afsluitingsverhouding zonder graan (0–1)</value></data>
-  <data name="lgSetBaseline"        xml:space="preserve"><value>Basiswaarde instellen</value></data>
-  <data name="lgNoise"              xml:space="preserve"><value>Ruis</value></data>
-  <data name="lgPaddles"            xml:space="preserve"><value>Schoepen</value></data>
-  <data name="lgBaselineSaved"  xml:space="preserve"><value>Nulpunt laatst opgeslagen:</value></data>
-  <data name="lgBaselineNoModule"   xml:space="preserve"><value>Module niet verbonden.</value></data>
-  <data name="lgYieldFactor"        xml:space="preserve"><value>Opbrengstfactor:</value></data>
-  <data name="lgFactorNote"         xml:space="preserve"><value>kalibratiemultiplicator — vergroot om opbrengstlezingen te verhogen</value></data>
-  <data name="lgCalibrationRun"     xml:space="preserve"><value>─── Calibratierun ─────────────────────────────</value></data>
-  <data name="lgStartRun"           xml:space="preserve"><value>Run starten</value></data>
-  <data name="lgStopRun"            xml:space="preserve"><value>Run stoppen</value></data>
-  <data name="lgMeasuredBlank"      xml:space="preserve"><value>Gemeten: —</value></data>
-  <data name="lgActualWeight"       xml:space="preserve"><value>Werkelijk gewicht:</value></data>
-  <data name="lgCalibrationTip"     xml:space="preserve"><value>Tip: laat de lege elevator 10 s lopen om de basiswaarde te bepalen.</value></data>
-  <data name="lgCalSaved"           xml:space="preserve"><value>Kalibratie opgeslagen en toegepast.</value></data>
-  <data name="lgPendingSave"        xml:space="preserve"><value>Druk op „Opslaan &amp;&amp; Toepassen" om te bevestigen.</value></data>
-  <data name="lgEnterWeighedAmt"    xml:space="preserve"><value>Voer het werkelijk gewogen gewicht in.</value></data>
-  <data name="lgNoMeasuredData"     xml:space="preserve"><value>Geen meetgegevens — voer eerst een calibratierun uit.</value></data>
-  <data name="lgNewFactorResult"    xml:space="preserve"><value>Nieuwe factor: {0:F3}</value></data>
-  <data name="lgFactorUpdated"      xml:space="preserve"><value>Factor bijgewerkt naar {0:F3} en opgeslagen.</value></data>
-  <data name="lgSetBaselineConfirm" xml:space="preserve"><value>Basiswaarde instellen op {0:F3}?
-
-Zorg dat de elevator leeg loopt.</value></data>
-  <data name="lgMeasuredMetric"     xml:space="preserve"><value>Gemeten: {0:F2} t</value></data>
-  <data name="lgMeasuredImperial"   xml:space="preserve"><value>Gemeten: {0:F2} bu ({1:F0} lbs)</value></data>
 
   <!-- Moisture Cal form -->
-  <data name="lgMoistureSection"    xml:space="preserve"><value>Vocht</value></data>
-  <data name="lgPercentSavedToCrop" xml:space="preserve"><value>% (opgeslagen in gewas)</value></data>
-  <data name="lgPercentPerCount"    xml:space="preserve"><value>%/telling (opgeslagen in profiel)</value></data>
-  <data name="lgTemperatureSection" xml:space="preserve"><value>Temperatuur</value></data>
-  <data name="lgDegCSavedToProfile" xml:space="preserve"><value>°C (opgeslagen in profiel)</value></data>
-  <data name="lgDegCPerCount"       xml:space="preserve"><value>°C/telling (opgeslagen in profiel)</value></data>
-  <data name="lgNoLiveMoistReading" xml:space="preserve"><value>Geen live vochtmeting.</value></data>
-  <data name="lgNoLiveTempReading"  xml:space="preserve"><value>Geen live temperatuurmeting.</value></data>
   <data name="lgSaved"              xml:space="preserve"><value>Opgeslagen.</value></data>
 
   <!-- Jobs form -->
@@ -146,7 +96,6 @@ Zorg dat de elevator leeg loopt.</value></data>
   <data name="lgColAcres"          xml:space="preserve"><value>Hectare</value></data>
   <data name="lgColField"          xml:space="preserve"><value>Perceel</value></data>
   <data name="lgSelectCropFirst"   xml:space="preserve"><value>Selecteer eerst een gewas.</value></data>
-  <data name="lgSelectHeaderFirst" xml:space="preserve"><value>Selecteer eerst een maaikop.</value></data>
   <data name="lgSelectJobFirst"    xml:space="preserve"><value>Selecteer eerst een taak uit de lijst.</value></data>
   <data name="lgEnterJobName"      xml:space="preserve"><value>Voer een taaknaam in.</value></data>
   <data name="lgMustHaveOneJob"    xml:space="preserve"><value>Minstens één taak vereist.</value></data>
@@ -156,21 +105,11 @@ Zorg dat de elevator leeg loopt.</value></data>
   <data name="lgItemInUseByJob"    xml:space="preserve"><value>Verwijderen niet mogelijk — wordt gebruikt door een of meer taken.</value></data>
 
   <!-- Crops form -->
-  <data name="lgCategoryLabel"    xml:space="preserve"><value>Categorie:</value></data>
-  <data name="lgTestWeight"       xml:space="preserve"><value>Testgewicht:</value></data>
-  <data name="lgMktMoisture"      xml:space="preserve"><value>Marktvochtgehalte:</value></data>
   <data name="lgEnterCropName"    xml:space="preserve"><value>Voer een gewasnaam in.</value></data>
-  <data name="lgTestWeightRequired" xml:space="preserve"><value>Voer een hectolitergewicht groter dan nul in.</value></data>
   <data name="lgMustHaveOneCrop"  xml:space="preserve"><value>Minstens één gewas vereist.</value></data>
   <data name="lgDeleteCropPrompt" xml:space="preserve"><value>Dit gewas verwijderen?</value></data>
 
   <!-- Headers form -->
-  <data name="lgType"               xml:space="preserve"><value>Type:</value></data>
-  <data name="lgWidth"              xml:space="preserve"><value>Breedte:</value></data>
-  <data name="lgHeaderOffset"       xml:space="preserve"><value>Vóór het draaipunt:</value></data>
-  <data name="lgEnterHeaderName"    xml:space="preserve"><value>Voer een maaikopnaam in.</value></data>
-  <data name="lgMustHaveOneHeader"  xml:space="preserve"><value>Minstens één maaikop vereist.</value></data>
-  <data name="lgDeleteHeaderPrompt" xml:space="preserve"><value>Deze maaikop verwijderen?</value></data>
 
   <!-- Profiles form -->
   <data name="lgCombineId"           xml:space="preserve"><value>Maaidorser-ID:</value></data>
@@ -186,12 +125,10 @@ Zorg dat de elevator leeg loopt.</value></data>
   <data name="lgJobReport"    xml:space="preserve"><value>Taakrapport</value></data>
   <data name="lgPrint"       xml:space="preserve"><value>Afdrukken</value></data>
   <data name="lgRecalcMap"       xml:space="preserve"><value>Herberekenen</value></data>
-  <data name="lgRecalcMapPrompt" xml:space="preserve"><value>Deze opbrengstkaart herberekenen met de huidige kalibratie? Reeds getekende waarden worden overschreven.</value></data>
   <data name="lgFieldColon"   xml:space="preserve"><value>Perceel:</value></data>
   <data name="lgAreaColon"    xml:space="preserve"><value>Oppervlakte:</value></data>
   <data name="lgTotalColon"   xml:space="preserve"><value>Totaal:</value></data>
   <data name="lgAvgYield"     xml:space="preserve"><value>Gem. opbrengst:</value></data>
-  <data name="lgAvgMoisture"  xml:space="preserve"><value>Gem. vocht:</value></data>
   <data name="lgDataPoints"   xml:space="preserve"><value>Datapunten:</value></data>
   <data name="lgExportCsv"    xml:space="preserve"><value>CSV exporteren</value></data>
   <data name="lgExportFailed" xml:space="preserve"><value>Export mislukt — geen gegevens of fout.</value></data>
@@ -201,5 +138,93 @@ Zorg dat de elevator leeg loopt.</value></data>
   <data name="lgLow"    xml:space="preserve"><value>Laag</value></data>
   <data name="lgHigh"   xml:space="preserve"><value>Hoog</value></data>
   <data name="lgNoJobs" xml:space="preserve"><value>Geen taken</value></data>
+
+
+  <!-- BeltFlo: conveyor scale, loads and alarms -->
+  <data name="lgRowsHarvested" xml:space="preserve"><value>Rijen:</value></data>
+  <data name="lgTitleConveyor" xml:space="preserve"><value>Transportband</value></data>
+  <data name="lgTitleScaleCal" xml:space="preserve"><value>Weegschaal kalibreren</value></data>
+  <data name="lgRows" xml:space="preserve"><value>Rijen:</value></data>
+  <data name="lgRowSpacing" xml:space="preserve"><value>Rijafstand:</value></data>
+  <data name="lgAheadOfPivot" xml:space="preserve"><value>Voor draaipunt:</value></data>
+  <data name="lgScaleWeighsInto" xml:space="preserve"><value>Weegschaal weegt in:</value></data>
+  <data name="lgTruck" xml:space="preserve"><value>Vrachtwagen</value></data>
+  <data name="lgTank" xml:space="preserve"><value>Bunker</value></data>
+  <data name="lgDiggingWidth" xml:space="preserve"><value>Rooibreedte: {0}</value></data>
+  <data name="lgRowsInfo" xml:space="preserve"><value>{0} breed  (rooier heeft {1} rijen)</value></data>
+  <data name="lgBeltPerPulse" xml:space="preserve"><value>Band per puls:</value></data>
+  <data name="lgPulsesPerRev" xml:space="preserve"><value>Pulsen per omloop:</value></data>
+  <data name="lgSectionLength" xml:space="preserve"><value>Weegsectie:</value></data>
+  <data name="lgEmptyBeltBelow" xml:space="preserve"><value>Band leeg onder:</value></data>
+  <data name="lgBeltStoppedAfter" xml:space="preserve"><value>Band gestopt na:</value></data>
+  <data name="lgDigToScaleDelay" xml:space="preserve"><value>Vertraging rooien–weegschaal:</value></data>
+  <data name="lgBarFullFlow" xml:space="preserve"><value>Balk stroom vol bij:</value></data>
+  <data name="lgBarFullBelt" xml:space="preserve"><value>Balk band vol bij:</value></data>
+  <data name="lgMeasureBelt" xml:space="preserve"><value>Band meten</value></data>
+  <data name="lgResetDistance" xml:space="preserve"><value>Afstand resetten</value></data>
+  <data name="lgConveyorJobRunning" xml:space="preserve"><value>Beëindig de klus voordat u deze instelling wijzigt.</value></data>
+  <data name="lgBarScalesOnly" xml:space="preserve"><value>Klus loopt - alleen de eindwaarden van de balken zijn te wijzigen.</value></data>
+  <data name="lgCalRaw" xml:space="preserve"><value>Ruwe waarde:</value></data>
+  <data name="lgCalWeight" xml:space="preserve"><value>Op de sectie:</value></data>
+  <data name="lgCalReading" xml:space="preserve"><value>Aflezing:</value></data>
+  <data name="lgCalZero" xml:space="preserve"><value>Nulpunt:</value></data>
+  <data name="lgCalSpan" xml:space="preserve"><value>Helling:</value></data>
+  <data name="lgCalStable" xml:space="preserve"><value>Stabiel</value></data>
+  <data name="lgCalUnstable" xml:space="preserve"><value>Onstabiel</value></data>
+  <data name="lgCalZeroScale" xml:space="preserve"><value>Weegschaal nullen</value></data>
+  <data name="lgCalKnownWeight" xml:space="preserve"><value>Bekend gewicht</value></data>
+  <data name="lgNoScale" xml:space="preserve"><value>GEEN WEEGSCHAAL</value></data>
+  <data name="lgScaleFault" xml:space="preserve"><value>Weegfout - opname gepauzeerd</value></data>
+  <data name="lgScaleRestored" xml:space="preserve"><value>Weegschaal OK - opname hervat</value></data>
+  <data name="lgLoads" xml:space="preserve"><value>Vrachten:</value></data>
+  <data name="lgTitleLoads" xml:space="preserve"><value>Vrachten</value></data>
+  <data name="lgNewLoad" xml:space="preserve"><value>Nieuwe vracht</value></data>
+  <data name="lgFinishLoad" xml:space="preserve"><value>Vracht afsluiten</value></data>
+  <data name="lgFlow" xml:space="preserve"><value>Stroom</value></data>
+  <data name="lgBelt" xml:space="preserve"><value>Band</value></data>
+  <data name="lgRecording" xml:space="preserve"><value>Opn.</value></data>
+  <data name="lgRecalcLater" xml:space="preserve"><value>Kaartcorrectie gebeurt in het scherm Vrachten</value></data>
+  <data name="lgStatusScale" xml:space="preserve"><value>Weegschaal</value></data>
+  <data name="lgStatusZero" xml:space="preserve"><value>Nul</value></data>
+  <data name="lgModuleNotReceiving" xml:space="preserve"><value>Module ontvangt niets van BeltFlo - controleer de verbinding</value></data>
+  <data name="lgFinishJob" xml:space="preserve"><value>Afsluiten</value></data>
+  <data name="lgFinishLoadPrompt" xml:space="preserve"><value>Deze vracht afsluiten? Het gewicht blijft bewaard tot het gecertificeerde gewicht is ingevoerd.</value></data>
+  <data name="lgPaused" xml:space="preserve"><value>Gepauzeerd - er wordt niets geteld</value></data>
+  <data name="lgResumed" xml:space="preserve"><value>Tellen hervat</value></data>
+  <data name="lgResumedSectionsOn" xml:space="preserve"><value>Secties aan - tellen hervat</value></data>
+  <data name="lgPausedSectionsOn" xml:space="preserve"><value>GEPAUZEERD - secties aan, niets geteld. Druk op ▶</value></data>
+  <data name="lgNoLoadOpen" xml:space="preserve"><value>Geen vracht open - druk op ▶</value></data>
+  <data name="lgJobStatusPaused" xml:space="preserve"><value> - Gepauzeerd</value></data>
+  <data name="lgAutoResumePause" xml:space="preserve"><value>Hervatten uit pauze als secties aan gaan</value></data>
+  <data name="lgScreenNotBuilt" xml:space="preserve"><value>Scherm {0} is nog niet gebouwd</value></data>
+  <data name="lgBeltSensorSuspect" xml:space="preserve"><value>Geen bandpulsen - gewicht niet vastgelegd</value></data>
+  <data name="lgColJob" xml:space="preserve"><value>Klus</value></data>
+  <data name="lgColMonitor" xml:space="preserve"><value>Monitor</value></data>
+  <data name="lgColTicket" xml:space="preserve"><value>Ticket</value></data>
+  <data name="lgColDiff" xml:space="preserve"><value>Versch. %</value></data>
+  <data name="lgFlag" xml:space="preserve"><value>Markering</value></data>
+  <data name="lgFlagNone" xml:space="preserve"><value>Geen</value></data>
+  <data name="lgFlagWet" xml:space="preserve"><value>Nat</value></data>
+  <data name="lgFlagSpoiled" xml:space="preserve"><value>Bedorven</value></data>
+  <data name="lgFlagTrash" xml:space="preserve"><value>Tarra</value></data>
+  <data name="lgFlagStones" xml:space="preserve"><value>Stenen</value></data>
+  <data name="lgMonitorWeight" xml:space="preserve"><value>Monitor</value></data>
+  <data name="lgTicketWeight" xml:space="preserve"><value>Ticket</value></data>
+  <data name="lgDifference" xml:space="preserve"><value>Verschil</value></data>
+  <data name="lgFactor" xml:space="preserve"><value>Factor</value></data>
+  <data name="lgSaveWeightOnly" xml:space="preserve"><value>Alleen gewicht opslaan</value></data>
+  <data name="lgCorrectLoad" xml:space="preserve"><value>Deze vracht corrigeren</value></data>
+  <data name="lgUpdateCalibration" xml:space="preserve"><value>Kalibratie bijwerken</value></data>
+  <data name="lgCorrectJob" xml:space="preserve"><value>Klus corrigeren</value></data>
+  <data name="lgRename" xml:space="preserve"><value>Hernoemen</value></data>
+  <data name="lgReopen" xml:space="preserve"><value>Heropenen</value></data>
+  <data name="lgLoadActive" xml:space="preserve"><value>Wordt geladen</value></data>
+  <data name="lgLoadWaiting" xml:space="preserve"><value>Wacht</value></data>
+  <data name="lgLoadWeighed" xml:space="preserve"><value>Gewogen</value></data>
+  <data name="lgLoadCorrected" xml:space="preserve"><value>Gecorrigeerd</value></data>
+  <data name="lgNoLoads" xml:space="preserve"><value>Nog geen vrachten</value></data>
+  <data name="lgDeleteLoadPrompt" xml:space="preserve"><value>Vracht {0} van {1} verwijderen? De kaartpunten blijven in de klus.</value></data>
+  <data name="lgUpdateCalPrompt" xml:space="preserve"><value>Weegschaalhelling wijzigen van {0} naar {1} ({2})? Deze vracht wordt ook gecorrigeerd en de module weegt voortaan met de nieuwe helling.</value></data>
+  <data name="lgCorrectJobPrompt" xml:space="preserve"><value>{0} corrigeren met {1}? Alle kaartpunten en het klustotaal worden aangepast aan de tickets.</value></data>
 
 </root>
